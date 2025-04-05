@@ -2,12 +2,18 @@
 import Head from 'next/head';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useSession, signIn } from "next-auth/react";
+import { redirect } from "next/navigation";
 import { useState } from 'react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
+  const { data: session } = useSession();
+  if (session) {
+    redirect("/");
+  }
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     // Add your authentication logic here
@@ -15,6 +21,7 @@ export default function Login() {
   };
 
   return (
+    
     <div className="min-h-screen flex flex-col md:flex-row">
       <Head>
         <title>Sing Up - Login</title>
@@ -94,7 +101,7 @@ export default function Login() {
                 </svg>
               </button>
               
-              <button 
+              <button onClick={() => signIn("google")}
                 type="button"
                 className="inline-flex justify-center items-center p-2 border border-gray-300 rounded-full shadow-sm bg-white hover:bg-gray-50"
               >
