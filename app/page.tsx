@@ -20,6 +20,7 @@ export default function Home() {
       alt="User Profile"
     />
     <p>{session.user?.name || ""}</p>
+    <p>{session.user?.role || ""}</p>
     <button onClick={() => signOut()} className="px-5 py-2 bg-red-400 ">ออกจากระบบ</button>
   </>
 

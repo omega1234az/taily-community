@@ -5,11 +5,40 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import type { NextAuthOptions } from "next-auth";
 import FacebookProvider from "next-auth/providers/facebook";
+import { User } from "next-auth";
+import { Adapter } from "next-auth/adapters";
+
+// Extend the standard User type to include the role field and other Prisma fields
+declare module "next-auth" {
+  interface User {
+    id: string;
+    role?: string | null;
+    // Include other fields from your Prisma schema as needed
+  }
+  
+  interface Session {
+    user: {
+      id?: string;
+      name?: string | null;
+      email?: string | null;
+      image?: string | null;
+      role?: string | null;
+    }
+  }
+}
+
+// Extend JWT type to include custom fields
+declare module "next-auth/jwt" {
+  interface JWT {
+    role?: string | null;
+    userId?: string;
+  }
+}
 
 const prisma = new PrismaClient();
 
 export const options: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
+  adapter: PrismaAdapter(prisma) as Adapter,
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_ID as string,
@@ -26,7 +55,7 @@ export const options: NextAuthOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) {
           return null;
         }
@@ -35,11 +64,7 @@ export const options: NextAuthOptions = {
           where: { email: credentials.email },
         });
 
-        if (!user) {
-          return null;
-        }
-
-        if (!user.password) {
+        if (!user || !user.password) {
           return null;
         }
 
@@ -49,26 +74,33 @@ export const options: NextAuthOptions = {
           return null;
         }
 
-        return user;
+        // Return only the fields NextAuth expects/allows
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          image: user.image,
+          role: user.role
+        };
       },
     }),
   ],
   session: {
-    strategy: "jwt", // Using JWT session strategy
-    maxAge: 60 * 60 * 24, // session expires in 24 hours (in seconds)
+    strategy: "jwt",
+    maxAge: 60 * 60 * 24, // 24 hours in seconds
   },
   callbacks: {
     async session({ session, token }) {
-      // Add the role to the session object
-      if (token?.user) {
-        session.user.role = token.user.role; // assuming the user object has a `role` property
+      if (session.user) {
+        session.user.id = token.userId;
+        session.user.role = token.role;
       }
       return session;
     },
     async jwt({ token, user }) {
       if (user) {
-        // Add the role to the JWT token when the user is authenticated
-        token.user = { ...user, role: user.role }; // assuming the `user` object has a `role` property
+        token.userId = user.id;
+        token.role = user.role;
       }
       return token;
     },
