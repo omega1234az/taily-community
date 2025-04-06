@@ -4,20 +4,40 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useSession, signIn } from "next-auth/react";
 import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useState } from 'react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
+  const [error, setError] = useState("");
+  const router = useRouter();
   const { data: session } = useSession();
   if (session) {
     redirect("/");
   }
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Add your authentication logic here
-    console.log('Login attempt with:', { email, password });
+    setError("");
+    
+    try {
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
+      
+      if (result?.error) {
+        setError("อีเมลหรือรหัสผ่านไม่ถูกต้อง");
+      } else {
+        // เมื่อล็อกอินสำเร็จ นำทางไปยังหน้าอื่น
+        router.push("/");
+        router.refresh();
+      }
+    } catch (error) {
+      setError("เกิดข้อผิดพลาดในการเข้าสู่ระบบ");
+      console.error(error);
+    }
   };
 
   return (
@@ -116,6 +136,7 @@ export default function Login() {
             </div>
 
             <div>
+              <div>{error}</div>
               <button
                 type="submit"
                 className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-blue-400 hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
