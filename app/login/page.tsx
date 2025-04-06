@@ -5,22 +5,29 @@ import Link from 'next/link';
 import { useSession, signIn } from "next-auth/react";
 import { redirect } from "next/navigation";
 import { useRouter } from "next/navigation";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState("");
   const router = useRouter();
-  const { data: session } = useSession();
-  if (session) {
-    redirect("/");
-  }
-  const handleSubmit = async (e) => {
+  const { data: session, status } = useSession();
+  
+  // ใช้ useEffect เพื่อรอให้ session พร้อมก่อนที่จะ redirect
+  useEffect(() => {
+    if (status === "authenticated" && session) {
+      router.push("/");
+      router.refresh();
+    }
+  }, [session, status, router]);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
     
     try {
+      // สังเกตว่าเปลี่ยนจาก "Credentials" เป็น "credentials" (ตัวพิมพ์เล็ก)
       const result = await signIn("credentials", {
         email,
         password,
@@ -30,7 +37,7 @@ export default function Login() {
       if (result?.error) {
         setError("อีเมลหรือรหัสผ่านไม่ถูกต้อง");
       } else {
-        // เมื่อล็อกอินสำเร็จ นำทางไปยังหน้าอื่น
+        // เมื่อล็อกอินสำเร็จ นำทางไปยังหน้าอื่น (จะทำงานร่วมกับ useEffect)
         router.push("/");
         router.refresh();
       }
@@ -40,8 +47,17 @@ export default function Login() {
     }
   };
 
+  // แสดง loading ระหว่างตรวจสอบ session
+  if (status === "loading") {
+    return <div className="min-h-screen flex items-center justify-center">กำลังโหลด...</div>;
+  }
+  
+  // ถ้ามี session อยู่แล้ว redirect ไปหน้าหลัก (เป็นการป้องกันเพิ่มเติม)
+  if (status === "authenticated") {
+    return null; // ไม่แสดงอะไรระหว่างการ redirect
+  }
+
   return (
-    
     <div className="min-h-screen flex flex-col md:flex-row">
       <Head>
         <title>Sing Up - Login</title>
@@ -111,7 +127,7 @@ export default function Login() {
             </div>
             
             <div className="flex items-center justify-center space-x-4">
-              <button 
+              <button onClick={() => signIn("facebook")}
                 type="button"
                 className="inline-flex justify-center items-center p-2 border border-gray-300 rounded-full shadow-sm bg-white hover:bg-gray-50"
               >
@@ -136,7 +152,11 @@ export default function Login() {
             </div>
 
             <div>
-              <div>{error}</div>
+              {error && (
+                <div className="mb-4 p-2 text-center text-red-600 bg-red-100 rounded">
+                  {error}
+                </div>
+              )}
               <button
                 type="submit"
                 className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-blue-400 hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -150,9 +170,7 @@ export default function Login() {
 
       {/* Right side - Dog Image */}
       <div className="w-[50%]  flex items-center justify-center p-8 relative">
-        
         <div className="relative w-full h-full ">
-        
           <Image 
             src="/login/dog.png"
             alt="Cute dogs"
@@ -160,8 +178,6 @@ export default function Login() {
             className="object-contain"
             priority
           />
-          
-        
         </div>
       </div>
     </div>

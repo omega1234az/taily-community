@@ -4,22 +4,24 @@ import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import type { NextAuthOptions } from "next-auth";
+import FacebookProvider from "next-auth/providers/facebook";
 
-// สร้าง instance ของ PrismaClient
 const prisma = new PrismaClient();
 
 export const options: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),  // ใช้ PrismaAdapter สำหรับฐานข้อมูล
+  adapter: PrismaAdapter(prisma),
   providers: [
-    // Google Provider สำหรับการเข้าสู่ระบบด้วย Google
     GoogleProvider({
       clientId: process.env.GOOGLE_ID as string,
       clientSecret: process.env.GOOGLE_SECRET as string,
     }),
+    FacebookProvider({
+      clientId: process.env.FACEBOOK_CLIENT_ID as string,
+      clientSecret: process.env.FACEBOOK_CLIENT_SECRET as string,
+    }),
 
-    // Credentials Provider สำหรับการเข้าสู่ระบบด้วย Email/Password
     CredentialsProvider({
-      name: "Credentials",
+      name: "credentials",
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
@@ -29,37 +31,47 @@ export const options: NextAuthOptions = {
           return null;
         }
 
-        // ค้นหาผู้ใช้ในฐานข้อมูลจากอีเมล
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
         });
 
-        // หากไม่พบผู้ใช้ ให้คืนค่า null
         if (!user) {
           return null;
         }
 
-        // ตรวจสอบว่า user.password มีค่าหรือไม่
         if (!user.password) {
           return null;
         }
 
-        // ตรวจสอบรหัสผ่าน
         const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
-        
-        // หากรหัสผ่านไม่ถูกต้อง ให้คืนค่า null
+
         if (!isPasswordValid) {
           return null;
         }
 
-        // คืนค่าผู้ใช้เมื่อการยืนยันตัวตนสำเร็จ
         return user;
       },
     }),
   ],
   session: {
-    strategy: "database",  // ใช้ฐานข้อมูลสำหรับจัดการ session
-    maxAge: 60 * 60 * 24,   // ตั้งเวลา session หมดอายุหลังจาก 24 ชั่วโมง (ในวินาที)
+    strategy: "jwt", // Using JWT session strategy
+    maxAge: 60 * 60 * 24, // session expires in 24 hours (in seconds)
+  },
+  callbacks: {
+    async session({ session, token }) {
+      // Add the role to the session object
+      if (token?.user) {
+        session.user.role = token.user.role; // assuming the user object has a `role` property
+      }
+      return session;
+    },
+    async jwt({ token, user }) {
+      if (user) {
+        // Add the role to the JWT token when the user is authenticated
+        token.user = { ...user, role: user.role }; // assuming the `user` object has a `role` property
+      }
+      return token;
+    },
   },
   secret: process.env.NEXTAUTH_SECRET,
 };

@@ -1,12 +1,17 @@
 
 "use client"
-import { useSession, signIn } from "next-auth/react";
+import { useSession, signIn, signOut} from "next-auth/react";
 import { redirect } from "next/navigation";
+
+
+import { getToken } from "next-auth/jwt";
+
 export default function Home() {
   const { data: session } = useSession();
   if (!session) {
     redirect("/login");
   }
+  console.log(session);
   return (<>
 
     <img
@@ -14,6 +19,8 @@ export default function Home() {
       src={session.user?.image || ""}
       alt="User Profile"
     />
+    <p>{session.user?.name || ""}</p>
+    <button onClick={() => signOut()} className="px-5 py-2 bg-red-400 ">ออกจากระบบ</button>
   </>
 
   );
