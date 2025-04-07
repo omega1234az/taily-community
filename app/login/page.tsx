@@ -69,20 +69,20 @@ export default function Login() {
       <div className="w-full md:w-1/2 flex flex-col justify-center p-8 bg-white">
         <div className="max-w-md mx-auto w-full">
           <h2 className="text-5xl font-bold text-gray-900 mb-6">
-            Welcome back
+            เข้าสู่ระบบ
           </h2>
           
           <p className="text-lg text-gray-600 mb-8">
-            Don&apos;t have an account?{' '}
-            <Link href="/signup" className=" text-lg text-blue-400 hover:text-blue-500">
-              Signup
+              ยังไม่มี Account?{' '}
+            <Link href="/register" className=" text-lg text-blue-400 hover:text-blue-500">
+              สมัครสมาชิก
             </Link>
           </p>
           
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
               <label htmlFor="email" className="block text-lg font-medium text-gray-700">
-                Email
+                อีเมล
               </label>
               <div className="mt-1">
                 <input
@@ -100,7 +100,7 @@ export default function Login() {
 
             <div>
               <label htmlFor="password" className="block text-lg font-medium text-gray-700">
-                Password
+                รหัสผ่าน
               </label>
               <div className="mt-1">
                 <input
