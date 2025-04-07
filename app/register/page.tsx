@@ -1,48 +1,91 @@
 "use client"
-import Head from 'next/head';
+
+import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
+import { z } from 'zod';
+
+
+const signUpSchema = z.object({
+  name: z.string().min(3, { message: "ชื่อต้องมีอย่างน้อย 3 ตัวอักษร" }),
+  email: z.string().email({ message: "รูปแบบอีเมลไม่ถูกต้อง" }),
+  password: z.string().min(8, { message: "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร" })
+    .regex(/[A-Z]/, { message: "รหัสผ่านต้องมีตัวพิมพ์ใหญ่อย่างน้อย 1 ตัว" })
+    .regex(/[0-9]/, { message: "รหัสผ่านต้องมีตัวเลขอย่างน้อย 1 ตัว" }),
+  confirmPassword: z.string()
+}).refine(data => data.password === data.confirmPassword, {
+  message: "รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน",
+  path: ["confirmPassword"]
+});
+
+type SignUpFormData = z.infer<typeof signUpSchema>;
 
 export default function SignUpForm() {
   const router = useRouter();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<SignUpFormData>({
     name: '',
     email: '',
     password: '',
     confirmPassword: ''
   });
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [generalError, setGeneralError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    
+    if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+  };
+
+  const validateForm = () => {
+    try {
+      signUpSchema.parse(formData);
+      setErrors({});
+      return true;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const newErrors: Record<string, string> = {};
+        error.errors.forEach(err => {
+          if (err.path[0]) {
+            newErrors[err.path[0].toString()] = err.message;
+          }
+        });
+        setErrors(newErrors);
+      }
+      return false;
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
+    setGeneralError('');
+    
 
-    // ตรวจสอบว่ารหัสผ่านและการยืนยันรหัสผ่านตรงกัน
-    if (formData.password !== formData.confirmPassword) {
-      setError('รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน');
-      setLoading(false);
+    if (!validateForm()) {
       return;
     }
+    
+    setLoading(true);
 
     try {
-      // สร้างข้อมูลที่จะส่งไป API (ไม่รวม confirmPassword)
       const submitData = {
         name: formData.name,
         email: formData.email,
         password: formData.password
       };
       
-      // ส่งข้อมูลไปยัง API
+
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -55,7 +98,7 @@ export default function SignUpForm() {
         throw new Error(data.message || 'เกิดข้อผิดพลาดในการลงทะเบียน');
       }
 
-      // ลงทะเบียนสำเร็จ - ทำการล็อกอินอัตโนมัติ
+      // เข้าสู่ระบบอัตโนมัติหลังการลงทะเบียน
       const result = await signIn('credentials', {
         email: formData.email,
         password: formData.password,
@@ -63,29 +106,31 @@ export default function SignUpForm() {
       });
 
       if (result?.error) {
-        setError('เกิดข้อผิดพลาดในการล็อกอิน กรุณาล็อกอินอีกครั้ง');
+        setGeneralError('เกิดข้อผิดพลาดในการล็อกอิน กรุณาล็อกอินอีกครั้ง');
         router.push('/login');
       } else {
-        // นำผู้ใช้ไปยังหน้าแดชบอร์ดหรือหน้าหลัก
-        router.push('/dashboard');
+        router.push('/');
       }
     } catch (err: any) {
-      setError(err.message);
+      setGeneralError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="min-h-screen flex flex-col md:flex-row">
-      <Head>
-        <title>Sign Up</title>
-        <meta name="description" content="Create a new account" />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
+  const getErrorMessage = (field: keyof SignUpFormData) => {
+    return errors[field] || '';
+  };
 
-      {/* Left side - Dog Image */}
-      <div className="w-full md:w-1/2 flex items-center justify-center  relative">
+  return (
+    <motion.div
+      className="min-h-screen flex flex-col md:flex-row"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 1 }}
+    >
+      <div className="w-full md:w-1/2 flex items-center justify-center relative">
         <div className="relative w-full h-full">
           <Image 
             src="/login/dog.png"
@@ -97,7 +142,6 @@ export default function SignUpForm() {
         </div>
       </div>
 
-      {/* Right side - Sign Up Form */}
       <div className="w-full md:w-1/2 flex flex-col justify-center p-8 bg-white">
         <div className="max-w-md mx-auto w-full">
           <h2 className="text-5xl font-bold text-gray-900 mb-6">
@@ -111,8 +155,6 @@ export default function SignUpForm() {
             </Link>
           </div>
           
-          
-          
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
               <label htmlFor="name" className="block text-lg font-medium text-gray-700">
@@ -125,8 +167,9 @@ export default function SignUpForm() {
                   type="text"
                   value={formData.name}
                   onChange={handleChange}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-lg"
+                  className={`appearance-none block w-full px-3 py-2 border ${errors.name ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-lg`}
                 />
+                {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
               </div>
             </div>
             
@@ -143,8 +186,9 @@ export default function SignUpForm() {
                   required
                   value={formData.email}
                   onChange={handleChange}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-lg"
+                  className={`appearance-none block w-full px-3 py-2 border ${errors.email ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-lg`}
                 />
+                {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
               </div>
             </div>
             
@@ -161,8 +205,9 @@ export default function SignUpForm() {
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-lg"
+                  className={`appearance-none block w-full px-3 py-2 border ${errors.password ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-lg`}
                 />
+                {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
               </div>
             </div>
             
@@ -179,8 +224,9 @@ export default function SignUpForm() {
                   required
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-lg"
+                  className={`appearance-none block w-full px-3 py-2 border ${errors.confirmPassword ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-lg`}
                 />
+                {errors.confirmPassword && <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>}
               </div>
             </div>
 
@@ -195,7 +241,7 @@ export default function SignUpForm() {
             </div>
             
             <div className="flex items-center justify-center space-x-4">
-              <button onClick={() => signIn("facebook" , { callbackUrl: '/' })}
+              <button onClick={() => signIn("facebook", { callbackUrl: '/' })}
                 type="button"
                 className="cursor-pointer inline-flex justify-center items-center p-2 border border-gray-300 rounded-full shadow-sm bg-white hover:bg-gray-50"
               >
@@ -205,7 +251,7 @@ export default function SignUpForm() {
                 </svg>
               </button>
               
-              <button onClick={() => signIn("google" , { callbackUrl: '/' }) }
+              <button onClick={() => signIn("google", { callbackUrl: '/' })}
                 type="button"
                 className="cursor-pointer inline-flex justify-center items-center p-2 border border-gray-300 rounded-full shadow-sm bg-white hover:bg-gray-50"
               >
@@ -218,11 +264,11 @@ export default function SignUpForm() {
                 </svg>
               </button>
             </div>
-            {error && (
-            <div className="mb-4 p-2 text-center text-red-600 bg-red-100 rounded">
-              {error}
-            </div>
-          )}
+            {generalError && (
+              <div className="mb-4 p-2 text-center text-red-600 bg-red-100 rounded">
+                {generalError}
+              </div>
+            )}
             <div>
               <button
                 type="submit"
@@ -235,6 +281,6 @@ export default function SignUpForm() {
           </form>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

@@ -1,20 +1,37 @@
 "use client";
-import Head from 'next/head';
+
+import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSession, signIn } from "next-auth/react";
 import { redirect } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from 'react';
+import { z } from 'zod';
+
+
+const loginSchema = z.object({
+  email: z.string()
+    .email({ message: "รูปแบบอีเมลไม่ถูกต้อง" })
+    .min(1, { message: "กรุณากรอกอีเมล" }),
+  password: z.string()
+    .min(8, { message: "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร" })
+});
+
+
+type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState("");
+  const [formData, setFormData] = useState<LoginFormData>({
+    email: '',
+    password: ''
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [generalError, setGeneralError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { data: session, status } = useSession();
   
-  // ใช้ useEffect เพื่อรอให้ session พร้อมก่อนที่จะ redirect
   useEffect(() => {
     if (status === "authenticated" && session) {
       router.push("/");
@@ -22,50 +39,92 @@ export default function Login() {
     }
   }, [session, status, router]);
 
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    
+    if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+  };
+
+  const validateForm = () => {
+    try {
+      loginSchema.parse(formData);
+      setErrors({});
+      return true;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const newErrors: Record<string, string> = {};
+        error.errors.forEach(err => {
+          if (err.path[0]) {
+            newErrors[err.path[0].toString()] = err.message;
+          }
+        });
+        setErrors(newErrors);
+      }
+      return false;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError("");
+    setGeneralError("");
+    
+    
+    if (!validateForm()) {
+      return;
+    }
+    
+    setIsLoading(true);
     
     try {
-      // สังเกตว่าเปลี่ยนจาก "Credentials" เป็น "credentials" (ตัวพิมพ์เล็ก)
       const result = await signIn("credentials", {
-        email,
-        password,
+        email: formData.email,
+        password: formData.password,
         redirect: false,
       });
       
       if (result?.error) {
-        setError("อีเมลหรือรหัสผ่านไม่ถูกต้อง");
+        setGeneralError("อีเมลหรือรหัสผ่านไม่ถูกต้อง");
       } else {
-        // เมื่อล็อกอินสำเร็จ นำทางไปยังหน้าอื่น (จะทำงานร่วมกับ useEffect)
         router.push("/");
         router.refresh();
       }
     } catch (error) {
-      setError("เกิดข้อผิดพลาดในการเข้าสู่ระบบ");
+      setGeneralError("เกิดข้อผิดพลาดในการเข้าสู่ระบบ");
       console.error(error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // แสดง loading ระหว่างตรวจสอบ session
+
+  const getErrorMessage = (field: keyof LoginFormData) => {
+    return errors[field] || '';
+  };
+  
   if (status === "loading") {
     return <div className="min-h-screen flex items-center justify-center">กำลังโหลด...</div>;
   }
   
-  // ถ้ามี session อยู่แล้ว redirect ไปหน้าหลัก (เป็นการป้องกันเพิ่มเติม)
   if (status === "authenticated") {
-    return null; // ไม่แสดงอะไรระหว่างการ redirect
+    return null; 
   }
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row">
-      <Head>
-        <title>Sing Up - Login</title>
-        <meta name="description" content="Login to your account" />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
-
-      {/* Left side - Login Form */}
+    <motion.div
+      className="min-h-screen flex flex-col md:flex-row"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 1 }}
+    >
       <div className="w-full md:w-1/2 flex flex-col justify-center p-8 bg-white">
         <div className="max-w-md mx-auto w-full">
           <h2 className="text-5xl font-bold text-gray-900 mb-6">
@@ -73,8 +132,8 @@ export default function Login() {
           </h2>
           
           <p className="text-lg text-gray-600 mb-8">
-              ยังไม่มี Account?{' '}
-            <Link href="/register" className=" text-lg text-blue-400 hover:text-blue-500">
+            ยังไม่มี Account?{' '}
+            <Link href="/register" className="text-lg text-blue-400 hover:text-blue-500">
               สมัครสมาชิก
             </Link>
           </p>
@@ -91,10 +150,11 @@ export default function Login() {
                   type="email"
                   autoComplete="email"
                   required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-lg"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className={`appearance-none block w-full px-3 py-2 border ${errors.email ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-lg`}
                 />
+                {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
               </div>
             </div>
 
@@ -109,10 +169,19 @@ export default function Login() {
                   type="password"
                   autoComplete="current-password"
                   required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-lg"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className={`appearance-none block w-full px-3 py-2 border ${errors.password ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-lg`}
                 />
+                {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end">
+              <div className="text-sm">
+                <Link href="/forgot-password" className="font-medium text-blue-400 hover:text-blue-500">
+                  ลืมรหัสผ่าน?
+                </Link>
               </div>
             </div>
 
@@ -127,8 +196,9 @@ export default function Login() {
             </div>
             
             <div className="flex items-center justify-center space-x-4">
-              <button onClick={() => signIn("facebook")}
-                type="button"
+              <button 
+                type="button" 
+                onClick={() => signIn("facebook", { callbackUrl: '/' })}
                 className="cursor-pointer inline-flex justify-center items-center p-2 border border-gray-300 rounded-full shadow-sm bg-white hover:bg-gray-50"
               >
                 <span className="sr-only">Sign in with Facebook</span>
@@ -137,8 +207,9 @@ export default function Login() {
                 </svg>
               </button>
               
-              <button onClick={() => signIn("google")}
-                type="button"
+              <button 
+                type="button" 
+                onClick={() => signIn("google", { callbackUrl: '/' })}
                 className="cursor-pointer inline-flex justify-center items-center p-2 border border-gray-300 rounded-full shadow-sm bg-white hover:bg-gray-50"
               >
                 <span className="sr-only">Sign in with Google</span>
@@ -152,25 +223,25 @@ export default function Login() {
             </div>
 
             <div>
-              {error && (
+              {generalError && (
                 <div className="mb-4 p-2 text-center text-red-600 bg-red-100 rounded">
-                  {error}
+                  {generalError}
                 </div>
               )}
               <button
                 type="submit"
+                disabled={isLoading}
                 className="cursor-pointer w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-blue-400 hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                Login
+                {isLoading ? 'กำลังดำเนินการ...' : 'เข้าสู่ระบบ'}
               </button>
             </div>
           </form>
         </div>
       </div>
-
-      {/* Right side - Dog Image */}
-      <div className="w-[50%]  flex items-center justify-center p-8 relative">
-        <div className="relative w-full h-full ">
+            
+      <div className="w-full md:w-1/2 flex items-center justify-center p-8 relative">
+        <div className="relative w-full h-full">
           <Image 
             src="/login/dog.png"
             alt="Cute dogs"
@@ -180,6 +251,6 @@ export default function Login() {
           />
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
