@@ -7,11 +7,11 @@ const prisma = new PrismaClient();
 
 export async function POST(request: Request) {
   try {
-    // รับข้อมูลจาก request body
+
     const body = await request.json();
     const { name, email, password, username } = body;
 
-    // ตรวจสอบข้อมูลที่จำเป็น
+
     if (!email || !password) {
       return NextResponse.json(
         { message: "Email และ password จำเป็นต้องระบุ" },
@@ -19,7 +19,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // ตรวจสอบว่าอีเมลนี้มีอยู่ในระบบแล้วหรือไม่
     const existingUserByEmail = await prisma.user.findUnique({
       where: { email },
     });
@@ -31,7 +30,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // ตรวจสอบว่า username นี้มีอยู่ในระบบแล้วหรือไม่ (ถ้ามีการส่ง username มา)
     if (username) {
       const existingUserByUsername = await prisma.user.findUnique({
         where: { username },
@@ -45,10 +43,9 @@ export async function POST(request: Request) {
       }
     }
 
-    // เข้ารหัสพาสเวิร์ด
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // สร้างผู้ใช้ใหม่
     const user = await prisma.user.create({
       data: {
         name,
@@ -58,7 +55,6 @@ export async function POST(request: Request) {
       },
     });
 
-    // ส่งข้อมูลผู้ใช้กลับไป (ไม่รวมรหัสผ่าน)
     const { password: _, ...userWithoutPassword } = user;
     
     return NextResponse.json(

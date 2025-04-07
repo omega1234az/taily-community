@@ -8,12 +8,12 @@ import FacebookProvider from "next-auth/providers/facebook";
 import { User } from "next-auth";
 import { Adapter } from "next-auth/adapters";
 
-// Extend the standard User type to include the role field and other Prisma fields
+
 declare module "next-auth" {
   interface User {
     id: string;
     role?: string | null;
-    // Include other fields from your Prisma schema as needed
+    
   }
   
   interface Session {
@@ -27,7 +27,7 @@ declare module "next-auth" {
   }
 }
 
-// Extend JWT type to include custom fields
+
 declare module "next-auth/jwt" {
   interface JWT {
     role?: string | null;
