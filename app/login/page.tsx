@@ -129,7 +129,7 @@ export default function Login() {
             <div className="flex items-center justify-center space-x-4">
               <button onClick={() => signIn("facebook")}
                 type="button"
-                className="inline-flex justify-center items-center p-2 border border-gray-300 rounded-full shadow-sm bg-white hover:bg-gray-50"
+                className="cursor-pointer inline-flex justify-center items-center p-2 border border-gray-300 rounded-full shadow-sm bg-white hover:bg-gray-50"
               >
                 <span className="sr-only">Sign in with Facebook</span>
                 <svg className="h-10 w-10 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
@@ -139,7 +139,7 @@ export default function Login() {
               
               <button onClick={() => signIn("google")}
                 type="button"
-                className="inline-flex justify-center items-center p-2 border border-gray-300 rounded-full shadow-sm bg-white hover:bg-gray-50"
+                className="cursor-pointer inline-flex justify-center items-center p-2 border border-gray-300 rounded-full shadow-sm bg-white hover:bg-gray-50"
               >
                 <span className="sr-only">Sign in with Google</span>
                 <svg className="h-10 w-10" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
@@ -159,7 +159,7 @@ export default function Login() {
               )}
               <button
                 type="submit"
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-blue-400 hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="cursor-pointer w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-blue-400 hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 Login
               </button>
