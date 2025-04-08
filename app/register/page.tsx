@@ -3,11 +3,10 @@
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { z } from 'zod';
-
 
 const signUpSchema = z.object({
   name: z.string().min(3, { message: "ชื่อต้องมีอย่างน้อย 3 ตัวอักษร" }),
@@ -34,6 +33,21 @@ export default function SignUpForm() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [generalError, setGeneralError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  
+  const submitTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSubmitTimeRef = useRef<number>(0);
+  const throttleTimeMs = 3000; // ระยะเวลาที่ต้องรอระหว่างการส่งฟอร์ม (3 วินาที)
+
+  
+  useEffect(() => {
+    return () => {
+      if (submitTimeoutRef.current) {
+        clearTimeout(submitTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -67,16 +81,27 @@ export default function SignUpForm() {
     }
   };
 
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setGeneralError('');
     
-
     if (!validateForm()) {
       return;
     }
     
+    const currentTime = Date.now();
+    
+    
+    if (isSubmitting || (currentTime - lastSubmitTimeRef.current) < throttleTimeMs) {
+      setGeneralError(`กรุณารอสักครู่ก่อนส่งข้อมูลอีกครั้ง (${Math.ceil((throttleTimeMs - (currentTime - lastSubmitTimeRef.current)) / 1000)} วินาที)`);
+      return;
+    }
+    
+    
+    setIsSubmitting(true);
     setLoading(true);
+    lastSubmitTimeRef.current = currentTime;
 
     try {
       const submitData = {
@@ -85,7 +110,6 @@ export default function SignUpForm() {
         password: formData.password
       };
       
-
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -98,7 +122,7 @@ export default function SignUpForm() {
         throw new Error(data.message || 'เกิดข้อผิดพลาดในการลงทะเบียน');
       }
 
-      // เข้าสู่ระบบอัตโนมัติหลังการลงทะเบียน
+      
       const result = await signIn('credentials', {
         email: formData.email,
         password: formData.password,
@@ -115,7 +139,32 @@ export default function SignUpForm() {
       setGeneralError(err.message);
     } finally {
       setLoading(false);
+      
+
+      submitTimeoutRef.current = setTimeout(() => {
+        setIsSubmitting(false);
+      }, throttleTimeMs);
     }
+  };
+
+ 
+  const handleSocialSignIn = (provider: string) => {
+    const currentTime = Date.now();
+    
+    if (isSubmitting || (currentTime - lastSubmitTimeRef.current) < throttleTimeMs) {
+      setGeneralError(`กรุณารอสักครู่ก่อนเข้าสู่ระบบอีกครั้ง (${Math.ceil((throttleTimeMs - (currentTime - lastSubmitTimeRef.current)) / 1000)} วินาที)`);
+      return;
+    }
+    
+    setIsSubmitting(true);
+    lastSubmitTimeRef.current = currentTime;
+    
+    signIn(provider, { callbackUrl: '/' });
+    
+
+    submitTimeoutRef.current = setTimeout(() => {
+      setIsSubmitting(false);
+    }, throttleTimeMs);
   };
 
   const getErrorMessage = (field: keyof SignUpFormData) => {
@@ -241,9 +290,11 @@ export default function SignUpForm() {
             </div>
             
             <div className="flex items-center justify-center space-x-4">
-              <button onClick={() => signIn("facebook", { callbackUrl: '/' })}
+              <button 
                 type="button"
-                className="cursor-pointer inline-flex justify-center items-center p-2 border border-gray-300 rounded-full shadow-sm bg-white hover:bg-gray-50"
+                onClick={() => handleSocialSignIn("facebook")}
+                disabled={isSubmitting}
+                className="cursor-pointer inline-flex justify-center items-center p-2 border border-gray-300 rounded-full shadow-sm bg-white hover:bg-gray-50 disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 <span className="sr-only">Sign in with Facebook</span>
                 <svg className="h-10 w-10 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
@@ -251,9 +302,11 @@ export default function SignUpForm() {
                 </svg>
               </button>
               
-              <button onClick={() => signIn("google", { callbackUrl: '/' })}
+              <button 
                 type="button"
-                className="cursor-pointer inline-flex justify-center items-center p-2 border border-gray-300 rounded-full shadow-sm bg-white hover:bg-gray-50"
+                onClick={() => handleSocialSignIn("google")}
+                disabled={isSubmitting}
+                className="cursor-pointer inline-flex justify-center items-center p-2 border border-gray-300 rounded-full shadow-sm bg-white hover:bg-gray-50 disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 <span className="sr-only">Sign in with Google</span>
                 <svg className="h-10 w-10" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
@@ -272,8 +325,8 @@ export default function SignUpForm() {
             <div>
               <button
                 type="submit"
-                disabled={loading}
-                className="cursor-pointer w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-[#FFBA60] hover:bg-[#FFBA20] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                disabled={loading || isSubmitting}
+                className="cursor-pointer w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-[#FFBA60] hover:bg-[#FFBA20] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 {loading ? 'กำลังดำเนินการ...' : 'สมัครสมาชิก'}
               </button>
