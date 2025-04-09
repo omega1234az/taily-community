@@ -5,6 +5,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import type { NextAuthOptions } from "next-auth";
 import FacebookProvider from "next-auth/providers/facebook";
+import LineProvider from "next-auth/providers/line";
 import { User } from "next-auth";
 import { Adapter } from "next-auth/adapters";
 
@@ -48,6 +49,11 @@ export const options: NextAuthOptions = {
       clientId: process.env.FACEBOOK_CLIENT_ID as string,
       clientSecret: process.env.FACEBOOK_CLIENT_SECRET as string,
     }),
+    LineProvider({
+      authorization: { params: { scope: "profile openid email" } },
+      clientId: process.env.LINE_CLIENT_ID as string, 
+      clientSecret: process.env.LINE_CLIENT_SECRET as string
+    }),
 
     CredentialsProvider({
       name: "credentials",
@@ -87,7 +93,7 @@ export const options: NextAuthOptions = {
   ],
   session: {
     strategy: "jwt",
-    maxAge: 60 * 60 * 24, // 24 hours in seconds
+    maxAge: 60 * 60 * 24, 
   },
   callbacks: {
     async session({ session, token }) {

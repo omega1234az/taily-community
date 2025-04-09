@@ -220,6 +220,14 @@ export default function Login() {
                   <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
                 </svg>
               </button>
+              <button 
+                type="button" 
+                onClick={() => signIn("line", { callbackUrl: '/' })}
+                className="cursor-pointer inline-flex justify-center items-center p-2 border border-gray-300 rounded-full shadow-sm bg-white hover:bg-gray-50"
+              >
+                <span className="sr-only">Sign in with Line</span>
+                <img className='h-10 w-10' src="login/line.png" alt="" />
+              </button>
             </div>
 
             <div>

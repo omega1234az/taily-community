@@ -1,12 +1,14 @@
+// ---------- CONFIG ----------
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
- 
+
 generator client {
   provider = "prisma-client-js"
 }
- 
+
+// ---------- USER / AUTH ----------
 model User {
   id            String          @id @default(cuid())
   name          String?
@@ -16,15 +18,17 @@ model User {
   emailVerified DateTime?
   image         String?
   role          String?         @default("user")
+
   accounts      Account[]
-  sessions      Session[]
-  // Optional for WebAuthn support
-  Authenticator Authenticator[]
- 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  pets          Pet[]
+  lostPets      LostPet[]
+  clues         Clue[]
+  adoptions     AdoptionPost[]
+  
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
 }
- 
+
 model Account {
   id                       String  @id @default(cuid())
   userId                   String  @unique
@@ -40,47 +44,125 @@ model Account {
   session_state            String?
   refresh_token_expires_in Int?
   user                     User?   @relation(fields: [userId], references: [id])
- 
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
- 
+
   @@unique([provider, providerAccountId])
   @@index([userId])
 }
- 
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id])
- 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
- 
-  @@index([userId])
-}
- 
+
+
+
 model VerificationToken {
   identifier String
   token      String
   expires    DateTime
- 
+
   @@unique([identifier, token])
 }
- 
-// Optional for WebAuthn support
-model Authenticator {
-  credentialID         String  @unique
-  userId               String
-  providerAccountId    String
-  credentialPublicKey  String
-  counter              Int
-  credentialDeviceType String
-  credentialBackedUp   Boolean
-  transports           String?
- 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
- 
-  @@id([userId, credentialID])
+
+
+
+// ---------- PET PROFILE ----------
+model Pet {
+  id          Int        @id @default(autoincrement())
+  name        String
+  species     String     // เช่น "dog", "cat"
+  breed       String?
+  gender      String?
+  age         Int?
+  color       String?
+  description String?
+  userId      String
+  user        User       @relation(fields: [userId], references: [id])
+  images      PetImage[]
+  medicals    MedicalRecord[]
+  createdAt   DateTime   @default(now())
+}
+
+model PetImage {
+  id      Int    @id @default(autoincrement())
+  url     String
+  petId   Int
+  pet     Pet    @relation(fields: [petId], references: [id])
+}
+
+model MedicalRecord {
+  id        Int      @id @default(autoincrement())
+  petId     Int
+  title     String
+  detail    String?
+  date      DateTime
+  pet       Pet      @relation(fields: [petId], references: [id])
+}
+
+// ---------- LOST PET ----------
+model LostPet {
+  id          Int          @id @default(autoincrement())
+  title       String
+  description String
+  location    String
+  lat         Float?
+  lng         Float?
+  lostDate    DateTime
+  petType     String
+  reward      Float?
+  userId      String
+  user        User         @relation(fields: [userId], references: [id])
+  images      LostPetImage[]
+  clues       Clue[]
+  createdAt   DateTime     @default(now())
+}
+
+model LostPetImage {
+  id        Int      @id @default(autoincrement())
+  url       String
+  lostPetId Int
+  lostPet   LostPet  @relation(fields: [lostPetId], references: [id])
+}
+
+model Clue {
+  id         Int        @id @default(autoincrement())
+  content    String
+  location   String?
+  lat        Float?
+  lng        Float?
+  userId     String
+  lostPetId  Int
+  user       User       @relation(fields: [userId], references: [id])
+  lostPet    LostPet    @relation(fields: [lostPetId], references: [id])
+  images     ClueImage[]
+  createdAt  DateTime   @default(now())
+}
+
+model ClueImage {
+  id      Int    @id @default(autoincrement())
+  url     String
+  clueId  Int
+  clue    Clue   @relation(fields: [clueId], references: [id])
+}
+
+// ---------- ADOPTION / หาบ้านใหม่ ----------
+model AdoptionPost {
+  id          Int        @id @default(autoincrement())
+  title       String
+  description String
+  location    String?
+  lat         Float?
+  lng         Float?
+  species     String
+  gender      String?
+  age         Int?
+  images      AdoptionImage[]
+  userId      String
+  user        User       @relation(fields: [userId], references: [id])
+  createdAt   DateTime   @default(now())
+}
+
+model AdoptionImage {
+  id         Int      @id @default(autoincrement())
+  url        String
+  adoptionId Int
+  adoption   AdoptionPost @relation(fields: [adoptionId], references: [id])
 }
