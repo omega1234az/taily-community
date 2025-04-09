@@ -8,6 +8,7 @@ import FacebookProvider from "next-auth/providers/facebook";
 import LineProvider from "next-auth/providers/line";
 import { User } from "next-auth";
 import { Adapter } from "next-auth/adapters";
+import DiscordProvider from "next-auth/providers/discord";
 
 
 declare module "next-auth" {
@@ -44,28 +45,39 @@ export const options: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_ID as string,
       clientSecret: process.env.GOOGLE_SECRET as string,
+      
     }),
     FacebookProvider({
       clientId: process.env.FACEBOOK_CLIENT_ID as string,
       clientSecret: process.env.FACEBOOK_CLIENT_SECRET as string,
+      
     }),
     LineProvider({
       authorization: { params: { scope: "profile openid email" } },
       clientId: process.env.LINE_CLIENT_ID as string, 
-      clientSecret: process.env.LINE_CLIENT_SECRET as string
+      clientSecret: process.env.LINE_CLIENT_SECRET as string,
+      
     }),
+    DiscordProvider({
+      clientId: process.env.DISCORD_CLIENT_ID as string,
+      clientSecret: process.env.DISCORD_CLIENT_SECRET as string,
+      
+    }),
+    
 
     CredentialsProvider({
       name: "credentials",
+      
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
+      
       async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) {
           return null;
         }
-
+        
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
         });
@@ -94,6 +106,9 @@ export const options: NextAuthOptions = {
   session: {
     strategy: "jwt",
     maxAge: 60 * 60 * 24, 
+  },
+  pages: {
+    error: '/auth/error', 
   },
   callbacks: {
     async session({ session, token }) {

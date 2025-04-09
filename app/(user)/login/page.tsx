@@ -228,6 +228,14 @@ export default function Login() {
                 <span className="sr-only">Sign in with Line</span>
                 <img className='h-10 w-10' src="login/line.png" alt="" />
               </button>
+              <button 
+                type="button" 
+                onClick={() => signIn("discord", { callbackUrl: '/' })}
+                className="cursor-pointer inline-flex justify-center items-center p-2 border border-gray-300 rounded-full shadow-sm bg-white hover:bg-gray-50"
+              >
+                <span className="sr-only">Sign in with Line</span>
+                <img className='h-10 w-10' src="login/discord.png" alt="" />
+              </button>
             </div>
 
             <div>
