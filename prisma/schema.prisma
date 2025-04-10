@@ -12,7 +12,6 @@ generator client {
 model User {
   id            String          @id @default(cuid())
   name          String?
-  username      String?         @unique
   password      String?
   email         String?         @unique
   emailVerified DateTime?
@@ -24,7 +23,7 @@ model User {
   lostPets      LostPet[]
   clues         Clue[]
   adoptions     AdoptionPost[]
-  
+  passwordResetTokens PasswordResetToken[]
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 }
@@ -52,6 +51,16 @@ model Account {
   @@index([userId])
 }
 
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
 
 
 model VerificationToken {

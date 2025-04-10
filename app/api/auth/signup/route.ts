@@ -30,18 +30,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (username) {
-      const existingUserByUsername = await prisma.user.findUnique({
-        where: { username },
-      });
-
-      if (existingUserByUsername) {
-        return NextResponse.json(
-          { message: "Username นี้ถูกใช้งานแล้ว" },
-          { status: 400 }
-        );
-      }
-    }
+    
 
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -50,7 +39,7 @@ export async function POST(request: Request) {
       data: {
         name,
         email,
-        username,
+        
         password: hashedPassword,
       },
     });
