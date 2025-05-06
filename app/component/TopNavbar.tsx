@@ -147,7 +147,9 @@ export default function TopNavbar() {
                   <Link href="/profile">โปรไฟล์</Link>
                 </li>
                 <li className="px-4 py-2 hover:bg-gray-300">
-                  <button className="w-full text-left cursor-pointer" onClick={() => alert('Logout clicked')}>ออกจากระบบ</button>
+                  <button className="w-full text-left cursor-pointer" onClick={() => { localStorage.clear(); window.location.href = '/login';}}>
+                    ออกจากระบบ
+                  </button>
                 </li>
               </ul>
             </div>
