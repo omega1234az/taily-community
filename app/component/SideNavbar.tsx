@@ -27,9 +27,9 @@ export default function SideNavbar() {
           {/* วงกลมล่าง */}
           <div className="absolute items-center bottom-0 left-0 sm:left-[-30px] h-3/5 bg-[#AFDAFB] w-24 sm:w-52 md:w-56 xl:w-72 rounded-t-full z-0">
             <div className="flex flex-col space-y-8 w-full items-center text-white pt-10 text-sm sm:text-lg md:text-xl xl:text-2xl">
-              <Link href="#" className="hover:text-blue-900">ประวัติส่วนตัว</Link>
-              <Link href="#" className="hover:text-blue-900">สัตว์เลี้ยง</Link>
-              <Link href="#" className="hover:text-blue-900">ประกาศ</Link>
+              <Link href="/profile" className="hover:text-blue-900">ประวัติส่วนตัว</Link>
+              <Link href="/pet" className="hover:text-blue-900">สัตว์เลี้ยง</Link>
+              <Link href="/announcement" className="hover:text-blue-900">ประกาศ</Link>
             </div>
           </div>
         </div>
