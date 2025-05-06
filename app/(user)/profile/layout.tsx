@@ -15,7 +15,7 @@ const ProfileLayout = ({ children }: { children: React.ReactNode }) => {
           <SideNavbar />
         </div>
 
-        <main className="flex-1 xl:p-20  md:pt-16 sm:pt-14 pt-11 overflow-auto">
+        <main className="flex-1 xl:p-11  md:pt-16 sm:pt-14 pt-11 overflow-auto">
           {children}
         </main>
       </div>
