@@ -12,11 +12,24 @@ generator client {
 model User {
   id            String          @id @default(cuid())
   name          String?
-  password      String?
+  firstName     String?         // เพิ่มชื่อจริง
+  lastName      String?         // เพิ่มนามสกุล
   email         String?         @unique
-  emailVerified DateTime?
+  password      String?
+  phone         String?         // เพิ่มเบอร์โทร
   image         String?
   role          String?         @default("user")
+
+  houseNumber   String?         // เพิ่มที่อยู่
+  street        String?
+  village       String?
+  subDistrict   String?
+  district      String?
+  province      String?
+
+  emailVerified DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
 
   accounts      Account[]
   pets          Pet[]
@@ -24,9 +37,8 @@ model User {
   clues         Clue[]
   adoptions     AdoptionPost[]
   passwordResetTokens PasswordResetToken[]
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
 }
+
 
 model Account {
   id                       String  @id @default(cuid())
@@ -86,7 +98,7 @@ model Pet {
   userId      String
   user        User       @relation(fields: [userId], references: [id])
   images      PetImage[]
-  medicals    MedicalRecord[]
+
   createdAt   DateTime   @default(now())
 }
 
@@ -97,14 +109,7 @@ model PetImage {
   pet     Pet    @relation(fields: [petId], references: [id])
 }
 
-model MedicalRecord {
-  id        Int      @id @default(autoincrement())
-  petId     Int
-  title     String
-  detail    String?
-  date      DateTime
-  pet       Pet      @relation(fields: [petId], references: [id])
-}
+
 
 // ---------- LOST PET ----------
 model LostPet {
