@@ -143,7 +143,7 @@ export default function Announcement() {
       </div>
 
       <Link
-        href="/Detailsmissing"
+        href="/registerowner"
         className="group cursor-pointer hover:bg-gray-200 transition duration-200 flex justify-center items-center flex-col md:flex-row gap-6 p-6 my-5 rounded-2xl shadow-lg bg-[#E5EEFF] w-full xl:h-[300px] lg:h-[275px] md:h-[250px] sm:h-[390px] h-[350px] 2xl:max-w-[200px] xl:max-w-[200px] lg:max-w-[170px] md:max-w-[160px] sm:max-w-[288px] max-w-[235px] ml-5 sm:ml-12 md:ml-0"
       >
         <div className="bg-[#7CBBEB] group-hover:bg-[#addbf7] transition-colors duration-200 rounded-full p-2 flex justify-center items-center">
