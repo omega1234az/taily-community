@@ -2,13 +2,13 @@
 
 import Link from 'next/link';
 import React, { useState, useEffect, useRef } from 'react';
-
+import { useSession, signIn, signOut} from "next-auth/react";
 export default function TopNavbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
-
+  const { data: session } = useSession();
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const profileRef = useRef<HTMLDivElement | null>(null);
   const notificationRef = useRef<HTMLDivElement | null>(null); // New ref for notification area
@@ -81,15 +81,21 @@ export default function TopNavbar() {
           {dropdownOpen && (
             <div className="absolute top-6 left-0 lg:w-40 sm:w-30 w-28 mt-4 bg-white border border-gray-300 rounded shadow-md z-50">
               <ul className="text-sm text-gray-700">
+                <Link href="/home">
                 <li className="px-4 py-2 hover:bg-gray-300 cursor-pointer border-b border-gray-300">
-                  <Link href="">สัตว์เลี้ยงหาย</Link>
+                  สัตว์เลี้ยงหาย
                 </li>
+                </Link>
+                <Link href="/home">
                 <li className="px-4 py-2 hover:bg-gray-300 cursor-pointer border-b border-gray-300">
-                  <Link href="">หาเจ้าของ</Link>
+                  หาเจ้าของ
                 </li>
+                </Link>
+                <Link href="/home">
                 <li className="px-4 py-2 hover:bg-gray-300 cursor-pointer">
-                  <Link href="">แจ้งเบาะแส</Link>
+                  แจ้งเบาะแส
                 </li>
+                </Link>
               </ul>
             </div>
           )}
@@ -143,11 +149,13 @@ export default function TopNavbar() {
           {profileOpen && (
             <div className="absolute right-0 mt-2 lg:w-40 sm:w-30 w-28 bg-white border border-gray-300 rounded shadow-md z-50">
               <ul className="text-sm text-gray-700">
+                <Link href="/profile">
                 <li className="px-4 py-2 hover:bg-gray-300 cursor-pointer border-b border-gray-300">
-                  <Link href="/profile">โปรไฟล์</Link>
+                  โปรไฟล์
                 </li>
+                </Link>
                 <li className="px-4 py-2 hover:bg-gray-300">
-                  <button className="w-full text-left cursor-pointer" onClick={() => { localStorage.clear(); window.location.href = '/login';}}>
+                  <button className="w-full text-left cursor-pointer" onClick={() => signOut()}>
                     ออกจากระบบ
                   </button>
                 </li>
