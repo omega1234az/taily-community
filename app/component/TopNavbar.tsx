@@ -64,7 +64,9 @@ export default function TopNavbar() {
       </div>
 
       <div className="flex gap-6 font-medium sm:gap-12 lg:gap-28 xl:gap-42 items-center relative sm:text-lg lg:text-xl 2xl:text-2xl">
-        <Link className="hover:text-sky-600 cursor-pointer" href="">หน้าแรก</Link>
+        <Link href={"/home"}>
+        <div className="hover:text-sky-600 cursor-pointer" >หน้าแรก</div>
+        </Link>
         <div
           className="flex items-center gap-1 relative cursor-pointer"
           ref={dropdownRef}
