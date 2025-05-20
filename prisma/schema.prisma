@@ -35,7 +35,7 @@ model User {
   pets          Pet[]
   lostPets      LostPet[]
   clues         Clue[]
-  adoptions     AdoptionPost[]
+  foundPets     FoundPet[]      // เปลี่ยนจาก adoptions เป็น foundPets
   passwordResetTokens PasswordResetToken[]
 }
 
@@ -88,14 +88,16 @@ model VerificationToken {
 // ---------- PET PROFILE ----------
 model Pet {
   id          Int        @id @default(autoincrement())
-  name        String
+  name        String   // ชื่อสัตว์เลี้ยง
   species     String     // เช่น "dog", "cat"
-  breed       String?
-  gender      String?
-  age         Int?
-  color       String?
-  description String?
-  userId      String
+  breed       String? // เช่น "Labrador", "Siamese"
+  gender      String? // เพศ เช่น
+  age         Int? //อายุ
+  color       String? //สี
+  description String?   // รายละเอียด เช่น "ชอบเล่น", "ขี้อ้อน"
+  userId      String // userId ของเจ้าของสัตว์เลี้ยง
+  markings   String?  // ลักษณะเฉพาะ เช่น "white with black spots"
+  isNeutered  Int  //ทำหมันหรือไม่ 0 = ไม่ทำหมัน, 1 = ทำหมัน
   user        User       @relation(fields: [userId], references: [id])
   images      PetImage[]
 
@@ -104,8 +106,8 @@ model Pet {
 
 model PetImage {
   id      Int    @id @default(autoincrement())
-  url     String
-  petId   Int
+  url     String  // URL ของภาพ
+  petId   Int  // petId ของสัตว์เลี้ยง
   pet     Pet    @relation(fields: [petId], references: [id])
 }
 
@@ -114,15 +116,15 @@ model PetImage {
 // ---------- LOST PET ----------
 model LostPet {
   id          Int          @id @default(autoincrement())
-  title       String
-  description String
-  location    String
-  lat         Float?
-  lng         Float?
-  lostDate    DateTime
-  petType     String
-  reward      Float?
-  userId      String
+  title       String // ชื่อสัตว์ที่หาย
+  description String // รายละเอียด เช่น "หายที่ไหน", "ลักษณะเฉพาะ"
+  location    String // สถานที่หาย เช่น "บ้านเลขที่ 123 ถนน ABC"
+  lat         Float? // ละติจูด
+  lng         Float? // ลองจิจูด
+  lostDate    DateTime  // วันที่หาย
+  petType     String  // ประเภทสัตว์ เช่น "dog", "cat"
+  reward      Float? // รางวัล เช่น 100.00
+  userId      String // userId ของเจ้าของสัตว์ที่หาย
   user        User         @relation(fields: [userId], references: [id])
   images      LostPetImage[]
   clues       Clue[]
@@ -131,19 +133,19 @@ model LostPet {
 
 model LostPetImage {
   id        Int      @id @default(autoincrement())
-  url       String
-  lostPetId Int
+  url       String // URL ของภาพ
+  lostPetId Int // lostPetId ของสัตว์ที่หาย
   lostPet   LostPet  @relation(fields: [lostPetId], references: [id])
 }
 
 model Clue {
   id         Int        @id @default(autoincrement())
-  content    String
-  location   String?
-  lat        Float?
-  lng        Float?
-  userId     String
-  lostPetId  Int
+  content    String // ข้อความที่ให้เบาะแส เช่น "เห็นที่บ้านเลขที่ 123"
+  location   String? // สถานที่ที่พบเบาะแส เช่น "บ้านเลขที่ 123 ถนน ABC"
+  lat        Float? // ละติจูด
+  lng        Float? // ลองจิจูด
+  userId     String // userId ของผู้ให้เบาะแส
+  lostPetId  Int // lostPetId ของสัตว์ที่หาย
   user       User       @relation(fields: [userId], references: [id])
   lostPet    LostPet    @relation(fields: [lostPetId], references: [id])
   images     ClueImage[]
@@ -152,31 +154,37 @@ model Clue {
 
 model ClueImage {
   id      Int    @id @default(autoincrement())
-  url     String
-  clueId  Int
+  url     String // URL ของภาพ
+  clueId  Int // clueId ของเบาะแส
   clue    Clue   @relation(fields: [clueId], references: [id])
 }
 
-// ---------- ADOPTION / หาบ้านใหม่ ----------
-model AdoptionPost {
-  id          Int        @id @default(autoincrement())
-  title       String
-  description String
-  location    String?
-  lat         Float?
+// ---------- FOUND PET (หาเจ้าของ) ----------
+model FoundPet {
+  id          Int            @id @default(autoincrement())
+  title       String // ชื่อสัตว์ที่พบ
+  description String // รายละเอียด เช่น "ลักษณะเฉพาะ"
+  location    String // สถานที่พบ เช่น "บ้านเลขที่ 123 ถนน ABC"
+  lat         Float? // ละติจูด
   lng         Float?
-  species     String
-  gender      String?
-  age         Int?
-  images      AdoptionImage[]
+  foundDate   DateTime// วันที่พบสัตว์
+  species     String  // ประเภทสัตว์
+  breed       String? // เช่น "Labrador", "Siamese"
+  gender      String? // เพศ เช่น
+  color       String? // สี
+  age         Int?           // อายุโดยประมาณ
+  distinctive String?        // ลักษณะเด่น
+  status      String         @default("finding") // สถานะ: finding - กำลังหาเจ้าของ, returned - คืนเจ้าของเเล้ว
+  images      FoundPetImage[]
   userId      String
-  user        User       @relation(fields: [userId], references: [id])
-  createdAt   DateTime   @default(now())
+  user        User           @relation(fields: [userId], references: [id])
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
 }
 
-model AdoptionImage {
-  id         Int      @id @default(autoincrement())
-  url        String
-  adoptionId Int
-  adoption   AdoptionPost @relation(fields: [adoptionId], references: [id])
+model FoundPetImage {
+  id         Int       @id @default(autoincrement())
+  url        String // URL ของภาพ
+  foundPetId Int
+  foundPet   FoundPet  @relation(fields: [foundPetId], references: [id])
 }
