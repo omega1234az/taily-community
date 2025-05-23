@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import PetCardh from "@/app/component/Cardhomeh";
 import PetCardj from "@/app/component/Cardhomej";
@@ -284,6 +284,12 @@ export default function Home() {
     },
   ];
 
+  const friendSectionRef = useRef<HTMLDivElement>(null);
+
+  const handleScrollToFriends = () => {
+    friendSectionRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
   const filteredPets = (showLostPets ? petsLost : petsOwner).filter((pet) => {
     const matchType =
       !selectedType ||
@@ -335,7 +341,10 @@ export default function Home() {
             </p>
 
             <div className="flex gap-4 sm:mt-4 lg:mt-6 mt-2">
-              <button className="rounded-full shadow-md bg-[#010200] text-white 2xl:text-2xl xl:text-lg lg:text-md md:text-sm sm:text-xs text-[10px] sm:py-2 sm:px-6 lg:px-8 xl:px-10 py-1 px-4 cursor-pointer hover:bg-gray-500 transition duration-300">
+              <button
+                onClick={handleScrollToFriends}
+                className="rounded-full shadow-md bg-[#010200] text-white 2xl:text-2xl xl:text-lg lg:text-md md:text-sm sm:text-xs text-[10px] sm:py-2 sm:px-6 lg:px-8 xl:px-10 py-1 px-4 cursor-pointer hover:bg-gray-500 transition duration-300"
+              >
                 ดูประกาศ
               </button>
               <Link href="/announcement">
@@ -516,7 +525,7 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="flex justify-center mb-3 lg:mb-5">
+      <div ref={friendSectionRef} className="flex justify-center mb-3 lg:mb-5">
         <button className="rounded-full shadow-md bg-[#EAD64D] text-black 2xl:text-2xl xl:text-xl lg:text-lg md:text-md sm:text-sm text-xs sm:py-2.5 sm:px-8 lg:px-10 xl:px-12 py-1.5 px-6 cursor-pointer hover:bg-yellow-200 transition duration-300">
           {showLostPets ? "สัตว์เลี้ยงหาย" : "หาเจ้าของ"}
         </button>
