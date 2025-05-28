@@ -3,7 +3,7 @@
 import React from "react";
 import TopNavbar from "@/app/component/TopNavbar";
 
-const DetailsmissingLayout = ({ children }: { children: React.ReactNode }) => {
+const RegisterownerLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="flex flex-col h-screen">
       <TopNavbar />
@@ -15,4 +15,4 @@ const DetailsmissingLayout = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-export default DetailsmissingLayout;
+export default RegisterownerLayout;

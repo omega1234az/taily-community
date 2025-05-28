@@ -2,19 +2,9 @@
 
 import React, { useState } from "react";
 import AnCard from "@/app/component/AnCard";
-import PetCard from "@/app/component/PetCard";
 import Link from "next/link";
-import Image from "next/image";
 
 export default function Announcement() {
-  const [showModal, setShowModal] = useState(false);
-
-  // กำหนดค่าเป็น false เพื่อทดสอบว่าไม่ได้ลงทะเบียน
-  const [hasRegisteredPets, setHasRegisteredPets] = useState(true);
-
-  const handleCancel = () => setShowModal(false);
-  const handleSave = () => setShowModal(false);
-
   return (
     <div>
       <div className="flex items-center gap-2">
@@ -42,9 +32,9 @@ export default function Announcement() {
           lostLocation="บ้านหนองอึ่งพัฒนา อ.เมือง จ.กำแพงเพชร"
         />
 
-        <div
+        <Link
+          href="/registermissing"
           className="group cursor-pointer hover:bg-gray-200 transition duration-200 flex justify-center items-center flex-col md:flex-row gap-6 p-6 rounded-2xl shadow-lg bg-[#E5EEFF] w-full xl:h-[300px] lg:h-[275px] md:h-[250px] sm:h-[390px] h-[350px] 2xl:max-w-[200px] xl:max-w-[200px] lg:max-w-[170px] md:max-w-[160px] sm:max-w-[288px] max-w-[235px] ml-5 sm:ml-12 md:ml-0"
-          onClick={() => setShowModal(true)}
         >
           <div className="bg-[#7CBBEB] group-hover:bg-[#addbf7] transition-colors duration-200 rounded-full p-2 flex justify-center items-center">
             <svg
@@ -60,73 +50,8 @@ export default function Announcement() {
               />
             </svg>
           </div>
-        </div>
+        </Link>
       </div>
-
-      {showModal && (
-        <div className="fixed inset-0 bg-opacity-40 flex justify-center items-center z-50">
-          <div className="bg-white w-full h-full sm:w-[550px] sm:h-[400px] md:w-[650px] md:h-[400px] lg:w-[700px] lg:h-[450px] xl:w-[800px] xl:h-[550px] p-6 rounded-none sm:rounded-4xl shadow-xl relative flex flex-col justify-between">
-            {/* ▼ กรณียังไม่ได้ลงทะเบียน ▼ */}
-            {!hasRegisteredPets && (
-              <div className="flex flex-col items-center justify-center flex-grow">
-                <h1 className="text-xl font-bold text-center mt-10 sm:mt-0 mb-6">
-                  สัตว์เลี้ยงหาย
-                </h1>
-                <p className="text-center mb-6 text-gray-600">
-                  กรุณาลงทะเบียนสัตว์เลี้ยง
-                </p>
-                <div className="relative w-96 h-64 mb-6">
-                  <Image
-                    src="/all/cat.png"
-                    alt="Cute cat"
-                    fill
-                    className="object-contain"
-                    priority
-                  />
-                </div>
-                <Link
-                  href="/registerpet"
-                  className="rounded-full shadow-md bg-[#EAD64D] text-black text-lg py-2 px-7 hover:bg-yellow-200 transition duration-300  cursor-pointer"
-                >
-                  ลงทะเบียน
-                </Link>
-              </div>
-            )}
-
-            {/* ▼ กรณีลงทะเบียนแล้ว ▼ */}
-            {hasRegisteredPets && (
-              <div className="flex flex-col  flex-grow">
-                <h1 className="text- font-bold text-center  mt-5 sm:mt-0 mb-6 lg:text-xl sm:text-lg text-md ">
-                  สัตว์เลี้ยงหาย
-                </h1>
-                <div className="flex flex-wrap ml-5 gap-5 ">
-                  <Link href={`/missing?name=ไข่ตุ๋น`}>
-                    <PetCard imageSrc="/home/eggtun2.png" name="ไข่ตุ๋น" />
-                  </Link>
-                </div>
-              </div>
-            )}
-
-            {/* ปุ่มล่างขวา (ใช้ร่วมกันได้ทั้ง 2 กรณี) */}
-            <div className="flex justify-end">
-              <div className="flex gap-4">
-                <button
-                  onClick={handleCancel}
-                  className="bg-gray-400 text-white hover:bg-gray-600 shadow-md rounded-xl px-6 py-1 lg:text-xl  sm:text-lg text-sm  cursor-pointer"
-                >
-                  ยกเลิก
-                </button>
-                <button
-                  onClick={handleSave}
-                  className="bg-[#7CBBEB] text-white hover:bg-sky-600 shadow-md rounded-xl px-6 py-1 lg:text-xl  sm:text-lg  text-sm   cursor-pointer"
-                >
-                  บันทึก
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="flex items-center gap-2 mt-5">
         <svg

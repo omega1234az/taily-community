@@ -59,7 +59,7 @@ export default function TopNavbar() {
         />
       </div>
 
-      <div className="flex gap-4 font-medium sm:gap-10 lg:gap-28 xl:gap-42 items-center relative text-xs sm:text-lg lg:text-xl 2xl:text-2xl">
+      <div className="flex gap-4 font-medium sm:gap-10 lg:gap-28 xl:gap-56 items-center relative text-xs sm:text-lg lg:text-xl 2xl:text-2xl">
         <Link className="hover:text-sky-600 cursor-pointer" href="/home">
           หน้าแรก
         </Link>
@@ -94,18 +94,15 @@ export default function TopNavbar() {
             <div className="absolute top-6 left-0 lg:w-40 sm:w-30 w-24 2xl:mt-7 xl:mt-6 sm:mt-5 mt-4  bg-white border border-gray-300 rounded shadow-md z-50">
               <ul className="text-sm text-gray-700">
                 <li className="px-4 py-2 hover:bg-gray-300 cursor-pointer border-b border-gray-300 text-[10px] sm:text-sm lg:text-md">
-                  <Link href="/missing">สัตว์เลี้ยงหาย</Link>
+                  <Link href="/registermissing">สัตว์เลี้ยงหาย</Link>
                 </li>
                 <li className="px-4 py-2 hover:bg-gray-300 cursor-pointer border-b border-gray-300 text-[10px] sm:text-sm lg:text-md">
-                  <Link href="/registerowner">หาเจ้าของ</Link>
+                  <Link href="registerowner">หาเจ้าของ</Link>
                 </li>
               </ul>
             </div>
           )}
         </div>
-        <Link className="hover:text-sky-600 cursor-pointer" href="/petfriend">
-          เพิ่มเพื่อนสัตว์เลี้ยง
-        </Link>
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3 xl:gap-5 relative">

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 
 type OwnerPet = {
   id: string;
@@ -21,6 +21,7 @@ type Props = {
 };
 
 export default function OwnerPetDetails({ pet }: Props) {
+  const [mainImage, setMainImage] = useState(pet.images[0]);
   const [open, setOpen] = useState(false);
 
   const [witnessName, setWitnessName] = useState("");
@@ -30,6 +31,21 @@ export default function OwnerPetDetails({ pet }: Props) {
   const [name, setName] = useState("คาราเมล");
   const [phone, setPhone] = useState("000000000");
   const [facebook, setFacebook] = useState("คาราเมล10000");
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [imagePreview, setImagePreview] = useState<string>("/all/image.png");
+
+  const handleButtonClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const imageURL = URL.createObjectURL(file);
+      setImagePreview(imageURL);
+    }
+  };
 
   const handleSubmit = () => {
     const data = {
@@ -65,18 +81,26 @@ export default function OwnerPetDetails({ pet }: Props) {
 
         {open && (
           <div className="fixed inset-0 z-50 bg-opacity-50 flex items-center justify-center">
-            <div className="bg-white p-8 xl:mt-10 sm:mt-20 rounded-2xl shadow-lg xl:w-[600px] xl:h-[600px] lg:w-[550px] lg:h-[550px] md:w-[500px] md:h-[550px] sm:w-[450px] sm:h-[550px] w-full h-full relative">
-              <h2 className="text-lg lg:text-xl text-center font-semibold mb-4">
-                แจ้งเบาะแส
-              </h2>
+            <div className="bg-white p-8 xl:mt-10 sm:mt-20 rounded-2xl shadow-lg xl:w-[600px] xl:h-[600px] lg:w-[550px] lg:h-[550px] md:w-[500px] md:h-[550px] sm:w-[450px] sm:h-[550px] w-full h-full relative overflow-hidden">
+              {/* วงกลมพื้นหลัง */}
+              <span className="absolute top-[-36px] left-1 w-52 h-28 bg-[#7CBBEB] rounded-b-full z-0"></span>
+              <span className="absolute top-4 left-64 w-10 h-10 bg-[#EAD64D] rounded-full z-0 -translate-x-1/2"></span>
+              <span className="absolute top-5 left-120 w-18 h-18 bg-[#7CBBEB] rounded-full z-0"></span>
+
+              {/* ข้อความ "แจ้งเบาะแส" อยู่หน้า */}
+              <div className="relative z-10 flex justify-center mb-4">
+                <h2 className="text-lg lg:text-xl font-semibold text-center">
+                  แจ้งเบาะแส
+                </h2>
+              </div>
 
               {/* ฟอร์ม */}
-              <p className="mb-1 text-sm lg:text-md">ชื่อผู้พบเห็น</p>
+              <p className="mb-1 z-10 text-sm lg:text-md">ชื่อผู้พบเห็น</p>
               <input
                 type="text"
                 value={witnessName}
                 onChange={(e) => setWitnessName(e.target.value)}
-                className="mb-4 w-full border rounded-md p-2 text-sm"
+                className="mb-4 w-full border rounded-md p-2 text-sm relative z-10"
               />
 
               <p className="mb-1 text-sm lg:text-md">รายละเอียดการติดต่อ</p>
@@ -94,15 +118,32 @@ export default function OwnerPetDetails({ pet }: Props) {
                 className="mb-4 w-full border rounded-md p-2 text-sm"
               />
 
-              <p className="sm:mb-2 mb-4">รูป</p>
-              <img
-                src="/home/jang2.png"
-                alt="image"
-                className="lg:w-40 lg:h-24 sm:w-36 sm:h-20 w-48 h-28 object-cover mb-2"
-              />
-              <button className="text-sm lg:text-md mb-2 mt-3 sm:mt-0 px-5 py-1 rounded-lg bg-[#AFDAFB] hover:bg-[#b7ccf5] cursor-pointer">
-                อัปโหลด
-              </button>
+              <p className="sm:mb-2 z-10 mb-4">รูป</p>
+              <div className="relative mb-2">
+                {/* วงกลมสีเหลือง อยู่ข้างหลัง (absolute, z-0) */}
+                <span className="absolute top-14 left-8 w-24 h-24 bg-[#EAD64D] rounded-full z-0 -translate-x-1/2"></span>
+                <span className="absolute top-[-30] right-[-50] w-36 h-56 bg-[#EAD64D] rounded-l-full z-0 "></span>
+
+                {/* รูปและปุ่ม อยู่วงหน้าที่ z-10 */}
+                <img
+                  src={imagePreview}
+                  alt="image"
+                  className="lg:w-40 lg:h-24 sm:w-36 sm:h-20 w-48 h-28 object-cover relative mb-2"
+                />
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  className="hidden"
+                  accept="image/*"
+                />
+                <button
+                  onClick={handleButtonClick}
+                  className="relative z-10 text-sm lg:text-md px-5 py-1 rounded-lg bg-[#AFDAFB] hover:bg-[#b7ccf5] cursor-pointer"
+                >
+                  อัปโหลด
+                </button>
+              </div>
 
               {/* ปุ่มยกเลิกและส่ง */}
               <div className="absolute bottom-6 right-6 flex gap-3">
@@ -125,21 +166,27 @@ export default function OwnerPetDetails({ pet }: Props) {
       </div>
 
       <div className="flex flex-col sm:flex-row  items-start gap-10 xl:gap-16 pt-8 xl:pt-10">
-        <div className="ml-20 sm:ml-0 ">
+        <div className="ml-20 sm:ml-0">
+          {/* รูปหลัก */}
           <img
-            src={pet.images[0]}
+            src={mainImage}
             alt={pet.name}
-            className="2xl:w-72 xl:w-64 lg:w-60 md:w-56 sm:w-48 w-36 h-auto  object-cover  rounded-2xl overflow-hidden"
+            className="2xl:w-72 2xl:h-80 xl:w-64 xl:h-72 lg:w-60 lg:h-64 md:w-56 md:h-60 sm:w-48 sm:h-56 w-36 h-48 object-cover rounded-2xl overflow-hidden"
           />
+
+          {/* รูปเล็ก (thumbnail) */}
           <div className="grid grid-cols-3 gap-2 pt-3">
-            {pet.images.slice(1).map((img, idx) => (
-              <img
-                key={idx}
-                src={img}
-                alt={`${pet.name} ${idx + 1}`}
-                className="2xl:w-22 2xl:h-22 xl:w-20 xl:h-20 lg:w-18 lg:h-18 md:w-17 md:h-17 sm:w-14 sm:h-14 w-11 h-11 object-cover"
-              />
-            ))}
+            {pet.images
+              .filter((img) => img !== mainImage)
+              .map((img, idx) => (
+                <img
+                  key={idx}
+                  src={img}
+                  alt={`${pet.name} ${idx + 1}`}
+                  onClick={() => setMainImage(img)}
+                  className="2xl:w-22 2xl:h-22 xl:w-20 xl:h-20 lg:w-18 lg:h-18 md:w-17 md:h-17 sm:w-14 sm:h-14 w-11 h-12 object-cover cursor-pointer rounded-md"
+                />
+              ))}
           </div>
         </div>
 

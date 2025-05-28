@@ -1,8 +1,54 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, ChangeEvent } from "react";
 
-export default function Detailsmissing() {
+export default function Registerowner() {
+  const [mainImage, setMainImage] = useState<string | null>(null);
+  const [galleryImages, setGalleryImages] = useState<(string | null)[]>([
+    null,
+    null,
+    null,
+  ]);
+
+  const mainInputRef = useRef<HTMLInputElement | null>(null);
+  const galleryInputRefs = [
+    useRef<HTMLInputElement | null>(null),
+    useRef(null),
+    useRef(null),
+  ];
+  const handleGalleryImageClick = (index: number) => {
+    if (isEditing) {
+      // กดตอนแก้ไข ให้เปิด input รูปย่อยอันนั้น
+      galleryInputRefs[index]?.current?.click();
+    } else {
+      // ตอนไม่แก้ไข ให้สลับรูปหลักกับรูปย่อย
+      setGalleryImages((prev) => {
+        const newGallery = [...prev];
+        const temp = newGallery[index];
+        newGallery[index] = mainImage;
+        setMainImage(temp);
+        return newGallery;
+      });
+    }
+  };
+
+  const handleMainImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) setMainImage(URL.createObjectURL(file));
+  };
+
+  const handleGalleryImageChange = (
+    e: ChangeEvent<HTMLInputElement>,
+    index: number
+  ) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const newImages = [...galleryImages];
+      newImages[index] = URL.createObjectURL(file);
+      setGalleryImages(newImages);
+    }
+  };
+
   const [isDropdownVisible, setDropdownVisible] = useState(false);
   const [selectedType, setSelectedType] = useState("");
   const [isEditing, setIsEditing] = useState(true);
@@ -89,20 +135,45 @@ export default function Detailsmissing() {
       <div className="flex flex-col lg:flex-row 2xl:gap-56 xl:gap-44 lg:gap-24 md:gap-5 sm:gap-8 lg:pl-12 md:pl-28 sm:pl-20 pl-7 pt-18">
         {/* รูปภาพ */}
         <div className="lg:pl-0 md:pl-28 sm:pl-24 pl-20 pb-5">
-          <img
-            src="/all/image.png"
-            alt="image"
-            className="2xl:w-72 xl:w-64 lg:w-60 md:w-56 sm:w-48 w-36 h-auto object-cover"
-          />
-          <div className="lg:grid grid-cols-3 flex gap-2 pt-3">
-            {[...Array(3)].map((_, index) => (
-              <img
-                key={index}
-                src="/all/image.png"
-                alt="image"
-                className="2xl:w-22 xl:w-20 lg:w-18 md:w-17 sm:w-14 w-11 h-auto object-cover"
-              />
-            ))}
+          {/* รูปหลัก */}
+          <div className="your-container">
+            {/* ปุ่มกดรูปหลัก */}
+            <img
+              src={mainImage || "/all/image.png"}
+              alt="main"
+              onClick={() => {
+                if (isEditing) mainInputRef.current?.click();
+              }}
+              className="2xl:w-72 2xl:h-80 xl:w-64 xl:h-72 lg:w-60 lg:h-64 md:w-56 md:h-60 sm:w-48 sm:h-56 w-36 h-48 object-cover rounded-2xl cursor-pointer overflow-hidden"
+            />
+            <input
+              ref={mainInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleMainImageChange}
+            />
+
+            {/* ปุ่มเลือกรูป gallery 3 ช่อง */}
+            <div className="flex gap-2 pt-3">
+              {[0, 1, 2].map((index) => (
+                <div key={index}>
+                  <img
+                    src={galleryImages[index] || "/all/image.png"}
+                    alt={`gallery-${index}`}
+                    onClick={() => handleGalleryImageClick(index)}
+                    className="2xl:w-22 2xl:h-22 xl:w-20 xl:h-20 lg:w-18 lg:h-18 md:w-17 md:h-17 sm:w-14 sm:h-14 w-11 h-11 object-cover cursor-pointer rounded-md"
+                  />
+                  <input
+                    ref={galleryInputRefs[index]}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleGalleryImageChange(e, index)}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
