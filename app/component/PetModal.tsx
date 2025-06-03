@@ -1,8 +1,11 @@
 "use client";
 
 import React, { useEffect, useState, useRef, ChangeEvent } from "react";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 type Pet = {
+  owner?: string;
   name: string;
   imageSrc: string;
   history?: string;
@@ -17,6 +20,8 @@ type Pet = {
   color?: string;
   markings?: string;
   description?: string;
+  phone?: string;
+  facebook?: string;
   diseaseData?: Disease[];
   vaccineData?: Vaccine[];
 };
@@ -45,6 +50,7 @@ export default function PetDetailsModal({
   const [images, setImages] = useState<string[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
+  const [owner, setOwner] = useState("");
   const [name, setName] = useState("");
   const [age, setAge] = useState("");
   const [gender, setGender] = useState("");
@@ -54,6 +60,8 @@ export default function PetDetailsModal({
   const [color, setColor] = useState("");
   const [markings, setMarkings] = useState("");
   const [description, setDescription] = useState("");
+  const [phone, setPhone] = useState("");
+  const [facebook, setFacebook] = useState("");
   const [editableVaccineData, setEditableVaccineData] = useState<Vaccine[]>([]);
   const [editableDiseaseData, setEditableDiseaseData] = useState<Disease[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -73,6 +81,7 @@ export default function PetDetailsModal({
       selectedPet.imageSrc,
       ...(selectedPet.additionalImages?.slice(0, 3) || []),
     ]);
+    setName(selectedPet.owner || "");
     setName(selectedPet.name || "");
     setAge(selectedPet.age || "");
     setGender(selectedPet.gender || "");
@@ -188,6 +197,8 @@ export default function PetDetailsModal({
       setColor(selectedPet.color || "");
       setMarkings(selectedPet.markings || "");
       setDescription(selectedPet.description || "");
+      setPhone(selectedPet.phone || "");
+      setFacebook(selectedPet.facebook || "");
       setImages([
         selectedPet.imageSrc,
         ...(selectedPet.additionalImages?.slice(0, 3) || []),
@@ -199,6 +210,31 @@ export default function PetDetailsModal({
   const handleSave = () => {
     setIsEditing(false);
     setIsDropdownVisible(false);
+  };
+
+  const pdfRef = useRef<HTMLDivElement>(null);
+
+  const handlePrint = () => {
+    if (!pdfRef.current) return;
+
+    html2canvas(pdfRef.current, {
+      scale: 2,
+      useCORS: true, // กรณีมีรูปจาก URL ภายนอก
+      logging: true,
+    })
+      .then((canvas) => {
+        const imgData = canvas.toDataURL("image/png");
+        const pdf = new jsPDF("p", "mm", "a4");
+        const pdfWidth = 210;
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+        pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+        pdf.save("pet-details.pdf");
+      })
+      .catch((err) => {
+        console.error("PDF error:", err);
+        alert("เกิดข้อผิดพลาดในการพิมพ์");
+      });
   };
 
   if (!showModal || !selectedPet) return null;
@@ -789,16 +825,478 @@ export default function PetDetailsModal({
             </div>
 
             {/* ปุ่มแก้ไข/บันทึก/ยกเลิก */}
-            <div className="flex justify-end lg:mr-0 md:mr-14 sm:mr-5 mb-5">
+            <div className="flex justify-between xl:gap-40 lg:gap-24  lg:mx-auto md:mx-16 sm:mx-7 mx-12 mb-5">
               {!isEditing ? (
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="bg-[#7CBBEB] text-white hover:bg-sky-600 shadow-md rounded-xl px-6 py-1 sm:text-lg xl:text-xl cursor-pointer"
-                >
-                  แก้ไข
-                </button>
+                <>
+                  {/* ปุ่มพิมพ์ */}
+                  <button
+                    onClick={handlePrint}
+                    className="bg-[#EAD64D] border-[#edd017] hover:bg-[#ffef8a] hover:border-[#e0d37a] text-white sm:text-lg xl:text-xl px-6 py-1 rounded-xl cursor-pointer"
+                  >
+                    พิมพ์
+                  </button>
+                  {/* ข้อมูลที่ซ่อนอยู่ใน DOM แต่ไม่แสดง */}
+
+                  <div
+                    ref={pdfRef}
+                    style={{
+                      position: "absolute",
+                      top: "-10000px",
+                      left: "-10000px",
+                      width: "210mm", // A4 width
+                      height: "297mm", // A4 height
+                      backgroundColor: "white",
+                      padding: "20px",
+                      boxSizing: "border-box",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div className=" mx-auto bg-white h-full ">
+                      <img
+                        src="/all/bgprint.png"
+                        alt="bg"
+                        className="w-40 h-14 object-cover ml-28 mt-[-20px] mb-[-20px]"
+                      />
+                      <img
+                        src="/all/bgprint2.png"
+                        alt="bg"
+                        className="w-8 h-8 object-cover ml-[-28] mb-[-20px] mt-[-32px] "
+                      />
+
+                      <div className="py-5 flex gap-0 ">
+                        {/* Left: Image + History */}
+                        <img
+                          src="/all/bgprint4.png"
+                          alt="bg"
+                          className="absolute z-0 ml-56 mt-[470px]  w-56 h-48 object-cover  "
+                        />
+                        <img
+                          src="/all/bgprint4.png"
+                          alt="bg"
+                          className="absolute z-0 ml-72 mt-[770px]  w-48 h-40 object-cover  "
+                        />
+                        <div className="flex flex-col border-r-4 relative z-10 border-[#c5b3a2]">
+                          <div className="pr-5 pl-3 relative z-10 w-[350px] h-[400px]">
+                            {/* BG อยู่ข้างหลัง */}
+                            <img
+                              src="/all/bgprint2.png"
+                              alt="bg"
+                              className="absolute right-0 mt-40 w-44 h-40 object-cover z-0"
+                            />
+                            <img
+                              src="/all/bgprint2.png"
+                              alt="bg"
+                              className="absolute right-3 mt-10 w-5 h-5 object-cover z-0"
+                            />
+                            <img
+                              src="/all/bgprint2.png"
+                              alt="bg"
+                              className="absolute left-0 mt-28 w-10 h-10 object-cover z-0"
+                            />
+                            <img
+                              src="/all/bgprint2.png"
+                              alt="bg"
+                              className="absolute left-[-20px] mt-56 w-5 h-5 object-cover z-0"
+                            />
+                            <img
+                              src="/all/bgprint4.png"
+                              alt="bg"
+                              className="object-cover absolute ml-[-160px] mt-80 w-36 h-36"
+                            />
+                            <img
+                              src="/all/bgprint2.png"
+                              alt="bg"
+                              className="object-cover absolute  mt-96 w-3 h-3"
+                            />
+
+                            {/* รูปสัตว์เลี้ยง */}
+                            <img
+                              src={selectedPet?.imageSrc}
+                              alt="pet"
+                              className="w-[350px] h-[400px] object-cover relative z-10"
+                            />
+                          </div>
+
+                          <div className="border-b-4 border-[#c5b3a2] w-full my-5"></div>
+                          {/* History Section */}
+                          <div className="mt-5 px-2 relative flex-1 flex flex-col justify-start">
+                            <img
+                              src="/all/bgprint2.png"
+                              alt="bg"
+                              className="absolute mt-[-30px] right-64  w-3 h-3 object-cover"
+                            />
+
+                            <div className="relative flex items-center gap-2 mb-4 pl-8 z-10">
+                              <img
+                                src="/all/print2.png"
+                                alt="History"
+                                className="relative z-10 -mr-9 w-24 h-16 object-cover"
+                              />
+                              <img
+                                src="/all/bgprint2.png"
+                                alt="bg"
+                                className="absolute right-32 mb-10 w-6 h-6 object-cover z-0"
+                              />
+                              <img
+                                src="/all/bgprint2.png"
+                                alt="bg"
+                                className="absolute left-[-10px] mt-10 w-4 h-4 object-cover z-0"
+                              />
+                              <h2 className="text-2xl font-bold pb-5 pl-9  pr-10 border-3 rounded-3xl border-[#c77932] relative z-0">
+                                ประวัติ
+                              </h2>
+                            </div>
+                            <div className="text-xl   ">
+                              <img
+                                src="/all/bgprint3.png"
+                                alt="bg"
+                                className="absolute  ml-[-20px] w-56 h-40 object-cover z-0"
+                              />
+                              <p className="pb-3 relative z-10 pl-4">
+                                ชื่อเจ้าของ: {selectedPet?.owner}
+                              </p>
+
+                              <p className="pb-3 relative z-10 pl-4">
+                                ชื่อสัตว์เลี้ยง: {selectedPet?.name}
+                              </p>
+                              <img
+                                src="/all/bgprint2.png"
+                                alt="bg"
+                                className="absolute  ml-32 w-5 h-5 object-cover z-0"
+                              />
+                              <p className="pb-3 relative z-10 pl-4">
+                                อายุ: {selectedPet?.age}
+                              </p>
+                              <img
+                                src="/all/bgprint2.png"
+                                alt="bg"
+                                className="absolute  ml-[-20px] w-2 h-2 object-cover z-0"
+                              />
+
+                              <p className="pb-3 z-10 pl-4">
+                                สายพันธุ์: {selectedPet?.breed}
+                              </p>
+                              <img
+                                src="/all/bgprint2.png"
+                                alt="bg"
+                                className="absolute mb-20  ml-56 w-10 h-10 object-cover z-0"
+                              />
+                              <p className="pb-3 z-10 pl-4">
+                                ทำหมัน: {selectedPet?.sterilized}
+                              </p>
+                              <img
+                                src="/all/bgprint4.png"
+                                alt="bg"
+                                className="absolute  ml-[-140px] w-36 h-36 object-cover z-0"
+                              />
+                              <img
+                                src="/all/bgprint2.png"
+                                alt="bg"
+                                className="absolute mb-20  ml-20 w-4 h-4 object-cover z-0"
+                              />
+                              <p className="pb-3 z-10 pl-4">
+                                รอยตำหนิ: {selectedPet?.markings}
+                              </p>
+                              <img
+                                src="/all/bgprint2.png"
+                                alt="bg"
+                                className="absolute  ml-40 w-5 h-5 object-cover z-0"
+                              />
+
+                              <p className="pb-3 z-10 pl-4">
+                                รายละเอียด: {selectedPet?.description}
+                              </p>
+                              <img
+                                src="/all/bgprint2.png"
+                                alt="bg"
+                                className="absolute   ml-5 w-2 h-2 object-cover z-0"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Right: Pet Name + Icons + Diseases + Vaccines */}
+                        <div className="flex flex-col flex-1 relative z-10">
+                          <div className="pl-5 pb-5">
+                            <img
+                              src="/all/bgprint2.png"
+                              alt="bg"
+                              className="absolute w-10 h-10 object-cover -top-20 right-40 z-0"
+                            />
+                            <img
+                              src="/all/bgprint2.png"
+                              alt="bg"
+                              className="absolute w-3 h-3 object-cover -top-10 right-10 z-0"
+                            />
+                            <img
+                              src="/all/bgprint2.png"
+                              alt="bg"
+                              className="absolute w-5 h-5 object-cover top-40 -right-6 z-0"
+                            />
+                            <img
+                              src="/all/bgprint4.png"
+                              alt="bg"
+                              className="absolute w-56 h-48 object-cover right-0 z-0"
+                            />
+                            <img
+                              src="/all/bgprint2.png"
+                              alt="bg"
+                              className="absolute w-5 h-5 object-cover top-0  right-72 z-0"
+                            />
+                            <img
+                              src="/all/bgprint2.png"
+                              alt="bg"
+                              className="absolute w-10 h-10 object-cover top-11 right-80 z-0"
+                            />
+                            <img
+                              src="/all/bgprint2.png"
+                              alt="bg"
+                              className="absolute w-3 h-3 object-cover top-40  right-72 z-0"
+                            />
+                            <img
+                              src="/all/bgprint2.png"
+                              alt="bg"
+                              className="absolute w-7 h-7 object-cover top-[420px]  right-64 z-0"
+                            />
+                            <img
+                              src="/all/bgprint2.png"
+                              alt="bg"
+                              className="absolute w-5 h-6 object-cover top-[290px]  right-36 z-0"
+                            />
+                            <img
+                              src="/all/bgprint2.png"
+                              alt="bg"
+                              className="absolute w-4 h-4 object-cover top-[250px]  right-10 z-0"
+                            />
+
+                            <img
+                              src="/all/bgprint2.png"
+                              alt="bg"
+                              className="absolute w-7 h-7 object-cover top-[210px]  right-[200px] z-0"
+                            />
+                            <img
+                              src="/all/bgprint2.png"
+                              alt="bg"
+                              className="absolute w-3 h-3 object-cover top-[360px]  right-[360px] z-0"
+                            />
+                            <img
+                              src="/all/bgprint2.png"
+                              alt="bg"
+                              className="absolute w-10 h-10 object-cover top-[340px]  right-10 z-0"
+                            />
+                            <img
+                              src="/all/bgprint5.png"
+                              alt="bg"
+                              className="absolute w-48 h-52 object-cover top-[420px]  -right-5 z-0"
+                            />
+                            {/* Pet Name + Icon */}
+                            <div className="flex items-center space-x-2 mb-5 relative z-10">
+                              <h1 className="text-5xl font-semibold">
+                                {selectedPet?.name || "ไข่ตุ๋น"}
+                              </h1>
+                              <img
+                                src="/all/foot.png"
+                                alt="Foot"
+                                className="w-14 h-14 object-cover mt-5"
+                              />
+                            </div>
+
+                            {/* Contact Info */}
+                            <div className="text-xl space-y-2 ">
+                              <div className="flex items-center gap-2">
+                                <img
+                                  src="/all/call.png"
+                                  alt="Call"
+                                  className="w-6 h-6"
+                                />
+                                <span className="pb-5">
+                                  {selectedPet?.phone || "เบอร์โทร"}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <img
+                                  src="/all/face.png"
+                                  alt="Facebook"
+                                  className="w-6 h-6"
+                                />
+                                <span className="pb-5">
+                                  {selectedPet?.facebook || "Facebook"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="border-b-4 border-[#c5b3a2] relative z-20  w-full"></div>
+
+                          {/* Disease Section */}
+                          <div className="p-5 mb-10">
+                            <div className="relative flex items-center gap-2 mb-4 mt-4 space-y-2 pl-3  z-10">
+                              <img
+                                src="/all/print1.png"
+                                alt="Disease"
+                                className="relative z-10 -mr-9 w-24 h-16 object-cover"
+                              />
+                              <h2 className="text-2xl font-bold pb-5 pl-9 pr-10 border-3 rounded-3xl relative z-0">
+                                โรคประจำตัว
+                              </h2>
+                            </div>
+                            <table className="min-w-full border-2   shadow-md mb-4 relative z-10">
+                              <thead>
+                                <tr className="text-black text-base border-2">
+                                  <th className="py-2 px-4 border-black border-2 border-r text-center  text-xl ">
+                                    โรคประจำตัว
+                                  </th>
+                                  <th className="py-2 px-4 border-black border-2 border-r text-center  text-xl ">
+                                    วันที่พบโรค
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {selectedPet?.diseaseData?.map((d, index) => (
+                                  <tr key={index}>
+                                    <td className="py-2 px-4 border-black border-2 border-r border-b">
+                                      {d.name}
+                                    </td>
+                                    <td className="py-2 px-4 border-black border-2 border-b">
+                                      {d.date}
+                                    </td>
+                                  </tr>
+                                )) || (
+                                  <tr>
+                                    <td
+                                      colSpan={2}
+                                      className="text-center py-4"
+                                    >
+                                      ไม่มีข้อมูล
+                                    </td>
+                                  </tr>
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+
+                          <div className="border-b-4 border-[#c5b3a2] relative z-20 w-full"></div>
+
+                          {/* Vaccine Section */}
+                          <div className="p-5">
+                            <div className="relative grid grid-cols-[auto_64px] items-center ] mt-2 pl-20 pr-0">
+                              <h2 className="text-2xl font-bold  pb-5 px-16 border-3 border-[#bfb2a6] rounded-3xl relative z-0">
+                                วัคซีน
+                              </h2>
+                              <img
+                                src="/all/print3.png"
+                                alt="Vaccine"
+                                className="w-16 h-24 object-cover relative z-10 -ml-8"
+                              />
+                            </div>
+
+                            <table className="min-w-full border-2 shadow-md mt-3 mb-10">
+                              <thead>
+                                <tr className="text-black text-base border-2">
+                                  <th className="py-2 px-4 pb-2  border-black border-2 border-r border-b text-xl text-center ">
+                                    วัคซีน
+                                  </th>
+                                  <th className="py-2 px-4  border-black border-2 border-r border-b text-xl text-center ">
+                                    วันที่ได้รับวัคซีน
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {selectedPet?.vaccineData?.map((v, index) => (
+                                  <tr key={index}>
+                                    <td className="py-2 px-4 border-black border-2 border-r border-b">
+                                      {v.name}
+                                    </td>
+                                    <td className="py-2 px-4 border-black  border-2 border-b">
+                                      {v.date}
+                                    </td>
+                                  </tr>
+                                )) || (
+                                  <tr>
+                                    <td
+                                      colSpan={2}
+                                      className="text-center py-2"
+                                    >
+                                      ไม่มีข้อมูล
+                                    </td>
+                                  </tr>
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <img
+                      src="/all/bgprint2.png"
+                      alt="bg"
+                      className="absolute bottom-10 ml-10 w-7 h-7 object-cover z-0"
+                    />
+                    <img
+                      src="/all/bgprint4.png"
+                      alt="bg"
+                      className="absolute -bottom-20 ml-20 w-56 h-40 object-cover z-0"
+                    />
+                    <img
+                      src="/all/bgprint2.png"
+                      alt="bg"
+                      className="absolute bottom-1 ml-[490px] w-9 h-9 object-cover z-0"
+                    />
+                    <img
+                      src="/all/bgprint2.png"
+                      alt="bg"
+                      className="absolute bottom-24 ml-[560px] w-5 h-5 object-cover z-0"
+                    />
+                    <img
+                      src="/all/bgprint2.png"
+                      alt="bg"
+                      className="absolute -bottom-4 ml-[380px] w-7 h-7 object-cover z-0"
+                    />
+                    <img
+                      src="/all/bgprint2.png"
+                      alt="bg"
+                      className="absolute -bottom-1 ml-[620px] w-3 h-3 object-cover z-0"
+                    />
+                    <img
+                      src="/all/bgprint4.png"
+                      alt="bg"
+                      className="absolute -bottom-32 -right-24 w-40 h-40 object-cover z-0"
+                    />
+                    <img
+                      src="/all/bgprint4.png"
+                      alt="bg"
+                      className="absolute bottom-20 -right-24 w-64 h-52 object-cover z-0"
+                    />
+                    <img
+                      src="/all/bgprint2.png"
+                      alt="bg"
+                      className="absolute bottom-[310px] right-16 w-10 h-10 object-cover z-0"
+                    />
+                    <img
+                      src="/all/bgprint2.png"
+                      alt="bg"
+                      className="absolute bottom-[255px] right-64 w-3 h-3 object-cover z-0"
+                    />
+                    <img
+                      src="/all/bgprint2.png"
+                      alt="bg"
+                      className="absolute bottom-[360px] right-56 w-6 h-6 object-cover z-0"
+                    />
+                    <img
+                      src="/all/bgprint2.png"
+                      alt="bg"
+                      className="absolute bottom-[445px] right-32 w-6 h-6 object-cover z-0"
+                    />
+                  </div>
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="bg-[#7CBBEB] text-white hover:bg-sky-600 shadow-md rounded-xl px-6 py-1 sm:text-lg xl:text-xl cursor-pointer"
+                  >
+                    แก้ไข
+                  </button>
+                </>
               ) : (
-                <div className="flex gap-4">
+                <>
                   <button
                     onClick={handleCancel}
                     className="bg-gray-400 text-white hover:bg-gray-600 shadow-md rounded-xl px-6 py-1 sm:text-lg xl:text-xl cursor-pointer"
@@ -811,7 +1309,7 @@ export default function PetDetailsModal({
                   >
                     บันทึก
                   </button>
-                </div>
+                </>
               )}
             </div>
           </div>

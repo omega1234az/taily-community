@@ -22,6 +22,7 @@ export default function Pet() {
     setIsEditing(false);
   };
 
+  const [owner, setOwner] = useState("");
   const [name, setName] = useState("");
   const [age, setAge] = useState("");
   const [gender, setGender] = useState("");
@@ -31,10 +32,13 @@ export default function Pet() {
   const [description, setDescription] = useState("");
   const [sterilized, setSterilized] = useState("");
   const [selectedType, setSelectedType] = useState("");
+  const [phone, setPhone] = useState("");
+  const [facebook, setFacebook] = useState("");
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
 
   useEffect(() => {
     if (selectedPet) {
+      setOwner(selectedPet.owner || "");
       setName(selectedPet.name || "");
       setAge(selectedPet.age || "");
       setGender(selectedPet.gender || "");
@@ -44,12 +48,15 @@ export default function Pet() {
       setDescription(selectedPet.description || "");
       setSterilized(selectedPet.sterilized || "");
       setSelectedType(selectedPet.breed || "");
+      setPhone(selectedPet.phone || "");
+      setFacebook(selectedPet.facebook || "");
     }
   }, [selectedPet]);
 
   const petData = [
     {
       id: 1,
+      owner: "เจมส์",
       name: "ไข่ตุ๋น",
       imageSrc: "/home/eggtun2.png",
       breed: "แมว",
@@ -60,6 +67,8 @@ export default function Pet() {
       sterilized: "ทำหมันแล้ว",
       markings: "ไม่มี",
       description: "แมวขนสั้น น่ารัก ขี้อ้อน",
+      phone: "0625542343",
+      facebook: "jame'eee",
 
       additionalImages: [
         "/home/eggtun3.png",
@@ -77,6 +86,7 @@ export default function Pet() {
     },
     {
       id: 2,
+      owner: "พิ๊งพลอย",
       name: "ริรี่",
       imageSrc: "/home/katay.jpg",
       breed: "กระต่าย",
@@ -87,6 +97,8 @@ export default function Pet() {
       sterilized: "ทำหมันแล้ว",
       markings: "ไม่มี",
       description: "กระต่ายขี้เล่น",
+      phone: "0959613304",
+      facebook: "pingployyy",
       additionalImages: [
         "/home/katay2.jpg",
         "/home/katay3.jpg",
@@ -204,6 +216,7 @@ export default function Pet() {
           </Link>
         </div>
       </div>
+
       <PetModal
         showModal={showModal}
         setShowModal={setShowModal}
