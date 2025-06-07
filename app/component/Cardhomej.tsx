@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation"; // เพิ่ม usePathname
+import React, { useState, useRef, useEffect } from "react";
 
 interface PetCardjProps {
   id: string;
@@ -21,19 +21,82 @@ const PetCard: React.FC<PetCardjProps> = ({
   lostDate,
 }) => {
   const router = useRouter();
+  const pathname = usePathname(); // ดึง path ปัจจุบัน
+
+  const isAdminPage = pathname?.includes("/manageanns"); // ตรวจสอบว่าอยู่หน้าแอดมิน
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const handleDetailClick = () => {
     router.push(`/home/${id}`);
   };
 
+  const handleDelete = () => {
+    alert(`ลบประกาศ id: ${id}`);
+    setMenuOpen(false);
+    // เพิ่มฟังก์ชันลบจริง ๆ ที่นี่
+  };
+
+  const handleHide = () => {
+    alert(`ซ่อนประกาศ id: ${id}`);
+    setMenuOpen(false);
+    // เพิ่มฟังก์ชันซ่อนจริง ๆ ที่นี่
+  };
+
+  // ปิดเมนูถ้าคลิกข้างนอก
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    if (menuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [menuOpen]);
+
   return (
-    <div className="flex flex-col md:flex-row gap-6 p-6 border-2 border-gray-300 rounded-2xl shadow-lg bg-white w-full 2xl:max-w-2xl xl:max-w-xl lg:max-w-md md:max-w-lg sm:max-w-xs max-w-[230px] hover:bg-gray-200">
+    <div className="relative flex flex-col md:flex-row gap-6 p-6 border-2 border-gray-300 rounded-2xl shadow-lg bg-white w-full 2xl:max-w-2xl xl:max-w-xl lg:max-w-md md:max-w-lg sm:max-w-xs max-w-[230px] hover:bg-gray-200">
+      {/* ไอคอน อยู่มุมบนขวา ของกรอบหลัก */}
+      {isAdminPage && (
+        <div className="absolute top-4 right-4 z-20" ref={menuRef}>
+          <img
+            src="/all/Meatballs.png"
+            alt="menu"
+            className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 cursor-pointer"
+            onClick={() => setMenuOpen(!menuOpen)}
+          />
+          {/* เมนู Dropdown */}
+          {menuOpen && (
+            <div className="absolute top-6 sm:top-8 right-1 sm:right-2 bg-white border border-gray-300 rounded shadow-md w-24 sm:w-36 sm:text-sm lg:text-md z-30">
+              <button
+                className="w-full text-left px-4 py-2 hover:bg-gray-100 border-gray-300 border-b cursor-pointer"
+                onClick={handleDelete}
+              >
+                ลบประกาศ
+              </button>
+              <button
+                className="w-full text-left px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                onClick={handleHide}
+              >
+                ซ่อนประกาศ
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* รูปภาพ */}
-      <div className="mx-auto 2xl:w-[400px] 2xl:h-[350px] xl:w-[350px] xl:h-[300px] lg:w-[300px] lg:h-[250px] md:w-[300px] md:h-[250px] sm:w-[180px] sm:h-[230px] h-[150px] w-[100px] rounded-xl overflow-hidden">
+      <div className="mx-auto md:mx-0">
         <img
           src={imageSrc}
-          alt={breed}
-          className="w-full h-full object-cover"
+          className="mx-auto 2xl:w-[400px] 2xl:h-[350px] xl:w-[350px] xl:h-[300px] lg:w-[300px] lg:h-[250px] md:w-[300px] md:h-[250px] sm:w-[180px] sm:h-[230px] h-[150px] w-[100px] rounded-xl overflow-hidden object-cover"
         />
       </div>
 
