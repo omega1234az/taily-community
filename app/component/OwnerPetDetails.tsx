@@ -22,7 +22,9 @@ type Props = {
 
 export default function OwnerPetDetails({ pet }: Props) {
   const [mainImage, setMainImage] = useState(pet.images[0]);
-  const [open, setOpen] = useState(false);
+
+  const [isClueOpen, setIsClueOpen] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
 
   const [witnessName, setWitnessName] = useState("");
   const [contactDetail, setContactDetail] = useState("");
@@ -34,6 +36,10 @@ export default function OwnerPetDetails({ pet }: Props) {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imagePreview, setImagePreview] = useState<string>("/all/image.png");
+
+  const [reportType, setReportType] = useState<string>("");
+  const [showOtherInput, setShowOtherInput] = useState(false);
+  const [reportMessage, setReportMessage] = useState("");
 
   const handleButtonClick = () => {
     fileInputRef.current?.click();
@@ -48,13 +54,20 @@ export default function OwnerPetDetails({ pet }: Props) {
   };
 
   const handleSubmit = () => {
-    const data = {
+    console.log("ส่งข้อมูล:", {
       witnessName,
       contactDetail,
       sightingDetail,
-    };
-    console.log("ส่งข้อมูล:", data);
-    setOpen(false);
+    });
+    setIsClueOpen(false);
+  };
+
+  const handleSubmitReport = () => {
+    console.log(
+      "ข้อความรายงาน:",
+      reportType === "อื่นๆ" ? reportMessage : reportType
+    );
+    setIsReportOpen(false);
   };
 
   return (
@@ -62,108 +75,180 @@ export default function OwnerPetDetails({ pet }: Props) {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold mb-5">
           <span className="bg-[#EAD64D] lg:py-6 lg:pl-6 sm:py-5 sm:pl-5 py-3 pl-4 rounded-full">
-            หา
+            {pet.name.slice(0, 2)}
           </span>
-          เจ้าของ
+          {pet.name.slice(2)}
         </h1>
 
-        <div
-          onClick={() => setOpen(true)}
-          className="border-2 border-gray-400 rounded-lg p-1.5 flex flex-col items-center w-fit cursor-pointer hover:bg-gray-100"
-        >
-          <img
-            src="/home/jang.png"
-            alt="แจ้งเบาะแส"
-            className="lg:w-11 lg:h-9 sm:w-9 sm:h-7 w-8 h-6 object-cover"
-          />
-          <p className="lg:text-[10px] sm:text-[9px] text-[8px]">แจ้งเบาะแส</p>
+        <div className="flex gap-3">
+          {/* ปุ่มแจ้งเบาะแส */}
+          <div
+            onClick={() => setIsClueOpen(true)}
+            className="cursor-pointer border-2 border-gray-400 rounded-lg p-1.5 flex flex-col items-center w-fit"
+          >
+            <img
+              src="/home/jang.png"
+              alt="แจ้งเบาะแส"
+              className="lg:w-11 lg:h-9 sm:w-9 sm:h-7 w-8 h-6 object-cover"
+            />
+            <p className="lg:text-[10px] sm:text-[9px] text-[8px]">
+              แจ้งเบาะแส
+            </p>
+          </div>
+
+          {/* ปุ่มรายงาน */}
+          <div
+            className="flex justify-center items-center cursor-pointer"
+            onClick={() => setIsReportOpen(true)}
+          >
+            <img
+              src="/all/report.png"
+              alt="report"
+              className="lg:w-11 lg:h-9 sm:w-9 sm:h-7 w-8 h-6 object-cover"
+            />
+          </div>
         </div>
+      </div>
 
-        {open && (
-          <div className="fixed inset-0 z-50 bg-opacity-50 flex items-center justify-center">
-            <div className="bg-white p-8 xl:mt-10 sm:mt-20 rounded-2xl shadow-lg xl:w-[600px] xl:h-[600px] lg:w-[550px] lg:h-[550px] md:w-[500px] md:h-[550px] sm:w-[450px] sm:h-[550px] w-full h-full relative overflow-hidden">
-              {/* วงกลมพื้นหลัง */}
-              <span className="absolute top-[-36px] left-1 w-52 h-28 bg-[#7CBBEB] rounded-b-full z-0"></span>
-              <span className="absolute top-4 left-64 w-10 h-10 bg-[#EAD64D] rounded-full z-0 -translate-x-1/2"></span>
-              <span className="absolute top-5 left-120 w-18 h-18 bg-[#7CBBEB] rounded-full z-0"></span>
+      {/* Popup แจ้งเบาะแส */}
+      {isClueOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="bg-white p-8 xl:mt-10 sm:mt-20 rounded-2xl shadow-lg xl:w-[600px] xl:h-[600px] lg:w-[550px] lg:h-[550px] md:w-[500px] md:h-[550px] sm:w-[450px] sm:h-[550px] w-full h-full relative overflow-hidden">
+            <span className="absolute top-[-36px] left-1 w-52 h-28 bg-[#7CBBEB] rounded-b-full z-0"></span>
+            <span className="absolute top-4 left-64 w-10 h-10 bg-[#EAD64D] rounded-full z-0 -translate-x-1/2"></span>
+            <span className="absolute top-5 left-120 w-18 h-18 bg-[#7CBBEB] rounded-full z-0"></span>
 
-              {/* ข้อความ "แจ้งเบาะแส" อยู่หน้า */}
-              <div className="relative z-10 flex justify-center mb-4">
-                <h2 className="text-lg lg:text-xl font-semibold text-center">
-                  แจ้งเบาะแส
-                </h2>
-              </div>
+            <div className="relative z-10 flex justify-center mb-4">
+              <h2 className="text-lg lg:text-xl font-semibold text-center">
+                แจ้งเบาะแส
+              </h2>
+            </div>
 
-              {/* ฟอร์ม */}
-              <p className="mb-1 z-10 text-sm lg:text-md">ชื่อผู้พบเห็น</p>
+            <p className="mb-1 z-10 text-sm lg:text-md">ชื่อผู้พบเห็น</p>
+            <input
+              type="text"
+              value={witnessName}
+              onChange={(e) => setWitnessName(e.target.value)}
+              className="mb-4 w-full border rounded-md p-2 text-sm relative z-10"
+            />
+
+            <p className="mb-1 text-sm lg:text-md">รายละเอียดการติดต่อ</p>
+            <input
+              type="text"
+              value={contactDetail}
+              onChange={(e) => setContactDetail(e.target.value)}
+              className="mb-4 w-full border rounded-md p-2 text-sm"
+            />
+
+            <p className="mb-1 text-sm lg:text-md">รายละเอียดการพบเห็น</p>
+            <textarea
+              value={sightingDetail}
+              onChange={(e) => setSightingDetail(e.target.value)}
+              className="mb-4 w-full border rounded-md p-2 text-sm"
+            />
+
+            <p className="sm:mb-2 z-10 mb-4">รูป</p>
+            <div className="relative mb-2">
+              <span className="absolute top-14 left-8 w-24 h-24 bg-[#EAD64D] rounded-full z-0 -translate-x-1/2"></span>
+              <span className="absolute top-[-30] right-[-50] w-36 h-56 bg-[#EAD64D] rounded-l-full z-0 "></span>
+
+              <img
+                src={imagePreview}
+                alt="preview"
+                className="lg:w-40 lg:h-24 sm:w-36 sm:h-20 w-48 h-28 object-cover relative mb-2"
+              />
               <input
-                type="text"
-                value={witnessName}
-                onChange={(e) => setWitnessName(e.target.value)}
-                className="mb-4 w-full border rounded-md p-2 text-sm relative z-10"
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                className="hidden"
+                accept="image/*"
               />
+              <button
+                onClick={handleButtonClick}
+                className="relative z-10 text-sm lg:text-md px-5 py-1 rounded-lg bg-[#AFDAFB] hover:bg-[#b7ccf5] cursor-pointer"
+              >
+                อัปโหลด
+              </button>
+            </div>
 
-              <p className="mb-1 text-sm lg:text-md">รายละเอียดการติดต่อ</p>
-              <input
-                type="text"
-                value={contactDetail}
-                onChange={(e) => setContactDetail(e.target.value)}
-                className="mb-4 w-full border rounded-md p-2 text-sm"
-              />
-
-              <p className="mb-1 text-sm lg:text-md">รายละเอียดการพบเห็น</p>
-              <textarea
-                value={sightingDetail}
-                onChange={(e) => setSightingDetail(e.target.value)}
-                className="mb-4 w-full border rounded-md p-2 text-sm"
-              />
-
-              <p className="sm:mb-2 z-10 mb-4">รูป</p>
-              <div className="relative mb-2">
-                {/* วงกลมสีเหลือง อยู่ข้างหลัง (absolute, z-0) */}
-                <span className="absolute top-14 left-8 w-24 h-24 bg-[#EAD64D] rounded-full z-0 -translate-x-1/2"></span>
-                <span className="absolute top-[-30] right-[-50] w-36 h-56 bg-[#EAD64D] rounded-l-full z-0 "></span>
-
-                {/* รูปและปุ่ม อยู่วงหน้าที่ z-10 */}
-                <img
-                  src={imagePreview}
-                  alt="image"
-                  className="lg:w-40 lg:h-24 sm:w-36 sm:h-20 w-48 h-28 object-cover relative mb-2"
-                />
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  className="hidden"
-                  accept="image/*"
-                />
-                <button
-                  onClick={handleButtonClick}
-                  className="relative z-10 text-sm lg:text-md px-5 py-1 rounded-lg bg-[#AFDAFB] hover:bg-[#b7ccf5] cursor-pointer"
-                >
-                  อัปโหลด
-                </button>
-              </div>
-
-              {/* ปุ่มยกเลิกและส่ง */}
-              <div className="absolute bottom-6 right-6 flex gap-3">
-                <button
-                  onClick={() => setOpen(false)}
-                  className="px-6 py-1 text-sm lg:text-md rounded-md bg-[#D9D9D9] hover:bg-gray-100 cursor-pointer"
-                >
-                  ยกเลิก
-                </button>
-                <button
-                  onClick={handleSubmit}
-                  className="px-8 py-1 text-sm lg:text-md rounded-md bg-[#AFDAFB] hover:bg-[#b7ccf5] cursor-pointer"
-                >
-                  ส่ง
-                </button>
-              </div>
+            <div className="absolute bottom-6 right-6 flex gap-3">
+              <button
+                onClick={() => setIsClueOpen(false)}
+                className="px-6 py-1 text-sm lg:text-md rounded-md bg-[#D9D9D9] hover:bg-gray-100 cursor-pointer"
+              >
+                ยกเลิก
+              </button>
+              <button
+                onClick={handleSubmit}
+                className="px-8 py-1 text-sm lg:text-md rounded-md bg-[#AFDAFB] hover:bg-[#b7ccf5] cursor-pointer"
+              >
+                ส่ง
+              </button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Popup รายงาน */}
+      {isReportOpen && (
+        <div className="fixed inset-0 flex justify-center items-center z-50">
+          <div className="bg-white lg:w-[500px] sm:w-[400px] w-full h-full sm:h-auto rounded-md shadow-lg p-4 relative">
+            <button
+              onClick={() => setIsReportOpen(false)}
+              className="absolute top-5 right-5 text-2xl text-black cursor-pointer"
+            >
+              ✕
+            </button>
+            <h2 className="text-lg font-semibold">รายงาน</h2>
+
+            <div className="mt-4 space-y-2">
+              {[
+                "ฉันถูกใส่ความหรือถูกหมิ่นประมาทให้เสื่อมเสียชื่อเสียง",
+                "ประกาศนี้มีเนื้อหาไม่เหมาะสม",
+                "งานอันมีลิขสิทธิ์ของฉันถูกเผยแพร่โดยไม่ได้รับอนุญาต",
+                "อื่นๆ",
+              ].map((text) => (
+                <label
+                  key={text}
+                  className={`block cursor-pointer text-sm px-3 py-1 rounded-md 
+              ${
+                reportType === text
+                  ? "bg-red-200 text-red-800 font-semibold "
+                  : "bg-transparent"
+              }`}
+                  onClick={() => {
+                    setReportType(text);
+                    setShowOtherInput(text === "อื่นๆ");
+                    if (text !== "อื่นๆ") {
+                      setReportMessage("");
+                    }
+                  }}
+                >
+                  {text}
+                </label>
+              ))}
+            </div>
+
+            {showOtherInput && (
+              <textarea
+                placeholder="กรุณาระบุเหตุผลเพิ่มเติม..."
+                className="w-full mt-4 border border-gray-300 rounded-md p-2 text-sm resize-none"
+                rows={4}
+                value={reportMessage}
+                onChange={(e) => setReportMessage(e.target.value)}
+              />
+            )}
+
+            <button
+              onClick={handleSubmitReport}
+              className="mt-4 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm cursor-pointer"
+            >
+              ส่งรายงาน
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-col sm:flex-row  items-start gap-10 xl:gap-16 pt-8 xl:pt-10">
         <div className="ml-20 sm:ml-0">
