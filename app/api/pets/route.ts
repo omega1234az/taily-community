@@ -23,6 +23,12 @@ export async function GET() {
             image: true,
           },
         },
+        species: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         images: true,
         chronicDiseases: true,
         vaccines: true,
@@ -44,7 +50,7 @@ export async function GET() {
   }
 }
 
-// POST: เพิ่มสัตว์เลี้ยงใหม่พร้อมรูปภาพ
+// POST: เพิ่มสัตว์เลี้ยงใหม่พร้อมหลายรูปภาพ
 export async function POST(request: Request) {
   try {
     // ตรวจสอบ session
@@ -59,7 +65,7 @@ export async function POST(request: Request) {
     // ดึงข้อมูลจาก multipart/form-data
     const formData = await request.formData();
     const name = formData.get('name')?.toString();
-    const species = formData.get('species')?.toString();
+    const speciesId = formData.get('speciesId') ? parseInt(formData.get('speciesId') as string) : undefined;
     const breed = formData.get('breed')?.toString();
     const gender = formData.get('gender')?.toString();
     const age = formData.get('age') ? parseInt(formData.get('age') as string) : undefined;
@@ -70,7 +76,7 @@ export async function POST(request: Request) {
     const images = formData.getAll('images') as File[];
 
     // ตรวจสอบข้อมูล
-    if (!name || !species) {
+    if (!name || !speciesId) {
       return NextResponse.json(
         { message: 'กรุณาระบุชื่อและประเภทของสัตว์เลี้ยง' },
         { status: 400 }
@@ -82,9 +88,26 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+    if (isNaN(speciesId)) {
+      return NextResponse.json(
+        { message: 'รหัสประเภทสัตว์เลี้ยงไม่ถูกต้อง' },
+        { status: 400 }
+      );
+    }
     if (images.length > 5) {
       return NextResponse.json(
         { message: 'สามารถอัปโหลดรูปภาพได้สูงสุด 5 รูป' },
+        { status: 400 }
+      );
+    }
+
+    // ตรวจสอบว่า speciesId มีอยู่
+    const species = await prisma.petSpecies.findUnique({
+      where: { id: speciesId },
+    });
+    if (!species) {
+      return NextResponse.json(
+        { message: 'ไม่พบประเภทสัตว์เลี้ยงที่ระบุ' },
         { status: 400 }
       );
     }
@@ -137,7 +160,9 @@ export async function POST(request: Request) {
     const pet = await prisma.pet.create({
       data: {
         name,
-        species,
+        species: {
+          connect: { id: speciesId },
+        },
         breed,
         gender,
         age,
@@ -162,6 +187,12 @@ export async function POST(request: Request) {
             email: true,
             phone: true,
             image: true,
+          },
+        },
+        species: {
+          select: {
+            id: true,
+            name: true,
           },
         },
         images: true,
