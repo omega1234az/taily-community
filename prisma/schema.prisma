@@ -100,9 +100,30 @@ model Pet {
   isNeutered  Int  //ทำหมันหรือไม่ 0 = ไม่ทำหมัน, 1 = ทำหมัน
   user        User       @relation(fields: [userId], references: [id])
   images      PetImage[]
+  chronicDiseases PetChronicDisease[]
+  vaccines        VaccineRecord[]
 
   createdAt   DateTime   @default(now())
 }
+model PetChronicDisease {
+  id        Int      @id @default(autoincrement())
+  petId     Int
+  disease   String   // ชื่อโรค เช่น "โรคไต", "โรคหัวใจ"
+  description String? // รายละเอียดเพิ่มเติม เช่น "ตรวจพบตั้งแต่ปี 2022"
+  diagnosedAt DateTime? // วันที่วินิจฉัยโรค
+  pet       Pet      @relation(fields: [petId], references: [id])
+}
+
+model VaccineRecord {
+  id         Int      @id @default(autoincrement())
+  petId      Int
+  vaccine    String   // ชื่อวัคซีน เช่น "วัคซีนพิษสุนัขบ้า"
+  date       DateTime // วันที่ฉีด
+  nextDue    DateTime? // วันครบกำหนดครั้งถัดไป
+  note       String?
+  pet        Pet      @relation(fields: [petId], references: [id])
+}
+
 
 model PetImage {
   id      Int    @id @default(autoincrement())
