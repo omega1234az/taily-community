@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { getServerSession } from 'next-auth/next';
 import { options } from '../auth/[...nextauth]/option';
+import { put } from '@vercel/blob';
+import sharp from 'sharp';
 
 const prisma = new PrismaClient();
 
@@ -42,10 +44,10 @@ export async function GET() {
   }
 }
 
-// POST: เพิ่มสัตว์เลี้ยงใหม่
+// POST: เพิ่มสัตว์เลี้ยงใหม่พร้อมรูปภาพ
 export async function POST(request: Request) {
   try {
-    // ตรวจสอบ session ด้วย NextAuth
+    // ตรวจสอบ session
     const session = await getServerSession(options);
     if (!session || !session.user || !session.user.id) {
       return NextResponse.json(
@@ -54,19 +56,84 @@ export async function POST(request: Request) {
       );
     }
 
-    // ดึงข้อมูลจาก request body
-    const body = await request.json();
-    const { name, species, breed, gender, age, color, description, markings, isNeutered } = body;
+    // ดึงข้อมูลจาก multipart/form-data
+    const formData = await request.formData();
+    const name = formData.get('name')?.toString();
+    const species = formData.get('species')?.toString();
+    const breed = formData.get('breed')?.toString();
+    const gender = formData.get('gender')?.toString();
+    const age = formData.get('age') ? parseInt(formData.get('age') as string) : undefined;
+    const color = formData.get('color')?.toString();
+    const description = formData.get('description')?.toString();
+    const markings = formData.get('markings')?.toString();
+    const isNeutered = formData.get('isNeutered') === 'true' ? 1 : 0;
+    const images = formData.getAll('images') as File[];
 
-    // ตรวจสอบข้อมูลที่จำเป็น
+    // ตรวจสอบข้อมูล
     if (!name || !species) {
       return NextResponse.json(
         { message: 'กรุณาระบุชื่อและประเภทของสัตว์เลี้ยง' },
         { status: 400 }
       );
     }
+    if (age && (isNaN(age) || age < 0)) {
+      return NextResponse.json(
+        { message: 'อายุสัตว์เลี้ยงไม่ถูกต้อง' },
+        { status: 400 }
+      );
+    }
+    if (images.length > 5) {
+      return NextResponse.json(
+        { message: 'สามารถอัปโหลดรูปภาพได้สูงสุด 5 รูป' },
+        { status: 400 }
+      );
+    }
 
-    // สร้างสัตว์เลี้ยงใหม่
+    // อัปโหลดและบีบอัดรูปภาพ
+    const imageUrls: string[] = [];
+    for (const image of images) {
+      if (image && image.size > 0) {
+        if (!image.type.startsWith('image/')) {
+          return NextResponse.json(
+            { message: 'ไฟล์ที่อัปโหลดต้องเป็นรูปภาพ' },
+            { status: 400 }
+          );
+        }
+        if (image.size > 5 * 1024 * 1024) {
+          return NextResponse.json(
+            { message: 'ขนาดรูปภาพต้องไม่เกิน 5MB' },
+            { status: 400 }
+          );
+        }
+
+        // อ่านไฟล์เป็น Buffer
+        const imgBuffer = Buffer.from(await image.arrayBuffer());
+
+        // บีบอัดและปรับขนาดด้วย Sharp
+        const compressedImgBuffer = await sharp(imgBuffer)
+          .resize(500, 500, {
+            fit: 'inside',
+            withoutEnlargement: true,
+          })
+          .jpeg({
+            quality: 65,
+            progressive: true,
+          })
+          .toBuffer();
+
+        // สร้าง Blob จาก Buffer ที่บีบอัด
+        const compressedBlob = new Blob([compressedImgBuffer], { type: 'image/jpeg' });
+
+        // อัปโหลดไป Vercel Blob
+        const fileName = `pet-${session.user.id}-${Date.now()}.jpg`;
+        const { url } = await put(`pets/${session.user.id}/${fileName}`, compressedBlob, {
+          access: 'public',
+        });
+        imageUrls.push(url);
+      }
+    }
+
+    // สร้างสัตว์เลี้ยง
     const pet = await prisma.pet.create({
       data: {
         name,
@@ -77,9 +144,12 @@ export async function POST(request: Request) {
         color,
         description,
         markings,
-        isNeutered: isNeutered ? 1 : 0, // แปลง boolean เป็น Int (0 หรือ 1)
+        isNeutered,
         user: {
           connect: { id: session.user.id },
+        },
+        images: {
+          create: imageUrls.map((url) => ({ url })),
         },
       },
       include: {

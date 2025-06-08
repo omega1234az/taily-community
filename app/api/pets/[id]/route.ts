@@ -2,17 +2,17 @@ import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { getServerSession } from 'next-auth/next';
 import { options } from '../../auth/[...nextauth]/option';
+import { put, del } from '@vercel/blob';
+import sharp from 'sharp';
 
 const prisma = new PrismaClient();
 
 // GET: ดึงข้อมูลสัตว์เลี้ยงโดย ID
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    // รอ params และแปลง id เป็น Int
     const { id } = await params;
     const petId = parseInt(id);
 
-    // ตรวจสอบว่า petId เป็นตัวเลขที่ถูกต้อง
     if (isNaN(petId)) {
       return NextResponse.json(
         { message: 'ID สัตว์เลี้ยงไม่ถูกต้อง' },
@@ -21,9 +21,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     }
 
     const pet = await prisma.pet.findUnique({
-      where: {
-        id: petId,
-      },
+      where: { id: petId },
       include: {
         user: {
           select: {
@@ -61,10 +59,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   }
 }
 
-// PUT: อัปเดตข้อมูลสัตว์เลี้ยง
+// PUT: อัปเดตข้อมูลสัตว์เลี้ยงและรูปภาพ
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    // ตรวจสอบ session ด้วย NextAuth
+    // ตรวจสอบ session
     const session = await getServerSession(options);
     if (!session || !session.user || !session.user.id) {
       return NextResponse.json(
@@ -73,11 +71,10 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       );
     }
 
-    // รอ params และแปลง id เป็น Int
+    // รอ params และแปลง id
     const { id } = await params;
     const petId = parseInt(id);
 
-    // ตรวจสอบว่า petId เป็นตัวเลขที่ถูกต้อง
     if (isNaN(petId)) {
       return NextResponse.json(
         { message: 'ID สัตว์เลี้ยงไม่ถูกต้อง' },
@@ -105,19 +102,85 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       );
     }
 
-    // ดึงข้อมูลจาก request body
-    const body = await request.json();
-    const { name, species, breed, gender, age, color, description, markings, isNeutered } = body;
+    // ดึงข้อมูลจาก multipart/form-data
+    const formData = await request.formData();
+    const name = formData.get('name')?.toString();
+    const species = formData.get('species')?.toString();
+    const breed = formData.get('breed')?.toString();
+    const gender = formData.get('gender')?.toString();
+    const age = formData.get('age') ? parseInt(formData.get('age') as string) : undefined;
+    const color = formData.get('color')?.toString();
+    const description = formData.get('description')?.toString();
+    const markings = formData.get('markings')?.toString();
+    const isNeutered = formData.get('isNeutered') === 'true' ? 1 : 0;
+    const images = formData.getAll('images') as File[];
+    const removeImageIds = formData.get('removeImageIds')?.toString()?.split(',').map(Number).filter(id => !isNaN(id)) || [];
 
-    // ตรวจสอบข้อมูลที่จำเป็น
+    // ตรวจสอบข้อมูล
     if (!name || !species) {
       return NextResponse.json(
         { message: 'กรุณาระบุชื่อและประเภทของสัตว์เลี้ยง' },
         { status: 400 }
       );
     }
+    if (age && (isNaN(age) || age < 0)) {
+      return NextResponse.json(
+        { message: 'อายุสัตว์เลี้ยงไม่ถูกต้อง' },
+        { status: 400 }
+      );
+    }
+    if (images.length > 5) {
+      return NextResponse.json(
+        { message: 'สามารถอัปโหลดรูปภาพได้สูงสุด 5 รูป' },
+        { status: 400 }
+      );
+    }
 
-    // อัปเดตข้อมูลสัตว์เลี้ยง
+    // อัปโหลดและบีบอัดรูปภาพใหม่
+    const imageUrls: string[] = [];
+    for (const image of images) {
+      if (image && image.size > 0) {
+        if (!image.type.startsWith('image/')) {
+          return NextResponse.json(
+            { message: 'ไฟล์ที่อัปโหลดต้องเป็นรูปภาพ' },
+            { status: 400 }
+          );
+        }
+        if (image.size > 5 * 1024 * 1024) {
+          return NextResponse.json(
+            { message: 'ขนาดรูปภาพต้องไม่เกิน 5MB' },
+            { status: 400 }
+          );
+        }
+
+        // อ่านไฟล์เป็น Buffer
+        const imgBuffer = Buffer.from(await image.arrayBuffer());
+
+        // บีบอัดและปรับขนาดด้วย Sharp
+        const compressedImgBuffer = await sharp(imgBuffer)
+          .resize(500, 500, {
+            fit: 'inside',
+            withoutEnlargement: true,
+          })
+          .jpeg({
+            quality: 65,
+            progressive: true,
+          })
+          .toBuffer();
+
+        // สร้าง Blob จาก Buffer ที่บีบอัด
+        const compressedBlob = new Blob([compressedImgBuffer], { type: 'image/jpeg' });
+
+        // อัปโหลดไป Vercel Blob
+        const fileName = `pet-${session.user.id}-${Date.now()}.jpg`;
+        const { url } = await put(`pets/${session.user.id}/${fileName}`, compressedBlob, {
+          access: 'public',
+        });
+        imageUrls.push(url);
+      }
+    }
+
+    // อัปเดตข้อมูลสัตว์เลี้ยงและรูปภาพ
     const updatedPet = await prisma.pet.update({
       where: { id: petId },
       data: {
@@ -129,7 +192,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         color,
         description,
         markings,
-        isNeutered: isNeutered ? 1 : 0,
+        isNeutered,
+        images: {
+          deleteMany: { id: { in: removeImageIds } },
+          create: imageUrls.map((url) => ({ url })),
+        },
       },
       include: {
         user: {
@@ -149,6 +216,17 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       },
     });
 
+    // ลบรูปภาพเก่าจาก Vercel Blob
+    if (removeImageIds.length > 0) {
+      const imagesToDelete = await prisma.petImage.findMany({
+        where: { id: { in: removeImageIds }, petId },
+        select: { url: true },
+      });
+      for (const image of imagesToDelete) {
+        await del(image.url);
+      }
+    }
+
     return NextResponse.json(updatedPet);
   } catch (error) {
     console.error('[PUT_PET_ERROR]', error);
@@ -161,10 +239,10 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   }
 }
 
-// DELETE: ลบสัตว์เลี้ยง
+// DELETE: ลบสัตว์เลี้ยงและรูปภาพ
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    // ตรวจสอบ session ด้วย NextAuth
+    // ตรวจสอบ session
     const session = await getServerSession(options);
     if (!session || !session.user || !session.user.id) {
       return NextResponse.json(
@@ -173,11 +251,10 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
       );
     }
 
-    // รอ params และแปลง id เป็น Int
+    // รอ params และแปลง id
     const { id } = await params;
     const petId = parseInt(id);
 
-    // ตรวจสอบว่า petId เป็นตัวเลขที่ถูกต้อง
     if (isNaN(petId)) {
       return NextResponse.json(
         { message: 'ID สัตว์เลี้ยงไม่ถูกต้อง' },
@@ -188,7 +265,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     // ตรวจสอบว่า pet มีอยู่และ user เป็นเจ้าของ
     const pet = await prisma.pet.findUnique({
       where: { id: petId },
-      select: { id: true, userId: true },
+      select: { id: true, userId: true, images: { select: { url: true } } },
     });
 
     if (!pet) {
@@ -203,6 +280,11 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
         { message: 'คุณไม่มีสิทธิ์ลบสัตว์เลี้ยงนี้' },
         { status: 403 }
       );
+    }
+
+    // ลบรูปภาพจาก Vercel Blob
+    for (const image of pet.images) {
+      await del(image.url);
     }
 
     // ลบสัตว์เลี้ยง
