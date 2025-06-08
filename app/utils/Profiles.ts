@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth";
 import { options } from "../api/auth/[...nextauth]/option";
 const prisma = new PrismaClient();
 import { PrismaClient } from "@prisma/client";
+import { image } from "framer-motion/client";
 
 // ดึงข้อมูล user จาก session แล้วหาใน DB
 export async function getUserProfile() {
@@ -15,8 +16,10 @@ export async function getUserProfile() {
     where: { email: session.user.email },
     select: {
       id: true,
+      name: true,
       firstName: true,
       lastName: true,
+      image: true,
       email: true,
       phone: true,
       houseNumber: true,

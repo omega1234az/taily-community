@@ -106,7 +106,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     if (age && (isNaN(age) || age < 0)) {
       return NextResponse.json({ message: 'อายุสัตว์เลี้ยงไม่ถูกต้อง' }, { status: 400 });
     }
-
+    //ไว้แก้ได้
     if (images.length > 5) {
       return NextResponse.json({ message: 'สามารถอัปโหลดรูปภาพได้สูงสุด 5 รูป' }, { status: 400 });
     }

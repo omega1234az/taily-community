@@ -15,6 +15,7 @@ export default function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false)
 
   const [formData, setFormData] = useState({
+    name: "",
     firstName: "",
     lastName: "",
     email: "",
@@ -47,6 +48,7 @@ export default function ProfilePage() {
         setUser(userData)
 
         setFormData({
+          name : userData.name || "",
           firstName: userData.firstName || "",
           lastName: userData.lastName || "",
           email: userData.email || "",
@@ -77,6 +79,7 @@ export default function ProfilePage() {
       const nameParts = user.name ? user.name.split(" ") : ["", ""]
 
       setFormData({
+        name: user.name || "",
         firstName: user.firstName || "",
         lastName: user.lastName || "",
         email: user.email || "",
