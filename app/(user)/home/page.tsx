@@ -40,6 +40,7 @@ export default function Home() {
     lostDate: string;
     lostLocation: string;
     type: string;
+    reward?: string;
   };
 
   type OwnerPet = {
@@ -61,6 +62,7 @@ export default function Home() {
       lostDate: "2025-02-05",
       lostLocation: "บ้านหนองอึ่งพัฒนา อ.เมือง จ.กำแพงเพชร",
       type: "แมว",
+      reward: "5000",
     },
     {
       id: "02",
@@ -72,6 +74,7 @@ export default function Home() {
       lostDate: "2025-01-05",
       lostLocation: "ซอยสุขใจ 4 อ.เมือง จ.เชียงใหม่",
       type: "สุนัข",
+      reward: "4000",
     },
     {
       id: "03",
@@ -83,6 +86,7 @@ export default function Home() {
       lostDate: "2025-02-18",
       lostLocation: "ซอยสุขุมวิท 101 ถนนสุขุมวิท เขตบางนา",
       type: "งู",
+      reward: "3000",
     },
     {
       id: "04",
@@ -94,6 +98,7 @@ export default function Home() {
       lostDate: "2025-02-15",
       lostLocation: "ซอยสุขใจ 4 อ.เมือง จ.เชียงใหม่",
       type: "หนู",
+      reward: "2000",
     },
     {
       id: "05",
@@ -105,6 +110,7 @@ export default function Home() {
       lostDate: "2025-05-05",
       lostLocation: "บ้านหนองอึ่งพันฒานา อ.เมือง จ.กำแพงเพชร",
       type: "กระรอก",
+      reward: "1000",
     },
     {
       id: "06",
@@ -116,6 +122,7 @@ export default function Home() {
       lostDate: "2025-01-09",
       lostLocation: "ซอยสุขใจ 4 อ.เมือง จ.เชียงใหม่",
       type: "นก",
+      reward: "1500",
     },
     {
       id: "07",
@@ -127,6 +134,7 @@ export default function Home() {
       lostDate: "2025-04-10",
       lostLocation: "บ้านหนองอึ่งพันฒานา อ.เมือง จ.กำแพงเพชร",
       type: "กระต่าย",
+      reward: "2500",
     },
     {
       id: "08",
@@ -138,6 +146,7 @@ export default function Home() {
       lostDate: "22-05-2025",
       lostLocation: "ซอยสุขใจ 4 อ.เมือง จ.เชียงใหม่",
       type: "นก",
+      reward: "1100",
     },
     {
       id: "09",
@@ -149,6 +158,7 @@ export default function Home() {
       lostDate: "2025-04-30",
       lostLocation: "บ้านหนองอึ่งพันฒานา อ.เมือง จ.กำแพงเพชร",
       type: "เฟอร์ริต",
+      reward: "3500",
     },
     {
       id: "10",
@@ -160,6 +170,7 @@ export default function Home() {
       lostDate: "2025-03-02",
       lostLocation: "ซอยสุขใจ 4 อ.เมือง จ.เชียงใหม่",
       type: "สุนัข",
+      reward: "1200",
     },
     {
       id: "11",
@@ -171,6 +182,7 @@ export default function Home() {
       lostDate: "2025-05-03",
       lostLocation: "ซอยสุขใจ 4 อ.เมือง จ.เชียงใหม่",
       type: "เม่นแคระ",
+      reward: "500",
     },
     {
       id: "12",
@@ -182,6 +194,7 @@ export default function Home() {
       lostDate: "2025-03-20",
       lostLocation: "ซอยสุขใจ 4 อ.เมือง จ.เชียงใหม่",
       type: "ชูก้าไรเดอร์",
+      reward: "600",
     },
     {
       id: "13",
@@ -193,6 +206,7 @@ export default function Home() {
       lostDate: "2025-02-12",
       lostLocation: "หน้าบ้านในซอยสวนผัก 32 เขตตลิ่งชัน",
       type: "งู",
+      reward: "700",
     },
     {
       id: "14",
@@ -204,6 +218,7 @@ export default function Home() {
       lostDate: "2025-05-01",
       lostLocation: "หน้าบ้านในซอยสวนผัก 32 เขตตลิ่งชัน",
       type: "กระต่าย",
+      reward: "800",
     },
     {
       id: "15",
@@ -215,6 +230,7 @@ export default function Home() {
       lostDate: "2025-04-18",
       lostLocation: "คอนโดแถวรัชดาภิเษก ซอย 14",
       type: "แมว",
+      reward: "900",
     },
     {
       id: "16",
@@ -226,6 +242,7 @@ export default function Home() {
       lostDate: "2025-06-10",
       lostLocation: "หอพักใกล้มหาวิทยาลัยเชียงใหม่",
       type: "เม่น",
+      reward: "1000",
     },
     {
       id: "17",
@@ -237,6 +254,7 @@ export default function Home() {
       lostDate: "2025-06-01",
       lostLocation: "บ้านในซอยลาดปลาเค้า 72 เขตบางเขน",
       type: "หนู",
+      reward: "2000",
     },
     {
       id: "18",
@@ -248,6 +266,7 @@ export default function Home() {
       lostDate: "2025-05-28",
       lostLocation: "บ้านหนองรี อ.บ่อพลอย จ.กาญจนบุรี",
       type: "สุนัข",
+      reward: "2000",
     },
   ];
 
@@ -667,6 +686,7 @@ export default function Home() {
                   breed={lostPet.breed}
                   lostDate={lostPet.lostDate}
                   lostLocation={lostPet.lostLocation}
+                  reward={lostPet.reward || ""}
                 />
               );
             })}

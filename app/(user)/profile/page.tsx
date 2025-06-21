@@ -1,18 +1,18 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useEffect } from "react"
-import InputField from "@/app/component/InputField"
-import { useSession, signIn } from "next-auth/react"
-import { getUserProfile, saveProfile } from "@/app/utils/Profiles" // import ฟังก์ชันจาก Profiles.ts
+import { useState, useEffect } from "react";
+import InputField from "@/app/component/InputField";
+import { useSession, signIn } from "next-auth/react";
+import { getUserProfile, saveProfile } from "@/app/utils/Profiles"; // import ฟังก์ชันจาก Profiles.ts
 
 export default function ProfilePage() {
-  const { data: session, status } = useSession()
-  const [user, setUser] = useState<any>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isEditing, setIsEditing] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
+  const { data: session, status } = useSession();
+  const [user, setUser] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -26,26 +26,26 @@ export default function ProfilePage() {
     subDistrict: "",
     district: "",
     province: "",
-  })
+  });
 
   useEffect(() => {
-    if (status === "loading") return // ยังโหลด session อยู่
+    if (status === "loading") return; // ยังโหลด session อยู่
 
     if (status === "unauthenticated") {
-      signIn() // redirect ไปหน้า login
-      return
+      signIn(); // redirect ไปหน้า login
+      return;
     }
 
     // เมื่อ authenticated แล้วจึงเรียกข้อมูลผู้ใช้
-    fetchUserData()
-  }, [status])
+    fetchUserData();
+  }, [status]);
 
   // ย้ายฟังก์ชัน fetchUserData ออกมาจาก useEffect
   const fetchUserData = async () => {
     try {
-      const userData = await getUserProfile()
+      const userData = await getUserProfile();
       if (userData) {
-        setUser(userData)
+        setUser(userData);
 
         setFormData({
           name : userData.name || "",
@@ -59,24 +59,25 @@ export default function ProfilePage() {
           subDistrict: userData.subDistrict || "",
           district: userData.district || "",
           province: userData.province || "",
-        })
+        });
       }
-      console.log(userData)
+      console.log(userData);
     } catch (error) {
-      console.error("Failed to fetch user data:", error)
+      console.error("Failed to fetch user data:", error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
-  const handleChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [field]: e.target.value })
-  }
+  const handleChange =
+    (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData({ ...formData, [field]: e.target.value });
+    };
 
   const handleCancel = () => {
     // รีเซ็ตข้อมูลกลับไปเป็นค่าเริ่มต้น
     if (user) {
-      const nameParts = user.name ? user.name.split(" ") : ["", ""]
+      const nameParts = user.name ? user.name.split(" ") : ["", ""];
 
       setFormData({
         name: user.name || "",
@@ -90,15 +91,15 @@ export default function ProfilePage() {
         subDistrict: user.subDistrict || "",
         district: user.district || "",
         province: user.province || "",
-      })
+      });
     }
-    setIsEditing(false)
-  }
+    setIsEditing(false);
+  };
 
   const handleSave = async () => {
-    setIsSaving(true)
+    setIsSaving(true);
     try {
-      const result = await saveProfile(formData)
+      const result = await saveProfile(formData);
       if (result.success) {
         // อัปเดตข้อมูล user ในหน้าจอเมื่อบันทึกสำเร็จ
         const updatedUser = {
@@ -111,19 +112,19 @@ export default function ProfilePage() {
           subDistrict: formData.subDistrict,
           district: formData.district,
           province: formData.province,
-        }
-        setUser(updatedUser)
-        setIsEditing(false)
+        };
+        setUser(updatedUser);
+        setIsEditing(false);
       } else {
-        alert(result.message || "บันทึกข้อมูลไม่สำเร็จ")
+        alert(result.message || "บันทึกข้อมูลไม่สำเร็จ");
       }
     } catch (error) {
-      console.error("Error saving profile:", error)
-      alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล")
+      console.error("Error saving profile:", error);
+      alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
-  }
+  };
 
   // แสดงหน้าโหลดขณะดึงข้อมูล
   if (isLoading) {
@@ -131,7 +132,7 @@ export default function ProfilePage() {
       <div className="flex justify-center items-center h-64">
         <p className="text-gray-500">กำลังโหลดข้อมูล...</p>
       </div>
-    )
+    );
   }
 
   // แสดงข้อความเมื่อไม่พบข้อมูลผู้ใช้
@@ -140,7 +141,7 @@ export default function ProfilePage() {
       <div className="text-center py-10">
         <p className="text-gray-500">กรุณาเข้าสู่ระบบเพื่อดูข้อมูลโปรไฟล์</p>
       </div>
-    )
+    );
   }
 
   return (
@@ -281,5 +282,5 @@ export default function ProfilePage() {
         )}
       </div>
     </div>
-  )
+  );
 }

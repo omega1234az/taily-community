@@ -12,6 +12,7 @@ interface PetCardhProps {
   breed: string;
   lostDate: string;
   lostLocation: string;
+  reward: string;
 }
 
 const PetCard: React.FC<PetCardhProps> = ({
@@ -23,6 +24,7 @@ const PetCard: React.FC<PetCardhProps> = ({
   breed,
   lostDate,
   lostLocation,
+  reward,
 }) => {
   const router = useRouter();
   const pathname = usePathname(); // ดึง path ปัจจุบัน
@@ -125,6 +127,10 @@ const PetCard: React.FC<PetCardhProps> = ({
           </p>
           <p>
             <strong>สถานที่หาย:</strong> {lostLocation}
+          </p>
+          <p>
+            <strong>เงินรางวัล:</strong>{" "}
+            {reward ? `${reward} บาท` : "ไม่มีระบุ"}
           </p>
         </div>
 

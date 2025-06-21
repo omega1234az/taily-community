@@ -20,6 +20,7 @@ type LostPet = {
   lostDetail: string;
   lostLocation: string;
   images: string[];
+  reward?: string;
 };
 
 type OwnerPet = {
@@ -51,6 +52,7 @@ const petsLost: LostPet[] = [
     lostDate: "2025-02-05",
     lostDetail: "หายจากบริเวณหน้าบ้าน",
     lostLocation: "บ้านหนองอึ่งพัฒนา อ.เมือง จ.กำแพงเพชร",
+    reward: "5000",
     images: [
       "/home/eggtun2.png",
       "/home/eggtun3.png",
@@ -72,6 +74,7 @@ const petsLost: LostPet[] = [
     lostDate: "2025-01-05",
     lostDetail: "น่าจะววิ่งออกไปตอนเปิดรั้ว",
     lostLocation: "ซอยสุขใจ 4 อ.เมือง จ.เชียงใหม่",
+    reward: "4000",
     images: [
       "/home/sumo.png",
       "/home/somo2.jpg",
@@ -94,6 +97,7 @@ const petsLost: LostPet[] = [
     lostDate: "2025-02-20",
     lostDetail: "หายออกจากบ้านตอนเย็น ขณะเปิดประตูหลังบ้าน",
     lostLocation: "ซอยสุขุมวิท 101 ถนนสุขุมวิท เขตบางนา",
+    reward: "3000",
     images: [
       "/home/milmil.jpg",
       "/home/milmil1.jpg",
@@ -115,6 +119,7 @@ const petsLost: LostPet[] = [
     lostDate: "2025-02-15",
     lostDetail: "หายออกจากกรงในเวลากลางคืน",
     lostLocation: "ซอยสุขใจ 4 อ.เมือง จ.เชียงใหม่",
+    reward: "2000",
     images: [
       "/home/ham.jpg",
       "/home/ham2.jpeg",
@@ -136,6 +141,7 @@ const petsLost: LostPet[] = [
     lostDate: "2025-05-05",
     lostDetail: "อาจหลุดออกไปจากกรง",
     lostLocation: "บ้านหนองอึ่งพันฒานา อ.เมือง จ.กำแพงเพชร",
+    reward: "1000",
     images: [
       "/home/karog.jpg",
       "/home/karog2.jpeg",
@@ -157,6 +163,7 @@ const petsLost: LostPet[] = [
     lostDate: "2025-01-09",
     lostDetail: "บินหลุดออกจากหน้าต่าง",
     lostLocation: "ซอยสุขใจ 4 อ.เมือง จ.เชียงใหม่",
+    reward: "1500",
     images: [
       "/home/nok.jpg",
       "/home/nok2.jpeg",
@@ -178,6 +185,7 @@ const petsLost: LostPet[] = [
     lostDate: "2025-04-10",
     lostDetail: "หายระหว่างให้อาหาร",
     lostLocation: "บ้านหนองอึ่งพันฒานา อ.เมือง จ.กำแพงเพชร",
+    reward: "2500",
     images: [
       "/home/katay.jpg",
       "/home/katay2.jpg",
@@ -199,6 +207,7 @@ const petsLost: LostPet[] = [
     lostDate: "2025-05-22",
     lostDetail: "บินหลุดออกจากกรง",
     lostLocation: "ซอยสุขใจ 4 อ.เมือง จ.เชียงใหม่",
+    reward: "1100",
     images: [
       "/home/kok2.jpg",
       "/home/kok1.jpeg",
@@ -220,6 +229,7 @@ const petsLost: LostPet[] = [
     lostDate: "2025-04-30",
     lostDetail: "หลุดออกจากบ้านระหว่างทำความสะอาด",
     lostLocation: "บ้านหนองอึ่งพันฒานา อ.เมือง จ.กำแพงเพชร",
+    reward: "3500",
     images: [
       "/home/ferrit.jpg",
       "/home/ferrit2.jpg",
@@ -241,6 +251,7 @@ const petsLost: LostPet[] = [
     lostDate: "2025-03-02",
     lostDetail: "เปิดประตูแล้ววิ่งออกไป",
     lostLocation: "ซอยสุขใจ 4 อ.เมือง จ.เชียงใหม่",
+    reward: "1200",
     images: [
       "/home/thai.png",
       "/home/thai2.jpg",
@@ -262,6 +273,7 @@ const petsLost: LostPet[] = [
     lostDate: "2025-05-03",
     lostDetail: "หายระหว่างทำความสะอาดกรง",
     lostLocation: "ซอยสุขใจ 4 อ.เมือง จ.เชียงใหม่",
+    reward: "500",
     images: [
       "/home/men.jpg",
       "/home/men2.jpg",
@@ -283,6 +295,7 @@ const petsLost: LostPet[] = [
     lostDate: "2025-03-20",
     lostDetail: "หายตอนเปิดกรงทำความสะอาด",
     lostLocation: "ซอยสุขใจ 4 อ.เมือง จ.เชียงใหม่",
+    reward: "600",
     images: [
       "/home/chuga.jpg",
       "/home/chuga2.jpeg",
@@ -304,6 +317,7 @@ const petsLost: LostPet[] = [
     lostDate: "",
     lostDetail: "หายตอนเปิดกรงทำความสะอาด อาจเลื้อยออกจากบ้าน",
     lostLocation: "หายแถวหน้าบ้านในซอยสวนผัก 32 เขตตลิ่งชัน",
+    reward: "700",
     images: [
       "/home/Lumis.jpg",
       "/home/Lumis1.jpg",
@@ -325,6 +339,7 @@ const petsLost: LostPet[] = [
     lostDate: "",
     lostDetail: "หายตอนเปิดกรงให้ออกมาวิ่งเล่น อาจหลุดออกไปทางรั้วหลังบ้าน",
     lostLocation: "หายแถวหน้าบ้านในซอยสวนผัก 32 เขตตลิ่งชัน",
+    reward: "800",
     images: [
       "/home/bunbun.jpg",
       "/home/bunbun1.jpg",
@@ -346,6 +361,7 @@ const petsLost: LostPet[] = [
     lostDate: "",
     lostDetail: "ออกจากบ้านตอนกลางคืนแล้วไม่กลับมา",
     lostLocation: "หายจากคอนโดแถวรัชดาภิเษก ซอย 14",
+    reward: "900",
     images: [
       "/home/Nova.jpg",
       "/home/Nova1.jpg",
@@ -367,6 +383,7 @@ const petsLost: LostPet[] = [
     lostDate: "",
     lostDetail: "กรงเปิดทิ้งไว้แล้วไม่พบตัว อาจหลบไปในซอกมืด",
     lostLocation: "หายจากหอพักใกล้มหาวิทยาลัยเชียงใหม่",
+    reward: "1000",
     images: [
       "/home/Biscuit.jpg",
       "/home/Biscuit1.jpg",
@@ -388,6 +405,7 @@ const petsLost: LostPet[] = [
     lostDate: "",
     lostDetail: "หนีออกจากกรงตอนทำความสะอาด ไม่พบในบ้าน",
     lostLocation: "หายจากบ้านในซอยลาดปลาเค้า 72 เขตบางเขน",
+    reward: "2000",
     images: [
       "/home/Dusty.jpg",
       "/home/Dusty1.jpg",
@@ -409,6 +427,7 @@ const petsLost: LostPet[] = [
     lostDate: "2025-02-28",
     lostDetail: "หายจากหน้าบ้านขณะไม่มีคนดู",
     lostLocation: "บ้านหนองรี อ.บ่อพลอย จ.กาญจนบุรี",
+    reward: "2000",
     images: [
       "/home/samoy.png",
       "/home/samoy2.jpg",

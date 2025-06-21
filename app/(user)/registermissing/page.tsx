@@ -15,6 +15,7 @@ type PetData = {
   postedDate: string;
   missingLocation: string;
   missingDetail: string;
+  reward?: string;
 };
 
 export default function RegisterMissing() {

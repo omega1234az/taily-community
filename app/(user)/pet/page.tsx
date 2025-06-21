@@ -76,12 +76,12 @@ export default function Pet() {
         "/home/eggtun5.png",
       ],
       diseaseData: [
-        { name: "โรคหอบหืด", date: "5/01/67" },
-        { name: "ปัญหาไต", date: "10/03/67" },
+        { name: "โรคหอบหืด", date: "05-01-68" },
+        { name: "ปัญหาไต", date: "10-03-68" },
       ],
       vaccineData: [
-        { name: "วัคซีนพิษสุนัขบ้า", date: "1/01/67" },
-        { name: "วัคซีนไข้หวัดแมว", date: "15/01/67" },
+        { name: "วัคซีนพิษสุนัขบ้า", date: "01-01-68", nextdate: "03-01-68" },
+        { name: "วัคซีนไข้หวัดแมว", date: "15-01-68", nextdate: "18-01-68" },
       ],
     },
     {
@@ -104,8 +104,10 @@ export default function Pet() {
         "/home/katay3.jpg",
         "/home/katay4.jpg",
       ],
-      diseaseData: [{ name: "ปัญหาระบบย่อยอาหาร", date: "2/01/67" }],
-      vaccineData: [{ name: "วัคซีนไวรัสกระต่าย", date: "12/02/67" }],
+      diseaseData: [{ name: "ปัญหาระบบย่อยอาหาร", date: "02-01-68" }],
+      vaccineData: [
+        { name: "วัคซีนไวรัสกระต่าย", date: "12-02-68", nextdate: "15-02-68" },
+      ],
     },
   ];
 

@@ -30,6 +30,7 @@ export default function Announcement() {
           breed="บริติช ช็อตแฮร์"
           lostDate="2/5/2568"
           lostLocation="บ้านหนองอึ่งพัฒนา อ.เมือง จ.กำแพงเพชร"
+          reward="5000"
         />
 
         <Link

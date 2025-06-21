@@ -36,7 +36,7 @@ type PetDetailsModalProps = {
   >;
 };
 
-type Vaccine = { name: string; date: string };
+type Vaccine = { name: string; date: string; nextdate: string };
 type Disease = { name: string; date: string };
 
 export default function PetDetailsModal({
@@ -150,7 +150,7 @@ export default function PetDetailsModal({
   const diseaseTotalPages = calculateTotalPages(editableDiseaseData);
   const handleVaccineChange = (
     index: number,
-    field: "name" | "date",
+    field: "name" | "date" | "nextdate",
     value: string
   ) => {
     setEditableVaccineData((prev) => {
@@ -159,7 +159,7 @@ export default function PetDetailsModal({
       const allowedLength = rowsPerPage * (vaccineTotalPages - 1);
       if (globalIndex >= allowedLength + rowsPerPage) return prev;
       while (newData.length <= globalIndex) {
-        newData.push({ name: "", date: "" });
+        newData.push({ name: "", date: "", nextdate: "" });
       }
       newData[globalIndex] = { ...newData[globalIndex], [field]: value };
       return newData;
@@ -473,11 +473,14 @@ export default function PetDetailsModal({
                     <table className="min-w-full bg-white border rounded-lg shadow-md">
                       <thead>
                         <tr className="bg-[#7CBBEB] text-black text-base">
-                          <th className="py-3 px-6 border-black border-r text-left">
+                          <th className="py-3 px-4 border-black border-r text-left">
                             วัคซีน
                           </th>
-                          <th className="py-3 px-6 border-black border-r text-left">
+                          <th className="py-3 px-2 border-black border-r text-left">
                             วันที่ได้รับวัคซีน
+                          </th>
+                          <th className="py-3 px-2 border-black border-r text-left">
+                            วัคซีนครั้งต่อไป
                           </th>
                         </tr>
                       </thead>
@@ -494,7 +497,7 @@ export default function PetDetailsModal({
                                 index % 2 === 0 ? "bg-white" : "bg-[#7CBBEB]"
                               }
                             >
-                              <td className="py-2 px-6 border-black border-r">
+                              <td className="py-2 px-2 border-black border-r text-sm">
                                 {isEditing ? (
                                   <input
                                     type="text"
@@ -506,16 +509,16 @@ export default function PetDetailsModal({
                                         e.target.value
                                       )
                                     }
-                                    className="w-full border border-gray-300 rounded px-2 py-1"
+                                    className="w-full border border-gray-300 rounded "
                                   />
                                 ) : (
                                   vaccine.name
                                 )}
                               </td>
-                              <td className="py-2 px-6">
+                              <td className="py-2 px-4 border-black border-r">
                                 {isEditing ? (
                                   <input
-                                    type="text"
+                                    type="date"
                                     value={vaccine.date}
                                     onChange={(e) =>
                                       handleVaccineChange(
@@ -524,10 +527,28 @@ export default function PetDetailsModal({
                                         e.target.value
                                       )
                                     }
-                                    className="w-full border border-gray-300 rounded px-2 py-1"
+                                    className="w-full border border-gray-300 rounded "
                                   />
                                 ) : (
                                   vaccine.date
+                                )}
+                              </td>
+                              <td className="py-2 px-4">
+                                {isEditing ? (
+                                  <input
+                                    type="date"
+                                    value={vaccine.nextdate || ""}
+                                    onChange={(e) =>
+                                      handleVaccineChange(
+                                        (currentPage - 1) * rowsPerPage + index,
+                                        "nextdate",
+                                        e.target.value
+                                      )
+                                    }
+                                    className="w-full border border-gray-300 rounded "
+                                  />
+                                ) : (
+                                  vaccine.nextdate
                                 )}
                               </td>
                             </tr>
@@ -550,10 +571,10 @@ export default function PetDetailsModal({
                             ).length +
                             i;
 
-                          // Ensure the editableVaccineData[emptyIndex] exists
                           const emptyRow = editableVaccineData[emptyIndex] || {
                             name: "",
                             date: "",
+                            nextDate: "",
                           };
 
                           return (
@@ -565,7 +586,7 @@ export default function PetDetailsModal({
                                   : "bg-[#7CBBEB]"
                               }
                             >
-                              <td className="py-3 px-6 border-black border-r">
+                              <td className="py-2 px-6 border-black border-r">
                                 {isEditing ? (
                                   <input
                                     type="text"
@@ -583,15 +604,33 @@ export default function PetDetailsModal({
                                   ""
                                 )}
                               </td>
-                              <td className="py-1 px-6">
+                              <td className="py-2 px-6 border-black border-r">
                                 {isEditing ? (
                                   <input
-                                    type="text"
+                                    type="date"
                                     value={emptyRow.date}
                                     onChange={(e) =>
                                       handleVaccineChange(
                                         emptyIndex,
                                         "date",
+                                        e.target.value
+                                      )
+                                    }
+                                    className="w-full border border-gray-300 rounded px-2 py-1"
+                                  />
+                                ) : (
+                                  ""
+                                )}
+                              </td>
+                              <td className="py-2 px-6">
+                                {isEditing ? (
+                                  <input
+                                    type="date"
+                                    value={emptyRow.nextdate}
+                                    onChange={(e) =>
+                                      handleVaccineChange(
+                                        emptyIndex,
+                                        "nextdate",
                                         e.target.value
                                       )
                                     }
@@ -657,7 +696,7 @@ export default function PetDetailsModal({
                             โรคประจำตัว
                           </th>
                           <th className="py-3 px-6 border-black border-r text-left">
-                            วันที่พบโรค
+                            วันที่พบแพทย์
                           </th>
                         </tr>
                       </thead>
@@ -679,7 +718,7 @@ export default function PetDetailsModal({
                                   : "bg-[#EAD64D]"
                               }
                             >
-                              <td className="py-2 px-6 border-black border-r">
+                              <td className="py-3 px-6 border-black border-r">
                                 {isEditing ? (
                                   <input
                                     type="text"
@@ -691,7 +730,7 @@ export default function PetDetailsModal({
                                         e.target.value
                                       )
                                     }
-                                    className="w-full border border-gray-300 rounded px-2 py-2"
+                                    className="w-full border border-gray-300 rounded "
                                   />
                                 ) : (
                                   row.name
@@ -700,7 +739,7 @@ export default function PetDetailsModal({
                               <td className="py-3 px-6">
                                 {isEditing ? (
                                   <input
-                                    type="text"
+                                    type="date"
                                     value={row.date}
                                     onChange={(e) =>
                                       handleDiseaseChange(
@@ -709,7 +748,7 @@ export default function PetDetailsModal({
                                         e.target.value
                                       )
                                     }
-                                    className="w-full border border-gray-300 rounded px-2 py-2"
+                                    className="w-full border border-gray-300 rounded "
                                   />
                                 ) : (
                                   row.date
@@ -1147,7 +1186,7 @@ export default function PetDetailsModal({
                                     โรคประจำตัว
                                   </th>
                                   <th className="py-2 px-4 border-black border-2 border-r text-center  text-xl ">
-                                    วันที่พบโรค
+                                    วันที่พบแพทย์
                                   </th>
                                 </tr>
                               </thead>
@@ -1193,22 +1232,28 @@ export default function PetDetailsModal({
                             <table className="min-w-full border-2 shadow-md mt-3 mb-10">
                               <thead>
                                 <tr className="text-black text-base border-2">
-                                  <th className="py-2 px-4 pb-2  border-black border-2 border-r border-b text-xl text-center ">
+                                  <th className="py-2 px-2 pb-2  border-black border-2 border-r border-b text-md text-center ">
                                     วัคซีน
                                   </th>
-                                  <th className="py-2 px-4  border-black border-2 border-r border-b text-xl text-center ">
+                                  <th className="py-2 px-2  border-black border-2 border-r border-b text-md text-center ">
                                     วันที่ได้รับวัคซีน
+                                  </th>
+                                  <th className="py-2 px-2  border-black border-2 border-r border-b text-md text-center ">
+                                    วัคซีนครั้งต่อไป
                                   </th>
                                 </tr>
                               </thead>
                               <tbody>
                                 {selectedPet?.vaccineData?.map((v, index) => (
                                   <tr key={index}>
-                                    <td className="py-2 px-4 border-black border-2 border-r border-b">
+                                    <td className="py-2 px-2 border-black border-2 border-r border-b">
                                       {v.name}
                                     </td>
-                                    <td className="py-2 px-4 border-black  border-2 border-b">
+                                    <td className="py-2 px-2 border-black  border-2 border-b">
                                       {v.date}
+                                    </td>
+                                    <td className="py-2 px-2 border-black  border-2 border-b">
+                                      {v.nextdate}
                                     </td>
                                   </tr>
                                 )) || (

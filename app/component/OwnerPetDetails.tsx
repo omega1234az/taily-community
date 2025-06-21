@@ -192,7 +192,7 @@ export default function OwnerPetDetails({ pet }: Props) {
 
       {/* Popup รายงาน */}
       {isReportOpen && (
-        <div className="fixed inset-0 flex justify-center items-center z-50">
+        <div className="fixed inset-0 flex justify-center items-center z-50  bg-opacity-50">
           <div className="bg-white lg:w-[500px] sm:w-[400px] w-full h-full sm:h-auto rounded-md shadow-lg p-4 relative">
             <button
               onClick={() => setIsReportOpen(false)}
@@ -211,12 +211,11 @@ export default function OwnerPetDetails({ pet }: Props) {
               ].map((text) => (
                 <label
                   key={text}
-                  className={`block cursor-pointer text-sm px-3 py-1 rounded-md 
-              ${
-                reportType === text
-                  ? "bg-red-200 text-red-800 font-semibold "
-                  : "bg-transparent"
-              }`}
+                  className={`flex items-center  text-sm px-3 py-2 rounded-md transition ${
+                    reportType === text
+                      ? "bg-red-200 text-red-800 font-semibold"
+                      : "bg-transparent"
+                  }`}
                   onClick={() => {
                     setReportType(text);
                     setShowOtherInput(text === "อื่นๆ");
@@ -225,6 +224,12 @@ export default function OwnerPetDetails({ pet }: Props) {
                     }
                   }}
                 >
+                  <input
+                    type="checkbox"
+                    readOnly
+                    checked={reportType === text}
+                    className="mr-2 w-4 h-4 accent-red-500 cursor-pointer"
+                  />
                   {text}
                 </label>
               ))}
