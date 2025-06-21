@@ -8,37 +8,43 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// ---------- PET SPECIES ----------
+model PetSpecies {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique // เช่น "Cat", "Dog", "Rabbit"
+  pets      Pet[]
+  foundPets FoundPet[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
 // ---------- USER / AUTH ----------
 model User {
   id            String          @id @default(cuid())
   name          String?
-  firstName     String?         // เพิ่มชื่อจริง
-  lastName      String?         // เพิ่มนามสกุล
+  firstName     String?
+  lastName      String?
   email         String?         @unique
   password      String?
-  phone         String?         // เพิ่มเบอร์โทร
+  phone         String?
   image         String?
   role          String?         @default("user")
-
-  houseNumber   String?         // เพิ่มที่อยู่
+  houseNumber   String?
   street        String?
   village       String?
   subDistrict   String?
   district      String?
   province      String?
-
   emailVerified DateTime?
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
-
   accounts      Account[]
   pets          Pet[]
   lostPets      LostPet[]
   clues         Clue[]
-  foundPets     FoundPet[]      // เปลี่ยนจาก adoptions เป็น foundPets
+  foundPets     FoundPet[]
   passwordResetTokens PasswordResetToken[]
 }
-
 
 model Account {
   id                       String  @id @default(cuid())
@@ -55,10 +61,8 @@ model Account {
   session_state            String?
   refresh_token_expires_in Int?
   user                     User?   @relation(fields: [userId], references: [id])
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
   @@unique([provider, providerAccountId])
   @@index([userId])
 }
@@ -70,61 +74,76 @@ model PasswordResetToken {
   token     String   @unique
   expiresAt DateTime
   createdAt DateTime @default(now())
-
   @@index([userId])
 }
-
 
 model VerificationToken {
   identifier String
   token      String
   expires    DateTime
-
   @@unique([identifier, token])
 }
 
-
-
 // ---------- PET PROFILE ----------
 model Pet {
-  id          Int        @id @default(autoincrement())
-  name        String   // ชื่อสัตว์เลี้ยง
-  species     String     // เช่น "dog", "cat"
-  breed       String? // เช่น "Labrador", "Siamese"
-  gender      String? // เพศ เช่น
-  age         Int? //อายุ
-  color       String? //สี
-  description String?   // รายละเอียด เช่น "ชอบเล่น", "ขี้อ้อน"
-  userId      String // userId ของเจ้าของสัตว์เลี้ยง
-  markings   String?  // ลักษณะเฉพาะ เช่น "white with black spots"
-  isNeutered  Int  //ทำหมันหรือไม่ 0 = ไม่ทำหมัน, 1 = ทำหมัน
-  user        User       @relation(fields: [userId], references: [id])
-  images      PetImage[]
+  id            Int               @id @default(autoincrement())
+  name          String
+  speciesId     Int
+  species       PetSpecies        @relation(fields: [speciesId], references: [id])
+  breed         String?
+  gender        String?
+  age           Int?
+  color         String?
+  description   String?
+  userId        String
+  markings      String?
+  isNeutered    Int
+  user          User              @relation(fields: [userId], references: [id])
+  images        PetImage[]
+  chronicDiseases PetChronicDisease[]
+  vaccines      VaccineRecord[]
+  createdAt     DateTime          @default(now())
+}
 
-  createdAt   DateTime   @default(now())
+model PetChronicDisease {
+  id          Int      @id @default(autoincrement())
+  petId       Int
+  disease     String   // ชื่อโรค เช่น "โรคไต", "โรคหัวใจ"
+  description String?  // รายละเอียดเพิ่มเติม
+  diagnosedAt DateTime? // วันที่วินิจฉัย
+  pet         Pet      @relation(fields: [petId], references: [id])
+}
+
+model VaccineRecord {
+  id         Int      @id @default(autoincrement())
+  petId      Int
+  vaccine    String   // ชื่อวัคซีน เช่น "วัคซีนพิษสุนัขบ้า"
+  date       DateTime // วันที่ฉีด
+  nextDue    DateTime? // วันครบกำหนดครั้งถัดไป
+  note       String?
+  pet        Pet      @relation(fields: [petId], references: [id])
 }
 
 model PetImage {
   id      Int    @id @default(autoincrement())
-  url     String  // URL ของภาพ
-  petId   Int  // petId ของสัตว์เลี้ยง
+  url     String // URL ของภาพ
+  petId   Int    // petId ของสัตว์เลี้ยง
   pet     Pet    @relation(fields: [petId], references: [id])
 }
-
-
 
 // ---------- LOST PET ----------
 model LostPet {
   id          Int          @id @default(autoincrement())
-  title       String // ชื่อสัตว์ที่หาย
-  description String // รายละเอียด เช่น "หายที่ไหน", "ลักษณะเฉพาะ"
-  location    String // สถานที่หาย เช่น "บ้านเลขที่ 123 ถนน ABC"
-  lat         Float? // ละติจูด
-  lng         Float? // ลองจิจูด
-  lostDate    DateTime  // วันที่หาย
-  petType     String  // ประเภทสัตว์ เช่น "dog", "cat"
-  reward      Float? // รางวัล เช่น 100.00
-  userId      String // userId ของเจ้าของสัตว์ที่หาย
+  title       String       // ชื่อสัตว์ที่หาย
+  description String       // รายละเอียด เช่น "หายที่ไหน", "ลักษณะเฉพาะ"
+  location    String       // สถานที่หาย
+  lat         Float?       // ละติจูด
+  lng         Float?       // ลองจิจูด
+  lostDate    DateTime     // วันที่หาย
+
+  
+  reward      Float?       // รางวัล
+  userId      String       // userId ของเจ้าของ
   user        User         @relation(fields: [userId], references: [id])
   images      LostPetImage[]
   clues       Clue[]
@@ -133,19 +152,19 @@ model LostPet {
 
 model LostPetImage {
   id        Int      @id @default(autoincrement())
-  url       String // URL ของภาพ
-  lostPetId Int // lostPetId ของสัตว์ที่หาย
+  url       String   // URL ของภาพ
+  lostPetId Int      // lostPetId
   lostPet   LostPet  @relation(fields: [lostPetId], references: [id])
 }
 
 model Clue {
   id         Int        @id @default(autoincrement())
-  content    String // ข้อความที่ให้เบาะแส เช่น "เห็นที่บ้านเลขที่ 123"
-  location   String? // สถานที่ที่พบเบาะแส เช่น "บ้านเลขที่ 123 ถนน ABC"
-  lat        Float? // ละติจูด
-  lng        Float? // ลองจิจูด
-  userId     String // userId ของผู้ให้เบาะแส
-  lostPetId  Int // lostPetId ของสัตว์ที่หาย
+  content    String     // ข้อความที่ให้เบาะแส
+  location   String?    // สถานที่ที่พบเบาะแส
+  lat        Float?     // ละติจูด
+  lng        Float?     // ลองจิจูด
+  userId     String     // userId ของผู้ให้เบาะแส
+  lostPetId  Int        // lostPetId
   user       User       @relation(fields: [userId], references: [id])
   lostPet    LostPet    @relation(fields: [lostPetId], references: [id])
   images     ClueImage[]
@@ -155,26 +174,28 @@ model Clue {
 model ClueImage {
   id      Int    @id @default(autoincrement())
   url     String // URL ของภาพ
-  clueId  Int // clueId ของเบาะแส
+  clueId  Int    // clueId
   clue    Clue   @relation(fields: [clueId], references: [id])
 }
 
 // ---------- FOUND PET (หาเจ้าของ) ----------
 model FoundPet {
   id          Int            @id @default(autoincrement())
-  title       String // ชื่อสัตว์ที่พบ
-  description String // รายละเอียด เช่น "ลักษณะเฉพาะ"
-  location    String // สถานที่พบ เช่น "บ้านเลขที่ 123 ถนน ABC"
-  lat         Float? // ละติจูด
+  title       String
+  description String
+  location    String
+  lat         Float?
   lng         Float?
-  foundDate   DateTime// วันที่พบสัตว์
-  species     String  // ประเภทสัตว์
-  breed       String? // เช่น "Labrador", "Siamese"
-  gender      String? // เพศ เช่น
-  color       String? // สี
-  age         Int?           // อายุโดยประมาณ
-  distinctive String?        // ลักษณะเด่น
-  status      String         @default("finding") // สถานะ: finding - กำลังหาเจ้าของ, returned - คืนเจ้าของเเล้ว
+  foundDate   DateTime
+
+  speciesId   Int
+  species     PetSpecies     @relation(fields: [speciesId], references: [id])
+  breed       String?
+  gender      String?
+  color       String?
+  age         Int?
+  distinctive String?
+  status      String         @default("finding")
   images      FoundPetImage[]
   userId      String
   user        User           @relation(fields: [userId], references: [id])
@@ -184,7 +205,7 @@ model FoundPet {
 
 model FoundPetImage {
   id         Int       @id @default(autoincrement())
-  url        String // URL ของภาพ
+  url        String    // URL ของภาพ
   foundPetId Int
   foundPet   FoundPet  @relation(fields: [foundPetId], references: [id])
 }

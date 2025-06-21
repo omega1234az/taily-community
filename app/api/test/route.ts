@@ -8,6 +8,6 @@ export async function GET(request: NextRequest) {
   console.log('session', session)
 
   return NextResponse.json({
-    message: 'test',
+    session,
   })
 }
