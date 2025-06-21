@@ -2,8 +2,23 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import { getUserProfile } from "@/app/utils/Profiles";
 
 export default function SideNavbar() {
+  const [userData, setUserData] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const profile = await getUserProfile();
+        setUserData(profile);
+      } catch (err) {
+        console.error("ไม่สามารถโหลดข้อมูลผู้ใช้:", err);
+      }
+    };
+
+    fetchData();
+  }, []);
   return (
     <div className="relative h-screen">
       <div className="fixed top-0 left-0 h-full w-64 z-40">
