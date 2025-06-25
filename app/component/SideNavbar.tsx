@@ -3,9 +3,13 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { getUserProfile } from "@/app/utils/Profiles";
+import { usePathname } from "next/navigation";
 
 export default function SideNavbar() {
   const [userData, setUserData] = useState<any>(null);
+  const pathname = usePathname();
+
+  const isActive = (path: string) => pathname === path;
 
   useEffect(() => {
     const fetchData = async () => {

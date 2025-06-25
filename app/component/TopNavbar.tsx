@@ -1,5 +1,6 @@
 "use client";
 
+import { signOut } from "next-auth/react";
 import Link from "next/link";
 import React, { useState, useEffect, useRef } from "react";
 
@@ -172,16 +173,16 @@ export default function TopNavbar() {
           />
           {profileOpen && (
             <div className="absolute right-0 mt-4 lg:w-40 sm:w-30 w-28 bg-white border border-gray-300 rounded shadow-md z-50">
-              <ul className="text-sm text-gray-700">
+              <ul className="text-sm text-gray-700"> <Link href="/profile">
                 <li className="px-4 py-2 hover:bg-gray-300 cursor-pointer border-b border-gray-300">
-                  <Link href="/profile">โปรไฟล์</Link>
+                 โปรไฟล์
                 </li>
+                </Link>
                 <li className="px-4 py-2 hover:bg-gray-300">
                   <button
                     className="w-full text-left cursor-pointer"
                     onClick={() => {
-                      localStorage.clear();
-                      window.location.href = "/login";
+                      signOut({ callbackUrl: "/login" });
                     }}
                   >
                     ออกจากระบบ

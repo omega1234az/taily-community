@@ -43,6 +43,7 @@ model User {
   lostPets      LostPet[]
   clues         Clue[]
   foundPets     FoundPet[]
+  notifications Notification[]
   passwordResetTokens PasswordResetToken[]
 }
 
@@ -208,4 +209,27 @@ model FoundPetImage {
   url        String    // URL ของภาพ
   foundPetId Int
   foundPet   FoundPet  @relation(fields: [foundPetId], references: [id])
+}
+model Notification {
+  id          Int      @id @default(autoincrement())
+  userId      String   // ผู้รับการแจ้งเตือน
+  user        User     @relation(fields: [userId], references: [id])
+  
+  title       String   // หัวข้อการแจ้งเตือน
+  message     String   // ข้อความ
+  type        String   // ประเภท: "new_clue", "pet_found", "new_message"
+  
+  // ลิงก์ที่จะไปเมื่อกดการแจ้งเตือน
+  linkUrl     String?  // เช่น "/lost-pets/123", "/found-pets/456"
+  
+  // ข้อมูลอ้างอิง (เก็บ ID ของข้อมูลที่เกี่ยวข้อง)
+  referenceId Int?     // เช่น lostPetId, foundPetId, clueId
+  referenceType String? // เช่น "lost_pet", "found_pet", "clue"
+  
+  // สถานะ
+  isRead      Boolean  @default(false)
+  isDeleted   Boolean  @default(false)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
