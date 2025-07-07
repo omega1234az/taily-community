@@ -86,25 +86,28 @@ model VerificationToken {
 }
 
 // ---------- PET PROFILE ----------
-model Pet {
-  id            Int               @id @default(autoincrement())
-  name          String
-  speciesId     Int
-  species       PetSpecies        @relation(fields: [speciesId], references: [id])
-  breed         String?
-  gender        String?
-  age           Int?
-  color         String?
-  description   String?
-  userId        String
-  markings      String?
-  isNeutered    Int
-  user          User              @relation(fields: [userId], references: [id])
-  images        PetImage[]
-  chronicDiseases PetChronicDisease[]
-  vaccines      VaccineRecord[]
-  createdAt     DateTime          @default(now())
+model LostPet {
+  id          Int          @id @default(autoincrement())
+  title       String
+  description String
+  location    String
+  lat         Float?
+  lng         Float?
+  lostDate    DateTime
+  reward      Float?
+
+  userId      String
+  user        User         @relation(fields: [userId], references: [id])
+
+  // 🔗 เชื่อมกับ Pet แบบบังคับ
+  petId       Int
+  pet         Pet          @relation(fields: [petId], references: [id])
+
+  images      LostPetImage[]
+  clues       Clue[]
+  createdAt   DateTime     @default(now())
 }
+
 
 model PetChronicDisease {
   id          Int      @id @default(autoincrement())
@@ -124,6 +127,26 @@ model VaccineRecord {
   note       String?
   pet        Pet      @relation(fields: [petId], references: [id])
 }
+model Pet {
+  id              Int               @id @default(autoincrement())
+  name            String
+  speciesId       Int
+  species         PetSpecies        @relation(fields: [speciesId], references: [id])
+  breed           String?
+  gender          String?
+  age             Int?
+  color           Json?
+  description     String?
+  userId          String
+  markings        String?
+  isNeutered      Int
+  user            User              @relation(fields: [userId], references: [id])
+  images          PetImage[]
+  chronicDiseases PetChronicDisease[]
+  vaccines        VaccineRecord[]
+  lostPets        LostPet[]
+  createdAt       DateTime          @default(now())
+}
 
 model PetImage {
   id      Int    @id @default(autoincrement())
@@ -132,24 +155,7 @@ model PetImage {
   pet     Pet    @relation(fields: [petId], references: [id])
 }
 
-// ---------- LOST PET ----------
-model LostPet {
-  id          Int          @id @default(autoincrement())
-  title       String       // ชื่อสัตว์ที่หาย
-  description String       // รายละเอียด เช่น "หายที่ไหน", "ลักษณะเฉพาะ"
-  location    String       // สถานที่หาย
-  lat         Float?       // ละติจูด
-  lng         Float?       // ลองจิจูด
-  lostDate    DateTime     // วันที่หาย
 
-  
-  reward      Float?       // รางวัล
-  userId      String       // userId ของเจ้าของ
-  user        User         @relation(fields: [userId], references: [id])
-  images      LostPetImage[]
-  clues       Clue[]
-  createdAt   DateTime     @default(now())
-}
 
 model LostPetImage {
   id        Int      @id @default(autoincrement())
@@ -193,7 +199,7 @@ model FoundPet {
   species     PetSpecies     @relation(fields: [speciesId], references: [id])
   breed       String?
   gender      String?
-  color       String?
+  color       Json?
   age         Int?
   distinctive String?
   status      String         @default("finding")

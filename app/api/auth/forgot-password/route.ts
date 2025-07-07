@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
         const emailBody = `
   <div style="font-family: 'Helvetica Neue', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9; border-radius: 8px;">
     <div style="text-align: center; margin-bottom: 20px;">
-      <img src="http:localhost:3000/login/dog.png" alt="Logo" style="width: 80px; height: auto;" />
+      <img src="https://os2n2mjwpet03yzg.public.blob.vercel-storage.com/logo/logo-4izV1a2OKdVPL0l9W4qppuA3ZWZIMo.png" alt="Logo" style="width: 80px; height: auto;" />
     </div>
 
     <div style="background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">

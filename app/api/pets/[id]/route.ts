@@ -33,6 +33,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
             image: true,
           },
         },
+        species: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         images: true,
         chronicDiseases: true,
         vaccines: true,
@@ -43,17 +49,27 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json({ message: 'ไม่พบสัตว์เลี้ยงที่มี ID นี้' }, { status: 404 });
     }
 
-    return NextResponse.json(pet);
+    // Sanitize color
+    let color;
+    try {
+      color = pet.color ? JSON.parse(pet.color as string) : null;
+      if (!Array.isArray(color) || !color.every(item => typeof item === 'string')) {
+        color = null;
+      }
+    } catch (error) {
+      console.warn(`Invalid JSON in color for pet ID ${pet.id}:`, pet.color);
+      color = null;
+    }
+
+    return NextResponse.json({ ...pet, color });
   } catch (error) {
     console.error('[GET_PET_BY_ID_ERROR]', error);
     return NextResponse.json({ message: 'เกิดข้อผิดพลาดในการดึงข้อมูลสัตว์เลี้ยง' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
 // ----------------------------
-// PUT: อัปเดตข้อมูลสัตว์เลี้ยงและหลายรูปภาพ
+// PUT: อัปเดตข้อมูลสัตว์เลี้ยงแบบ Partial Update
 // ----------------------------
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -82,76 +98,194 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     }
 
     const formData = await request.formData();
+    
+    // เก็บข้อมูลที่จะอัปเดต (เฉพาะฟิลด์ที่ส่งมา)
+    const updateData: any = {};
+    const imageOperations: any = {};
+
+    // ตรวจสอบและเก็บข้อมูลพื้นฐาน
     const name = formData.get('name')?.toString();
-    const speciesId = formData.get('speciesId') ? parseInt(formData.get('speciesId') as string) : undefined;
+    if (name !== null && name !== undefined) {
+      if (name.trim() === '') {
+        return NextResponse.json({ message: 'ชื่อสัตว์เลี้ยงไม่สามารถเป็นค่าว่างได้' }, { status: 400 });
+      }
+      updateData.name = name;
+    }
+
+    const speciesIdRaw = formData.get('speciesId')?.toString();
+    if (speciesIdRaw !== null && speciesIdRaw !== undefined) {
+      const speciesId = parseInt(speciesIdRaw);
+      if (isNaN(speciesId)) {
+        return NextResponse.json({ message: 'ID ประเภทสัตว์เลี้ยงไม่ถูกต้อง' }, { status: 400 });
+      }
+      
+      const speciesExists = await prisma.petSpecies.findUnique({ where: { id: speciesId } });
+      if (!speciesExists) {
+        return NextResponse.json({ message: 'ประเภทสัตว์เลี้ยงไม่ถูกต้อง' }, { status: 400 });
+      }
+      
+      updateData.species = { connect: { id: speciesId } };
+    }
+
     const breed = formData.get('breed')?.toString();
+    if (breed !== null && breed !== undefined) {
+      updateData.breed = breed || null;
+    }
+
     const gender = formData.get('gender')?.toString();
-    const age = formData.get('age') ? parseInt(formData.get('age') as string) : undefined;
-    const color = formData.get('color')?.toString();
-    const description = formData.get('description')?.toString();
-    const markings = formData.get('markings')?.toString();
-    const isNeutered = formData.get('isNeutered') === 'true' ? 1 : 0;
-    const images = formData.getAll('images') as File[];
-    const removeImageIds = formData.get('removeImageIds')?.toString()?.split(',').map(Number).filter(id => !isNaN(id)) || [];
-
-    if (!name || !speciesId || isNaN(speciesId)) {
-      return NextResponse.json({ message: 'กรุณาระบุชื่อและประเภทของสัตว์เลี้ยงให้ถูกต้อง' }, { status: 400 });
+    if (gender !== null && gender !== undefined) {
+      updateData.gender = gender || null;
     }
 
-    const speciesExists = await prisma.petSpecies.findUnique({ where: { id: speciesId } });
-    if (!speciesExists) {
-      return NextResponse.json({ message: 'ประเภทสัตว์เลี้ยงไม่ถูกต้อง' }, { status: 400 });
-    }
-
-    if (age && (isNaN(age) || age < 0)) {
-      return NextResponse.json({ message: 'อายุสัตว์เลี้ยงไม่ถูกต้อง' }, { status: 400 });
-    }
-    //ไว้แก้ได้
-    if (images.length > 5) {
-      return NextResponse.json({ message: 'สามารถอัปโหลดรูปภาพได้สูงสุด 5 รูป' }, { status: 400 });
-    }
-
-    const imageUrls: string[] = [];
-    for (const image of images) {
-      if (image?.size > 0) {
-        if (!image.type.startsWith('image/')) {
-          return NextResponse.json({ message: 'ไฟล์ที่อัปโหลดต้องเป็นรูปภาพ' }, { status: 400 });
+    const ageRaw = formData.get('age')?.toString();
+    if (ageRaw !== null && ageRaw !== undefined) {
+      if (ageRaw === '') {
+        updateData.age = null;
+      } else {
+        const age = parseInt(ageRaw);
+        if (isNaN(age) || age < 0) {
+          return NextResponse.json({ message: 'อายุสัตว์เลี้ยงไม่ถูกต้อง' }, { status: 400 });
         }
-
-        if (image.size > 5 * 1024 * 1024) {
-          return NextResponse.json({ message: 'ขนาดรูปภาพต้องไม่เกิน 5MB' }, { status: 400 });
-        }
-
-        const imgBuffer = Buffer.from(await image.arrayBuffer());
-        const compressedImgBuffer = await sharp(imgBuffer)
-          .resize(500, 500, { fit: 'inside', withoutEnlargement: true })
-          .jpeg({ quality: 65, progressive: true })
-          .toBuffer();
-
-        const compressedBlob = new Blob([compressedImgBuffer], { type: 'image/jpeg' });
-        const fileName = `pet-${session.user.id}-${Date.now()}.jpg`;
-        const { url } = await put(`pets/${session.user.id}/${fileName}`, compressedBlob, { access: 'public' });
-        imageUrls.push(url);
+        updateData.age = age;
       }
     }
 
+    const description = formData.get('description')?.toString();
+    if (description !== null && description !== undefined) {
+      updateData.description = description || null;
+    }
+
+    const markings = formData.get('markings')?.toString();
+    if (markings !== null && markings !== undefined) {
+      updateData.markings = markings || null;
+    }
+
+    const isNeuteredRaw = formData.get('isNeutered')?.toString();
+    if (isNeuteredRaw !== null && isNeuteredRaw !== undefined) {
+      if (isNeuteredRaw === 'true') {
+        updateData.isNeutered = 1;
+      } else if (isNeuteredRaw === 'false') {
+        updateData.isNeutered = 0;
+      } else {
+        return NextResponse.json(
+          { message: 'สถานะการทำหมันไม่ถูกต้อง ต้องเป็น true หรือ false' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // ตรวจสอบ color
+    const colorRaw = formData.get('color')?.toString();
+    if (colorRaw !== null && colorRaw !== undefined) {
+      if (colorRaw === '') {
+        updateData.color = null;
+      } else {
+        try {
+          const color = JSON.parse(colorRaw);
+          if (!Array.isArray(color) || !color.every(item => typeof item === 'string')) {
+            return NextResponse.json(
+              { message: 'สีต้องอยู่ในรูปแบบ JSON array ของสตริง เช่น ["brown", "white"]' },
+              { status: 400 }
+            );
+          }
+          updateData.color = color;
+        } catch (error) {
+          return NextResponse.json(
+            { message: 'สีต้องอยู่ในรูปแบบ JSON array ของสตริง เช่น ["brown", "white"]' },
+            { status: 400 }
+          );
+        }
+      }
+    }
+
+    // จัดการรูปภาพ
+    const images = formData.getAll('images') as File[];
+    const removeImageIds = formData.get('removeImageIds')?.toString()?.split(',').map(Number).filter(id => !isNaN(id)) || [];
+
+    // ถ้ามีการจัดการรูปภาพ
+    if (images.length > 0 || removeImageIds.length > 0) {
+      // ตรวจสอบจำนวนรูปภาพ
+      const currentImages = await prisma.petImage.count({ where: { petId } });
+      const newImageCount = currentImages - removeImageIds.length + images.length;
+      
+      if (newImageCount > 5) {
+        return NextResponse.json({ message: 'จำนวนรูปภาพทั้งหมดต้องไม่เกิน 5 รูป' }, { status: 400 });
+      }
+
+      // ลบรูปภาพที่ระบุ
+      if (removeImageIds.length > 0) {
+        const imagesToDelete = await prisma.petImage.findMany({
+          where: { id: { in: removeImageIds }, petId },
+          select: { url: true },
+        });
+
+        imageOperations.deleteMany = { id: { in: removeImageIds } };
+
+        // ลบรูปภาพจาก Vercel Blob
+        for (const image of imagesToDelete) {
+          try {
+            await del(image.url);
+          } catch (error) {
+            console.warn('Failed to delete image from blob:', image.url, error);
+          }
+        }
+      }
+
+      // อัปโหลดรูปภาพใหม่
+      if (images.length > 0) {
+        const allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        const imageUrls: string[] = [];
+
+        for (const image of images) {
+          if (image?.size > 0) {
+            if (!allowedImageTypes.includes(image.type)) {
+              return NextResponse.json(
+                { message: 'รองรับเฉพาะไฟล์ JPEG, PNG และ WebP เท่านั้น' },
+                { status: 400 }
+              );
+            }
+            if (image.size > 5 * 1024 * 1024) {
+              return NextResponse.json({ message: 'ขนาดรูปภาพต้องไม่เกิน 5MB' }, { status: 400 });
+            }
+
+            try {
+              const imgBuffer = Buffer.from(await image.arrayBuffer());
+              const compressedImgBuffer = await sharp(imgBuffer)
+                .resize(500, 500, { fit: 'inside', withoutEnlargement: true })
+                .jpeg({ quality: 65, progressive: true })
+                .toBuffer();
+
+              const compressedBlob = new Blob([compressedImgBuffer], { type: 'image/jpeg' });
+              const fileName = `pet-${session.user.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.jpg`;
+              const { url } = await put(`pets/${session.user.id}/${fileName}`, compressedBlob, { access: 'public' });
+              imageUrls.push(url);
+            } catch (error) {
+              console.error('Error processing image:', error);
+              return NextResponse.json({ message: 'เกิดข้อผิดพลาดในการประมวลผลรูปภาพ' }, { status: 500 });
+            }
+          }
+        }
+
+        if (imageUrls.length > 0) {
+          imageOperations.create = imageUrls.map((url) => ({ url }));
+        }
+      }
+
+      // เพิ่มการจัดการรูปภาพใน updateData
+      if (Object.keys(imageOperations).length > 0) {
+        updateData.images = imageOperations;
+      }
+    }
+
+    // ถ้าไม่มีข้อมูลที่จะอัปเดต
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json({ message: 'ไม่มีข้อมูลที่จะอัปเดต' }, { status: 400 });
+    }
+
+    // อัปเดตข้อมูล
     const updatedPet = await prisma.pet.update({
       where: { id: petId },
-      data: {
-        name,
-        speciesId,
-        breed,
-        gender,
-        age,
-        color,
-        description,
-        markings,
-        isNeutered,
-        images: {
-          deleteMany: { id: { in: removeImageIds } },
-          create: imageUrls.map((url) => ({ url })),
-        },
-      },
+      data: updateData,
       include: {
         user: {
           select: {
@@ -164,29 +298,39 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
             image: true,
           },
         },
+        species: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         images: true,
         chronicDiseases: true,
         vaccines: true,
       },
     });
 
-    if (removeImageIds.length > 0) {
-      const imagesToDelete = await prisma.petImage.findMany({
-        where: { id: { in: removeImageIds }, petId },
-        select: { url: true },
-      });
-
-      for (const image of imagesToDelete) {
-        await del(image.url);
+    // แปลง color กลับเป็น JSON สำหรับ response
+    let responseColor;
+    try {
+      responseColor = updatedPet.color ? JSON.parse(updatedPet.color as string) : null;
+      if (!Array.isArray(responseColor) || !responseColor.every(item => typeof item === 'string')) {
+        responseColor = null;
       }
+    } catch (error) {
+      console.warn(`Invalid JSON in color for pet ID ${updatedPet.id}:`, updatedPet.color);
+      responseColor = null;
     }
 
-    return NextResponse.json(updatedPet);
+    return NextResponse.json({ 
+      ...updatedPet, 
+      color: responseColor,
+      message: 'อัปเดตข้อมูลสัตว์เลี้ยงสำเร็จ'
+    });
+
   } catch (error) {
     console.error('[PUT_PET_ERROR]', error);
     return NextResponse.json({ message: 'เกิดข้อผิดพลาดในการอัปเดตข้อมูลสัตว์เลี้ยง' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -219,21 +363,26 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
       return NextResponse.json({ message: 'คุณไม่มีสิทธิ์ลบสัตว์เลี้ยงนี้' }, { status: 403 });
     }
 
+    // ลบข้อมูลที่เกี่ยวข้อง
     await prisma.petImage.deleteMany({ where: { petId } });
     await prisma.vaccineRecord.deleteMany({ where: { petId } });
     await prisma.petChronicDisease.deleteMany({ where: { petId } });
 
+    // ลบรูปภาพจาก Vercel Blob
     for (const image of pet.images) {
-      await del(image.url);
+      try {
+        await del(image.url);
+      } catch (error) {
+        console.warn('Failed to delete image from blob:', image.url, error);
+      }
     }
 
+    // ลบสัตว์เลี้ยง
     await prisma.pet.delete({ where: { id: petId } });
 
     return NextResponse.json({ message: 'ลบสัตว์เลี้ยงสำเร็จ' }, { status: 200 });
   } catch (error) {
     console.error('[DELETE_PET_ERROR]', error);
     return NextResponse.json({ message: 'เกิดข้อผิดพลาดในการลบสัตว์เลี้ยง' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }

@@ -45,8 +45,6 @@ export async function GET() {
       { message: 'เกิดข้อผิดพลาดในการดึงข้อมูลสัตว์เลี้ยง' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -69,34 +67,24 @@ export async function POST(request: Request) {
     const breed = formData.get('breed')?.toString();
     const gender = formData.get('gender')?.toString();
     const age = formData.get('age') ? parseInt(formData.get('age') as string) : undefined;
-    const color = formData.get('color')?.toString();
+    const colorRaw = formData.get('color')?.toString();
     const description = formData.get('description')?.toString();
     const markings = formData.get('markings')?.toString();
-    const isNeutered = formData.get('isNeutered') === 'true' ? 1 : 0;
+    const isNeuteredRaw = formData.get('isNeutered')?.toString();
     const images = formData.getAll('images') as File[];
 
-    // ตรวจสอบข้อมูล
+    // ตรวจสอบข้อมูลที่จำเป็น
     if (!name || !speciesId) {
       return NextResponse.json(
         { message: 'กรุณาระบุชื่อและประเภทของสัตว์เลี้ยง' },
         { status: 400 }
       );
     }
-    if (age && (isNaN(age) || age < 0)) {
-      return NextResponse.json(
-        { message: 'อายุสัตว์เลี้ยงไม่ถูกต้อง' },
-        { status: 400 }
-      );
-    }
+
+    // ตรวจสอบ speciesId
     if (isNaN(speciesId)) {
       return NextResponse.json(
         { message: 'รหัสประเภทสัตว์เลี้ยงไม่ถูกต้อง' },
-        { status: 400 }
-      );
-    }
-    if (images.length > 5) {
-      return NextResponse.json(
-        { message: 'สามารถอัปโหลดรูปภาพได้สูงสุด 5 รูป' },
         { status: 400 }
       );
     }
@@ -112,13 +100,55 @@ export async function POST(request: Request) {
       );
     }
 
-    // อัปโหลดและบีบอัดรูปภาพ
+    // ตรวจสอบ age
+    if (age !== undefined && (isNaN(age) || age < 0)) {
+      return NextResponse.json(
+        { message: 'อายุสัตว์เลี้ยงไม่ถูกต้อง' },
+        { status: 400 }
+      );
+    }
+
+    // ตรวจสอบ isNeutered
+    const isNeutered = isNeuteredRaw === 'true' ? 1 : isNeuteredRaw === 'false' ? 0 : undefined;
+    if (isNeutered === undefined) {
+      return NextResponse.json(
+        { message: 'สถานะการทำหมันไม่ถูกต้อง ต้องเป็น true หรือ false' },
+        { status: 400 }
+      );
+    }
+
+    // ตรวจสอบ color (ต้องเป็น array หรือ undefined)
+    let color;
+    if (colorRaw) {
+      try {
+        color = JSON.parse(colorRaw);
+        if (!Array.isArray(color) || !color.every(item => typeof item === 'string')) {
+          throw new Error('Invalid array format');
+        }
+      } catch (error) {
+        return NextResponse.json(
+          { message: 'สีต้องอยู่ในรูปแบบ JSON array ของสตริง เช่น ["brown", "white"]' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // ตรวจสอบจำนวนรูปภาพ
+    if (images.length > 5) {
+      return NextResponse.json(
+        { message: 'สามารถอัปโหลดรูปภาพได้สูงสุด 5 รูป' },
+        { status: 400 }
+      );
+    }
+
+    // ตรวจสอบและอัปโหลดรูปภาพ
+    const allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp'];
     const imageUrls: string[] = [];
     for (const image of images) {
       if (image && image.size > 0) {
-        if (!image.type.startsWith('image/')) {
+        if (!allowedImageTypes.includes(image.type)) {
           return NextResponse.json(
-            { message: 'ไฟล์ที่อัปโหลดต้องเป็นรูปภาพ' },
+            { message: 'รองรับเฉพาะไฟล์ JPEG, PNG และ WebP เท่านั้น' },
             { status: 400 }
           );
         }
@@ -166,7 +196,7 @@ export async function POST(request: Request) {
         breed,
         gender,
         age,
-        color,
+        color: color ? JSON.stringify(color) : undefined,
         description,
         markings,
         isNeutered,
@@ -208,7 +238,5 @@ export async function POST(request: Request) {
       { message: 'เกิดข้อผิดพลาดในการเพิ่มสัตว์เลี้ยง' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
