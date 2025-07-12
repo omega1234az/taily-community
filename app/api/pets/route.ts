@@ -67,7 +67,7 @@ export async function POST(request: Request) {
     const breed = formData.get('breed')?.toString();
     const gender = formData.get('gender')?.toString();
     const age = formData.get('age') ? parseInt(formData.get('age') as string) : undefined;
-    const colorRaw = formData.get('color')?.toString();
+    const colorRaw = formData.get('color');
     const description = formData.get('description')?.toString();
     const markings = formData.get('markings')?.toString();
     const isNeuteredRaw = formData.get('isNeutered')?.toString();
@@ -109,19 +109,20 @@ export async function POST(request: Request) {
     }
 
     // ตรวจสอบ isNeutered
-    const isNeutered = isNeuteredRaw === 'true' ? 1 : isNeuteredRaw === 'false' ? 0 : undefined;
-    if (isNeutered === undefined) {
+    const isNeutered = Number(isNeuteredRaw);
+    if (isNeutered !== 0 && isNeutered !== 1) {
       return NextResponse.json(
-        { message: 'สถานะการทำหมันไม่ถูกต้อง ต้องเป็น true หรือ false' },
+        { message: 'สถานะการทำหมันไม่ถูกต้อง ต้องเป็น 0 หรือ 1' },
         { status: 400 }
       );
     }
 
     // ตรวจสอบ color (ต้องเป็น array หรือ undefined)
+    // ตรวจสอบ color (ต้องเป็น array หรือ undefined)
     let color;
     if (colorRaw) {
       try {
-        color = JSON.parse(colorRaw);
+        color = JSON.parse(colorRaw.toString());
         if (!Array.isArray(color) || !color.every(item => typeof item === 'string')) {
           throw new Error('Invalid array format');
         }
@@ -133,25 +134,28 @@ export async function POST(request: Request) {
       }
     }
 
-    // ตรวจสอบจำนวนรูปภาพ
-    if (images.length > 5) {
+
+    // ตรวจสอบและอัปโหลดรูปภาพ (แก้ไขให้ทำงานแบบ Sequential)
+    const allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    const imageUrls: string[] = [];
+    if (images.length > 1) {
       return NextResponse.json(
-        { message: 'สามารถอัปโหลดรูปภาพได้สูงสุด 5 รูป' },
+        { message: 'สามารถอัปโหลดรูปได้ไม่เกิน 4 รูป' },
         { status: 400 }
       );
     }
-
-    // ตรวจสอบและอัปโหลดรูปภาพ
-    const allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    const imageUrls: string[] = [];
+    // ใช้ for...of loop เพื่อให้ await ทำงานอย่างถูกต้อง
     for (const image of images) {
       if (image && image.size > 0) {
+        // ตรวจสอบประเภทไฟล์
         if (!allowedImageTypes.includes(image.type)) {
           return NextResponse.json(
             { message: 'รองรับเฉพาะไฟล์ JPEG, PNG และ WebP เท่านั้น' },
             { status: 400 }
           );
         }
+
+        // ตรวจสอบขนาดไฟล์
         if (image.size > 5 * 1024 * 1024) {
           return NextResponse.json(
             { message: 'ขนาดรูปภาพต้องไม่เกิน 5MB' },
@@ -159,30 +163,39 @@ export async function POST(request: Request) {
           );
         }
 
-        // อ่านไฟล์เป็น Buffer
-        const imgBuffer = Buffer.from(await image.arrayBuffer());
+        try {
+          // อ่านไฟล์เป็น Buffer
+          const imgBuffer = Buffer.from(await image.arrayBuffer());
 
-        // บีบอัดและปรับขนาดด้วย Sharp
-        const compressedImgBuffer = await sharp(imgBuffer)
-          .resize(500, 500, {
-            fit: 'inside',
-            withoutEnlargement: true,
-          })
-          .jpeg({
-            quality: 65,
-            progressive: true,
-          })
-          .toBuffer();
+          // บีบอัดและปรับขนาดด้วย Sharp
+          const compressedImgBuffer = await sharp(imgBuffer)
+            .resize(500, 500, {
+              fit: 'inside',
+              withoutEnlargement: true,
+            })
+            .jpeg({
+              quality: 65,
+              progressive: true,
+            })
+            .toBuffer();
 
-        // สร้าง Blob จาก Buffer ที่บีบอัด
-        const compressedBlob = new Blob([compressedImgBuffer], { type: 'image/jpeg' });
+          // สร้าง Blob จาก Buffer ที่บีบอัด
+          const compressedBlob = new Blob([compressedImgBuffer], { type: 'image/jpeg' });
 
-        // อัปโหลดไป Vercel Blob
-        const fileName = `pet-${session.user.id}-${Date.now()}.jpg`;
-        const { url } = await put(`pets/${session.user.id}/${fileName}`, compressedBlob, {
-          access: 'public',
-        });
-        imageUrls.push(url);
+          // อัปโหลดไป Vercel Blob
+          const fileName = `pet-${session.user.id}-${Date.now()}-${Math.random().toString(36).substring(2, 15)}.jpg`;
+          const { url } = await put(`pets/${session.user.id}/${fileName}`, compressedBlob, {
+            access: 'public',
+          });
+
+          imageUrls.push(url);
+        } catch (uploadError) {
+          console.error('Image upload error:', uploadError);
+          return NextResponse.json(
+            { message: 'เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ' },
+            { status: 500 }
+          );
+        }
       }
     }
 
@@ -196,7 +209,7 @@ export async function POST(request: Request) {
         breed,
         gender,
         age,
-        color: color ? JSON.stringify(color) : undefined,
+        color: color,
         description,
         markings,
         isNeutered,

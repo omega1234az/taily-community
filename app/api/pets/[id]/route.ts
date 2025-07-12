@@ -160,35 +160,31 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       updateData.markings = markings || null;
     }
 
-    const isNeuteredRaw = formData.get('isNeutered')?.toString();
-    if (isNeuteredRaw !== null && isNeuteredRaw !== undefined) {
-      if (isNeuteredRaw === 'true') {
-        updateData.isNeutered = 1;
-      } else if (isNeuteredRaw === 'false') {
-        updateData.isNeutered = 0;
-      } else {
-        return NextResponse.json(
-          { message: 'สถานะการทำหมันไม่ถูกต้อง ต้องเป็น true หรือ false' },
-          { status: 400 }
-        );
-      }
-    }
+    const isNeuteredRaw = formData.get('isNeutered');
+    const isNeutered = Number(isNeuteredRaw);
+if (isNeutered !== 0 && isNeutered !== 1) {
+  return NextResponse.json(
+    { message: 'สถานะการทำหมันไม่ถูกต้อง ต้องเป็น 0 หรือ 1' },
+    { status: 400 }
+  );
+}
 
-    // ตรวจสอบ color
+    // ตรวจสอบ color - แก้ไขการจัดการ
     const colorRaw = formData.get('color')?.toString();
     if (colorRaw !== null && colorRaw !== undefined) {
       if (colorRaw === '') {
         updateData.color = null;
       } else {
         try {
-          const color = JSON.parse(colorRaw);
-          if (!Array.isArray(color) || !color.every(item => typeof item === 'string')) {
+          const colorArray = JSON.parse(colorRaw);
+          if (!Array.isArray(colorArray) || !colorArray.every(item => typeof item === 'string')) {
             return NextResponse.json(
               { message: 'สีต้องอยู่ในรูปแบบ JSON array ของสตริง เช่น ["brown", "white"]' },
               { status: 400 }
             );
           }
-          updateData.color = color;
+          // เก็บเป็น JSON string ใน database
+          updateData.color = JSON.stringify(colorArray);
         } catch (error) {
           return NextResponse.json(
             { message: 'สีต้องอยู่ในรูปแบบ JSON array ของสตริง เช่น ["brown", "white"]' },
@@ -310,16 +306,18 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       },
     });
 
-    // แปลง color กลับเป็น JSON สำหรับ response
-    let responseColor;
-    try {
-      responseColor = updatedPet.color ? JSON.parse(updatedPet.color as string) : null;
-      if (!Array.isArray(responseColor) || !responseColor.every(item => typeof item === 'string')) {
+    // แปลง color กลับเป็น JSON array สำหรับ response
+    let responseColor = null;
+    if (updatedPet.color) {
+      try {
+        const parsedColor = JSON.parse(updatedPet.color as string);
+        if (Array.isArray(parsedColor) && parsedColor.every(item => typeof item === 'string')) {
+          responseColor = parsedColor;
+        }
+      } catch (error) {
+        console.warn(`Invalid JSON in color for pet ID ${updatedPet.id}:`, updatedPet.color);
         responseColor = null;
       }
-    } catch (error) {
-      console.warn(`Invalid JSON in color for pet ID ${updatedPet.id}:`, updatedPet.color);
-      responseColor = null;
     }
 
     return NextResponse.json({ 
