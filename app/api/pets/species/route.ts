@@ -28,4 +28,31 @@ export async function GET() {
   } finally {
     await prisma.$disconnect();
   }
+}// POST: เพิ่มข้อมูล PetSpecies ใหม่
+export async function POST(request: Request) {
+  const body = await request.json();
+  const { name } = body;
+
+  if (!name || name.trim() === '') {
+    return NextResponse.json(
+      { message: 'กรุณาระบุชื่อประเภทสัตว์เลี้ยง' },
+      { status: 400 }
+    );
+  }
+
+  try {
+    const newPetSpecies = await prisma.petSpecies.create({
+      data: { name },
+    });
+
+    return NextResponse.json(newPetSpecies, { status: 201 });
+  } catch (error) {
+    console.error('[CREATE_PET_SPECIES_ERROR]', error);
+    return NextResponse.json(
+      { message: 'เกิดข้อผิดพลาดในการเพิ่มประเภทสัตว์เลี้ยง' },
+      { status: 500 }
+    );
+  } finally {
+    await prisma.$disconnect();
+  }
 }
