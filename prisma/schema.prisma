@@ -3,6 +3,17 @@ datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
+enum LostPetStatus {
+  lost
+  found
+  pending
+  closed
+  reunited
+  reported
+  fake
+}
+
+
 
 generator client {
   provider = "prisma-client-js"
@@ -95,7 +106,7 @@ model LostPet {
   lng         Float?
   lostDate    DateTime
   reward      Float?
-
+  status      LostPetStatus @default(lost)
   userId      String
   user        User         @relation(fields: [userId], references: [id])
 
