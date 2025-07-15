@@ -1,150 +1,189 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect } from "react";
 import PetCard from "@/app/component/PetCard";
 import PetModal from "@/app/component/PetModal";
 
+interface Disease {
+  id?: number;
+  name: string;
+  date: string;
+}
+
+interface Vaccine {
+  id?: number;
+  name: string;
+  date: string;
+  nextdate: string;
+}
+
+interface Pet {
+  id: number;
+  owner: string;
+  name: string;
+  imageSrc: string;
+  breed: string;
+  age: string;
+  gender: string;
+  type: string;
+  color: string;
+  sterilized: string;
+  markings: string;
+  description: string;
+  phone: string;
+  facebook: string;
+  additionalImages?: string[];
+  diseaseData?: Disease[];
+  vaccineData?: Vaccine[];
+}
+
 export default function Pet() {
   const [showModal, setShowModal] = useState(false);
-  const [isRegistered, setIsRegistered] = useState(true); // กรณียังไม่ลงทะเบียนสัตว์เลี้ยง //
-  const [isEditing, setIsEditing] = useState(false);
-  const [selectedPet, setSelectedPet] = useState<any | null>(null);
-  const [activeSection, setActiveSection] = useState<
-    "history" | "disease" | "vaccine"
-  >("history");
+  const [isRegistered, setIsRegistered] = useState(true);
+  const [selectedPet, setSelectedPet] = useState<Pet | null>(null);
+  const [activeSection, setActiveSection] = useState<"history" | "disease" | "vaccine">("history");
+  const [pets, setPets] = useState<Pet[]>([]);
 
-  const handlePetClick = (pet: any) => {
-    setSelectedPet(pet);
-    setShowModal(true);
-    setIsEditing(false);
+  // โหลดข้อมูลสัตว์เลี้ยง
+  const fetchPets = async () => {
+    try {
+      const res = await fetch("/api/pets/me");
+      if (!res.ok) throw new Error("โหลดข้อมูลสัตว์เลี้ยงล้มเหลว");
+      const data: Pet[] = await res.json();
+      setPets(data);
+      setIsRegistered(data.length > 0);
+    } catch (error) {
+      console.error(error);
+      setIsRegistered(false);
+    }
   };
-
-  const [owner, setOwner] = useState("");
-  const [name, setName] = useState("");
-  const [age, setAge] = useState("");
-  const [gender, setGender] = useState("");
-  const [breed, setBreed] = useState("");
-  const [color, setColor] = useState("");
-  const [markings, setMarkings] = useState("");
-  const [description, setDescription] = useState("");
-  const [sterilized, setSterilized] = useState("");
-  const [selectedType, setSelectedType] = useState("");
-  const [phone, setPhone] = useState("");
-  const [facebook, setFacebook] = useState("");
-  const [isDropdownVisible, setIsDropdownVisible] = useState(false);
 
   useEffect(() => {
-    if (selectedPet) {
-      setOwner(selectedPet.owner || "");
-      setName(selectedPet.name || "");
-      setAge(selectedPet.age || "");
-      setGender(selectedPet.gender || "");
-      setBreed(selectedPet.breed || "");
-      setColor(selectedPet.color || "");
-      setMarkings(selectedPet.markings || "");
-      setDescription(selectedPet.description || "");
-      setSterilized(selectedPet.sterilized || "");
-      setSelectedType(selectedPet.breed || "");
-      setPhone(selectedPet.phone || "");
-      setFacebook(selectedPet.facebook || "");
+    fetchPets();
+  }, []);
+
+  // เพิ่มสัตว์เลี้ยงใหม่
+  const createPet = async (pet: Omit<Pet, "id">) => {
+    try {
+      const res = await fetch("/api/pets/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(pet),
+      });
+      if (!res.ok) throw new Error("เพิ่มสัตว์เลี้ยงไม่สำเร็จ");
+      await fetchPets(); // โหลดข้อมูลใหม่หลังเพิ่ม
+    } catch (error) {
+      console.error(error);
     }
-  }, [selectedPet]);
-
-  const petData = [
-    {
-      id: 1,
-      owner: "เจมส์",
-      name: "ไข่ตุ๋น",
-      imageSrc: "/home/eggtun2.png",
-      breed: "แมว",
-      age: "2 ปี",
-      gender: "เพศผู้",
-      type: "แมว",
-      color: "ส้ม",
-      sterilized: "ทำหมันแล้ว",
-      markings: "ไม่มี",
-      description: "แมวขนสั้น น่ารัก ขี้อ้อน",
-      phone: "0625542343",
-      facebook: "jame'eee",
-
-      additionalImages: [
-        "/home/eggtun3.png",
-        "/home/eggtun4.png",
-        "/home/eggtun5.png",
-      ],
-      diseaseData: [
-        { name: "โรคหอบหืด", date: "05-01-68" },
-        { name: "ปัญหาไต", date: "10-03-68" },
-      ],
-      vaccineData: [
-        { name: "วัคซีนพิษสุนัขบ้า", date: "01-01-68", nextdate: "03-01-68" },
-        { name: "วัคซีนไข้หวัดแมว", date: "15-01-68", nextdate: "18-01-68" },
-      ],
-    },
-    {
-      id: 2,
-      owner: "พิ๊งพลอย",
-      name: "ริรี่",
-      imageSrc: "/home/katay.jpg",
-      breed: "กระต่าย",
-      age: "3 ปี",
-      gender: "เพศเมีย",
-      type: "กระต่าย",
-      color: "น้ำตาลอ่อน",
-      sterilized: "ทำหมันแล้ว",
-      markings: "ไม่มี",
-      description: "กระต่ายขี้เล่น",
-      phone: "0959613304",
-      facebook: "pingployyy",
-      additionalImages: [
-        "/home/katay2.jpg",
-        "/home/katay3.jpg",
-        "/home/katay4.jpg",
-      ],
-      diseaseData: [{ name: "ปัญหาระบบย่อยอาหาร", date: "02-01-68" }],
-      vaccineData: [
-        { name: "วัคซีนไวรัสกระต่าย", date: "12-02-68", nextdate: "15-02-68" },
-      ],
-    },
-  ];
-
-  const handleCancel = () => {
-    setShowModal(false);
-    setIsEditing(false);
   };
 
-  const handleSave = () => {
-    setShowModal(false);
-    setIsEditing(false);
+  // แก้ไขข้อมูลสัตว์เลี้ยง
+  const updatePet = async (id: number, pet: Partial<Pet>) => {
+    try {
+      const res = await fetch(`/api/pets/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(pet),
+      });
+      if (!res.ok) throw new Error("แก้ไขสัตว์เลี้ยงไม่สำเร็จ");
+      await fetchPets();
+    } catch (error) {
+      console.error(error);
+    }
   };
 
-  const toggleDropdown = () => {
-    setIsDropdownVisible(!isDropdownVisible);
+  // ลบสัตว์เลี้ยง
+  const deletePet = async (id: number) => {
+    try {
+      const res = await fetch(`/api/pets/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("ลบสัตว์เลี้ยงไม่สำเร็จ");
+      await fetchPets();
+    } catch (error) {
+      console.error(error);
+    }
   };
 
-  const handleSelectType = (type: string) => {
-    setSelectedType(type);
-    setIsDropdownVisible(false);
+  // ดึงข้อมูลโรคประจำตัวของสัตว์เลี้ยง
+  const fetchDiseases = async (petId: number): Promise<Disease[]> => {
+    const res = await fetch(`/api/pets/chronicDiseases?petId=${petId}`);
+    if (!res.ok) throw new Error("โหลดโรคประจำตัวล้มเหลว");
+    return res.json();
+  };
+
+  // เพิ่มโรคประจำตัว
+  const addDisease = async (disease: Disease & { petId: number }) => {
+    const res = await fetch(`/api/pets/chronicDiseases`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(disease),
+    });
+    if (!res.ok) throw new Error("เพิ่มโรคไม่สำเร็จ");
+  };
+
+  // แก้ไขโรคประจำตัว
+  const updateDisease = async (id: number, disease: Partial<Disease>) => {
+    const res = await fetch(`/api/pets/chronicDiseases/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(disease),
+    });
+    if (!res.ok) throw new Error("แก้ไขโรคไม่สำเร็จ");
+  };
+
+  // ลบโรคประจำตัว
+  const deleteDisease = async (id: number) => {
+    const res = await fetch(`/api/pets/chronicDiseases/${id}`, { method: "DELETE" });
+    if (!res.ok) throw new Error("ลบโรคไม่สำเร็จ");
+  };
+
+  // ดึงข้อมูลวัคซีน
+  const fetchVaccines = async (petId: number): Promise<Vaccine[]> => {
+    const res = await fetch(`/api/pets/vaccine-records?petId=${petId}`);
+    if (!res.ok) throw new Error("โหลดวัคซีนล้มเหลว");
+    return res.json();
+  };
+
+  // เพิ่มวัคซีน
+  const addVaccine = async (vaccine: Vaccine & { petId: number }) => {
+    const res = await fetch(`/api/pets/vaccine-records`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(vaccine),
+    });
+    if (!res.ok) throw new Error("เพิ่มวัคซีนไม่สำเร็จ");
+  };
+
+  // แก้ไขวัคซีน
+  const updateVaccine = async (id: number, vaccine: Partial<Vaccine>) => {
+    const res = await fetch(`/api/pets/vaccine-records/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(vaccine),
+    });
+    if (!res.ok) throw new Error("แก้ไขวัคซีนไม่สำเร็จ");
+  };
+
+  // ลบวัคซีน
+  const deleteVaccine = async (id: number) => {
+    const res = await fetch(`/api/pets/vaccine-records/${id}`, { method: "DELETE" });
+    if (!res.ok) throw new Error("ลบวัคซีนไม่สำเร็จ");
+  };
+
+  // ฟังก์ชันอื่น ๆ เช่น handlePetClick, UI render เหมือนเดิม
+  const handlePetClick = (pet: Pet) => {
+    setSelectedPet(pet);
+    setShowModal(true);
   };
 
   if (!isRegistered) {
     return (
       <div className="flex flex-col items-center justify-center flex-grow mt-10">
         <h1 className="text-xl font-bold text-center mb-6">สัตว์เลี้ยงหาย</h1>
-        <p className="text-center mb-6 text-gray-600">
-          กรุณาลงทะเบียนสัตว์เลี้ยง
-        </p>
+        <p className="text-center mb-6 text-gray-600">กรุณาลงทะเบียนสัตว์เลี้ยง</p>
         <div className="relative w-96 h-64 mb-6">
-          <Image
-            src="/all/cat.png"
-            alt="Cute cat"
-            fill
-            className="object-contain"
-            priority
-          />
+          <Image src="/all/cat.png" alt="Cute cat" fill className="object-contain" priority />
         </div>
         <Link
           href="/registerpet"
@@ -175,18 +214,11 @@ export default function Pet() {
 
       {/* Pet Cards */}
       <div className="flex flex-wrap py-5 lg:gap-10 sm:gap-6 gap-5">
-        <div
-          onClick={() => handlePetClick(petData[0])}
-          className="cursor-pointer"
-        >
-          <PetCard imageSrc="/home/eggtun2.png" name="ไข่ตุ๋น" />
-        </div>
-        <div
-          onClick={() => handlePetClick(petData[1])}
-          className="cursor-pointer"
-        >
-          <PetCard imageSrc="/home/katay.jpg" name="ริรี่" />
-        </div>
+        {pets.map((pet) => (
+          <div key={pet.id} onClick={() => handlePetClick(pet)} className="cursor-pointer">
+            <PetCard imageSrc={pet.imageSrc} name={pet.name} />
+          </div>
+        ))}
 
         {/* Register Button */}
         <div
@@ -197,28 +229,21 @@ export default function Pet() {
                         sm:w-[110px] sm:h-[150px]
                         w-[95px] h-[140px]"
         >
-          <Link
-            href="/registerpet"
-            className="w-full h-full flex justify-center items-center"
-          >
+          <Link href="/registerpet" className="w-full h-full flex justify-center items-center">
             <div className="bg-[#7CBBEB] group-hover:bg-[#addbf7] transition-colors duration-200 rounded-full p-2 flex justify-center items-center">
               <svg
                 className="2xl:w-14 2xl:h-14 xl:w-14 xl:h-14 lg:w-11 lg:h-11 md:w-10 md:h-10 sm:w-9 sm:h-9 w-8 h-8"
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 100 100"
               >
-                <path
-                  d="M50 20V80M20 50H80"
-                  stroke="white"
-                  strokeWidth="10"
-                  strokeLinecap="round"
-                />
+                <path d="M50 20V80M20 50H80" stroke="white" strokeWidth="10" strokeLinecap="round" />
               </svg>
             </div>
           </Link>
         </div>
       </div>
 
+      {/* Modal */}
       <PetModal
         showModal={showModal}
         setShowModal={setShowModal}
