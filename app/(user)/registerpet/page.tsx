@@ -86,9 +86,79 @@ export default function RegisterPet() {
     setFormData((prevData) => ({ ...prevData, [name]: value }));
   };
 
-  const handleSave = () => {
-    setIsEditing(false);
-    console.log("ข้อมูลที่บันทึก:", formData);
+  const handleSave = async () => {
+    try {
+      const form = new FormData();
+
+      // ใส่ข้อมูล text
+      form.append("name", formData.name);
+      form.append("breed", formData.breed);
+      form.append("gender", formData.gender);
+      form.append("age", formData.age);
+      form.append("description", formData.details);
+      form.append("markings", formData.mark);
+      form.append("isNeutered", formData.neutered === "1" ? "1" : "0");
+
+      // ใส่ประเภทสัตว์ (speciesId)
+      const speciesMapping: Record<string, number> = {
+        แมว: 1,
+        สุนัข: 2,
+        นก: 3,
+        หนู: 4,
+        ชูก้าไรเดอร์: 5,
+        เฟอร์ริต: 6,
+        เม่นแคระ: 7,
+        กระรอก: 8,
+        กระต่าย: 9,
+        งู: 10,
+        อื่นๆ: 11,
+      };
+
+      const speciesId = speciesMapping[formData.type];
+      form.append("speciesId", speciesId.toString());
+
+      // ใส่ color (เป็น array JSON string)
+      const colors = formData.color.split(",").map((c) => c.trim());
+      form.append("color", JSON.stringify(colors));
+
+      // ใส่รูปภาพ (หลัก + gallery)
+      const files: File[] = [];
+
+      if (mainInputRef.current?.files?.[0]) {
+        files.push(mainInputRef.current.files[0]);
+      }
+
+      galleryInputRefs.forEach((ref) => {
+        if (ref.current?.files?.[0]) {
+          files.push(ref.current.files[0]);
+        }
+      });
+
+      files.forEach((file) => {
+        form.append("images", file);
+      });
+
+      // ส่ง API
+      const res = await fetch("/api/pets", {
+        method: "POST",
+        body: form,
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        alert("เกิดข้อผิดพลาด: " + errData.message);
+        return;
+      }
+
+      const result = await res.json();
+      console.log("บันทึกสำเร็จ", result);
+      alert("บันทึกข้อมูลเรียบร้อยแล้ว");
+
+      setIsEditing(false);
+    } catch (err) {
+      console.error(err);
+      alert("เกิดข้อผิดพลาดในการส่งข้อมูล");
+    }
   };
 
   const handleCancel = () => {

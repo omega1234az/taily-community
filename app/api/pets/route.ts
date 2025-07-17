@@ -138,7 +138,7 @@ export async function POST(request: Request) {
     // ตรวจสอบและอัปโหลดรูปภาพ (แก้ไขให้ทำงานแบบ Sequential)
     const allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp'];
     const imageUrls: string[] = [];
-    if (images.length > 1) {
+    if (images.length > 4) {
       return NextResponse.json(
         { message: 'สามารถอัปโหลดรูปได้ไม่เกิน 4 รูป' },
         { status: 400 }
