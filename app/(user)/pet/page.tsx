@@ -37,13 +37,19 @@ interface Pet {
   additionalImages?: string[];
   diseaseData?: Disease[];
   vaccineData?: Vaccine[];
+
+  // ✅ เพิ่มตรงนี้
+  images?: { url: string }[];
 }
 
 export default function Pet() {
   const [showModal, setShowModal] = useState(false);
   const [isRegistered, setIsRegistered] = useState(true);
   const [selectedPet, setSelectedPet] = useState<Pet | null>(null);
-  const [activeSection, setActiveSection] = useState<"history" | "disease" | "vaccine">("history");
+  const [activeSection, setActiveSection] = useState<
+    "history" | "disease" | "vaccine" | "treatment"
+  >("history");
+
   const [pets, setPets] = useState<Pet[]>([]);
 
   // โหลดข้อมูลสัตว์เลี้ยง
@@ -134,7 +140,9 @@ export default function Pet() {
 
   // ลบโรคประจำตัว
   const deleteDisease = async (id: number) => {
-    const res = await fetch(`/api/pets/chronicDiseases/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/pets/chronicDiseases/${id}`, {
+      method: "DELETE",
+    });
     if (!res.ok) throw new Error("ลบโรคไม่สำเร็จ");
   };
 
@@ -167,7 +175,9 @@ export default function Pet() {
 
   // ลบวัคซีน
   const deleteVaccine = async (id: number) => {
-    const res = await fetch(`/api/pets/vaccine-records/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/pets/vaccine-records/${id}`, {
+      method: "DELETE",
+    });
     if (!res.ok) throw new Error("ลบวัคซีนไม่สำเร็จ");
   };
 
@@ -181,9 +191,17 @@ export default function Pet() {
     return (
       <div className="flex flex-col items-center justify-center flex-grow mt-10">
         <h1 className="text-xl font-bold text-center mb-6">สัตว์เลี้ยงหาย</h1>
-        <p className="text-center mb-6 text-gray-600">กรุณาลงทะเบียนสัตว์เลี้ยง</p>
+        <p className="text-center mb-6 text-gray-600">
+          กรุณาลงทะเบียนสัตว์เลี้ยง
+        </p>
         <div className="relative w-96 h-64 mb-6">
-          <Image src="/all/cat.png" alt="Cute cat" fill className="object-contain" priority />
+          <Image
+            src="/all/cat.png"
+            alt="Cute cat"
+            fill
+            className="object-contain"
+            priority
+          />
         </div>
         <Link
           href="/registerpet"
@@ -215,8 +233,15 @@ export default function Pet() {
       {/* Pet Cards */}
       <div className="flex flex-wrap py-5 lg:gap-10 sm:gap-6 gap-5">
         {pets.map((pet) => (
-          <div key={pet.id} onClick={() => handlePetClick(pet)} className="cursor-pointer">
-            <PetCard imageSrc={pet.imageSrc} name={pet.name} />
+          <div
+            key={pet.id}
+            onClick={() => handlePetClick(pet)}
+            className="cursor-pointer"
+          >
+            <PetCard
+              imageSrc={pet.images?.[0]?.url || "/default.png"}
+              name={pet.name}
+            />
           </div>
         ))}
 
@@ -229,14 +254,22 @@ export default function Pet() {
                         sm:w-[110px] sm:h-[150px]
                         w-[95px] h-[140px]"
         >
-          <Link href="/registerpet" className="w-full h-full flex justify-center items-center">
+          <Link
+            href="/registerpet"
+            className="w-full h-full flex justify-center items-center"
+          >
             <div className="bg-[#7CBBEB] group-hover:bg-[#addbf7] transition-colors duration-200 rounded-full p-2 flex justify-center items-center">
               <svg
                 className="2xl:w-14 2xl:h-14 xl:w-14 xl:h-14 lg:w-11 lg:h-11 md:w-10 md:h-10 sm:w-9 sm:h-9 w-8 h-8"
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 100 100"
               >
-                <path d="M50 20V80M20 50H80" stroke="white" strokeWidth="10" strokeLinecap="round" />
+                <path
+                  d="M50 20V80M20 50H80"
+                  stroke="white"
+                  strokeWidth="10"
+                  strokeLinecap="round"
+                />
               </svg>
             </div>
           </Link>
