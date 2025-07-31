@@ -93,6 +93,36 @@ export default function Registerowner() {
     setFormData((prevData) => ({ ...prevData, [name]: value }));
   };
 
+  const [isNeuteredDropdownVisible, setNeuteredDropdownVisible] =
+    useState(false);
+  const handleSelectNeutered = (neutered: string) => {
+    setFormData((prevData) => ({
+      ...prevData,
+      neutered: neutered === "ทำหมันแล้ว" ? "1" : "0",
+    }));
+    setNeuteredDropdownVisible(false);
+  };
+
+  const [gender, setGender] = useState<string>("");
+  const [isGenderDropdownVisible, setGenderDropdownVisible] = useState(false);
+
+  const [selectedColors, setSelectedColors] = useState<string[]>([]);
+  // ตัวแปรสีทั้งหมด
+  const colors = [
+    { name: "ขาว", code: "bg-white" },
+    { name: "เหลือง", code: "bg-yellow-300" },
+    { name: "เทา", code: "bg-gray-500" },
+    { name: "น้ำตาล", code: "bg-[#866261]" },
+    { name: "ชมพู", code: "bg-[#e68181]" },
+    { name: "น้ำเงิน", code: "bg-blue-800" },
+    { name: "แดง", code: "bg-red-600" },
+    { name: "เขียว", code: "bg-green-600" },
+    { name: "ฟ้า", code: "bg-sky-400" },
+    { name: "ส้ม", code: "bg-orange-500" },
+    { name: "ไม่มีขน", code: "bg-pink-200" },
+    { name: "ม่วง", code: "bg-fuchsia-500" },
+    { name: "ดำ", code: "bg-black" },
+  ];
   const handleSave = () => {
     setIsEditing(false);
     console.log("ข้อมูลที่บันทึก:", {
@@ -185,30 +215,28 @@ export default function Registerowner() {
               <p className="sm:text-lg xl:text-xl">ประเภท</p>
               <div className="relative w-full">
                 <input
-                  name="type"
-                  value={formData.type}
-                  onChange={handleChange}
-                  className="w-full mt-1 p-2 pr-10 border border-gray-300 rounded-md mb-3 disabled:bg-gray-100"
+                  value={selectedType}
+                  onClick={toggleDropdown}
+                  readOnly
                   disabled={!isEditing}
+                  className="w-full mt-1 p-2 pr-10 border border-gray-300 rounded-md mb-3 disabled:bg-gray-100"
                 />
                 <svg
-                  width="21"
-                  height="24"
-                  viewBox="0 0 21 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 pb-1 text-gray-500 cursor-pointer ${
+                  className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-7 h-7 pb-1 text-gray-500 cursor-pointer ${
                     !isEditing ? "pointer-events-none" : ""
                   }`}
                   onClick={toggleDropdown}
+                  viewBox="0 0 24 24"
+                  fill="none"
                 >
                   <path
-                    d="M9.552 23.864C8.88 23.864 8.256 23.512 7.68 22.808C7.104 22.136 6.656 21.32 6.336 20.36C6.272 20.136 5.792 18.808 4.896 16.376C3.232 12.056 2.096 8.904 1.488 6.92C1.296 6.216 1.072 5.592 0.816 5.048C0.464 4.12 0.288 3.464 0.288 3.08C0.288 2.536 0.528 2.04 1.008 1.592C1.52 1.144 2.08 0.919998 2.688 0.919998C3.168 0.919998 3.632 1.064 4.08 1.352C4.56 1.64 4.896 2.104 5.088 2.744C5.28 3.32 5.632 4.52 6.144 6.344C6.848 8.808 7.456 10.904 7.968 12.632C8.512 14.36 9.104 16.072 9.744 17.768L12.384 11.432L15.312 4.52C15.472 4.232 15.712 3.784 16.032 3.176C16.352 2.568 16.688 2.136 17.04 1.88C17.392 1.624 17.824 1.496 18.336 1.496C18.944 1.496 19.472 1.656 19.92 1.976C20.368 2.296 20.592 2.76 20.592 3.368C20.592 3.912 20.496 4.408 20.304 4.856C20.144 5.304 19.856 5.96 19.44 6.824C19.024 7.56 18.768 8.04 18.672 8.264L13.152 20.072C12.672 21.32 12.176 22.264 11.664 22.904C11.152 23.544 10.448 23.864 9.552 23.864Z"
-                    fill="currentColor"
+                    d="M7 10l5 5 5-5"
+                    stroke="currentColor"
+                    strokeWidth="2"
                   />
                 </svg>
                 {isDropdownVisible && (
-                  <div className="absolute right-3 top-12 w-32 mt-2 bg-white shadow-lg rounded-md border border-gray-300 z-50">
+                  <div className="absolute  top-12 w-full mt-2 bg-white shadow-lg rounded-md border border-gray-300 z-10">
                     <ul>
                       {[
                         "แมว",
@@ -220,10 +248,12 @@ export default function Registerowner() {
                         "เม่นแคระ",
                         "กระรอก",
                         "กระต่าย",
+                        "งู",
+                        "อื่นๆ",
                       ].map((type) => (
                         <li
                           key={type}
-                          className="px-4 py-2 text-sm cursor-pointer border-b border-gray-300 hover:bg-gray-200"
+                          className="px-4 py-2 text-sm cursor-pointer hover:bg-gray-200 border-b border-gray-300 last:border-b-0"
                           onClick={() => handleSelectType(type)}
                         >
                           {type}
@@ -249,29 +279,151 @@ export default function Registerowner() {
           </div>
 
           {/* ช่องกรอกเพศ */}
-          <div className="grid grid-cols-2 gap-4 mb-2">
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            {/* ช่องทำหมัน */}
             <div className="flex flex-col">
-              <p className="sm:text-lg xl:text-xl">เพศ</p>
-              <input
-                name="neutered"
-                value={formData.neutered}
-                onChange={handleChange}
-                className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 disabled:bg-gray-100"
-                disabled={!isEditing}
-              />
+              <p className="sm:text-lg xl:text-xl">ทำหมัน</p>
+              <div className="relative w-full">
+                <input
+                  name="neutered"
+                  value={
+                    formData.neutered === "1"
+                      ? "ทำหมันแล้ว"
+                      : formData.neutered === "0"
+                      ? "ยังไม่ได้ทำหมัน"
+                      : ""
+                  }
+                  readOnly
+                  disabled={!isEditing}
+                  onClick={() => {
+                    if (isEditing)
+                      setNeuteredDropdownVisible(!isNeuteredDropdownVisible);
+                  }}
+                  className="w-full mt-1 p-2 pr-10 border border-gray-300 rounded-md disabled:bg-gray-100 cursor-pointer"
+                />
+                <svg
+                  className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-500 cursor-pointer ${
+                    !isEditing ? "pointer-events-none" : ""
+                  }`}
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  onClick={() =>
+                    setNeuteredDropdownVisible(!isNeuteredDropdownVisible)
+                  }
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 
+        1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+
+                {isNeuteredDropdownVisible && (
+                  <div className="absolute top-full left-0 mt-1 w-full bg-white shadow-md rounded-md border border-gray-300 z-10">
+                    <ul>
+                      {["ทำหมันแล้ว", "ยังไม่ได้ทำหมัน"].map((neutered) => (
+                        <li
+                          key={neutered}
+                          className="px-4 py-2 text-sm cursor-pointer hover:bg-gray-200 border-b border-gray-300 last:border-b-0"
+                          onClick={() => handleSelectNeutered(neutered)}
+                        >
+                          {neutered}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* ช่องกรอกสี */}
-            <div className="flex flex-col">
-              <p className="sm:text-lg xl:text-xl">สี</p>
-              <input
-                name="color"
-                value={formData.color}
-                onChange={handleChange}
-                className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 disabled:bg-gray-100"
-                disabled={!isEditing}
-              />
+            {/* ช่องเพศ */}
+            <div className="flex flex-col ">
+              <p className="sm:text-lg xl:text-xl">เพศ</p>
+              <div className="relative w-full">
+                <input
+                  name="gender"
+                  value={gender}
+                  readOnly
+                  disabled={!isEditing}
+                  onClick={() => {
+                    if (isEditing)
+                      setGenderDropdownVisible(!isGenderDropdownVisible);
+                  }}
+                  className="w-full mt-1 p-2 pr-10 border border-gray-300 rounded-md disabled:bg-gray-100 cursor-pointer"
+                />
+                <svg
+                  className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-500 cursor-pointer ${
+                    !isEditing ? "pointer-events-none" : ""
+                  }`}
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  onClick={() =>
+                    setGenderDropdownVisible(!isGenderDropdownVisible)
+                  }
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 
+        1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+
+                {isGenderDropdownVisible && (
+                  <div className="absolute top-full left-0 mt-1 w-full bg-white shadow-md rounded-md border border-gray-300 z-10">
+                    <ul>
+                      {["เพศผู้", "เพศเมีย"].map((option) => (
+                        <li
+                          key={option}
+                          className="px-4 py-2 text-sm cursor-pointer hover:bg-gray-200 border-b border-gray-300 last:border-b-0"
+                          onClick={() => {
+                            setGender(option);
+                            setGenderDropdownVisible(false);
+                          }}
+                        >
+                          {option}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
             </div>
+          </div>
+
+          {/* ช่องกรอกสี */}
+          <div className="flex flex-wrap gap-3  mb-6">
+            {colors.map((color, idx) => {
+              const isSelected = selectedColors.includes(color.name);
+              return (
+                <div
+                  key={idx}
+                  onClick={() => {
+                    if (!isEditing) return;
+                    setSelectedColors((prev) =>
+                      prev.includes(color.name)
+                        ? prev.filter((c) => c !== color.name)
+                        : [...prev, color.name]
+                    );
+                    setFormData((prevData) => ({
+                      ...prevData,
+                      color: isSelected
+                        ? selectedColors
+                            .filter((c) => c !== color.name)
+                            .join(",")
+                        : [...selectedColors, color.name].join(","),
+                    }));
+                  }}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer ${
+                    isSelected ? "bg-gray-400" : "bg-gray-300"
+                  }`}
+                >
+                  <div className={`w-6 h-6 rounded-full  ${color.code}`}></div>
+                  <span className="text-sm">{color.name}</span>
+                </div>
+              );
+            })}
           </div>
 
           {/* ช่องกรอกรอยตำหนิ */}

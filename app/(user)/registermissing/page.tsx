@@ -8,6 +8,7 @@ type PetData = {
   gender: string;
   breed: string;
   sterilized: string;
+  neutered?: string; // เพิ่มถ้าจำเป็น
   color: string;
   markings: string;
   description: string;
@@ -69,6 +70,62 @@ export default function RegisterMissing() {
     }
   };
 
+  const [isGenderDropdownVisible, setGenderDropdownVisible] = useState(false);
+  const handleSelectGender = (gender: string) => {
+    setGender(gender);
+    setGenderDropdownVisible(false); // หรือ setDropdownVisible(false) ตามที่คุณใช้
+  };
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const [isNeuteredDropdownVisible, setNeuteredDropdownVisible] =
+    useState(false);
+
+  const handleInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSelectNeutered = (value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      neutered: value === "ทำหมันแล้ว" ? "1" : "0",
+    }));
+    setNeuteredDropdownVisible(false);
+  };
+
+  const [selectedColors, setSelectedColors] = useState<string[]>([]);
+
+  // ตัวแปรสีทั้งหมด
+  const colors = [
+    { name: "ขาว", code: "bg-white" },
+    { name: "เหลือง", code: "bg-yellow-300" },
+    { name: "เทา", code: "bg-gray-500" },
+    { name: "น้ำตาล", code: "bg-[#866261]" },
+    { name: "ชมพู", code: "bg-[#e68181]" },
+    { name: "น้ำเงิน", code: "bg-blue-800" },
+    { name: "แดง", code: "bg-red-600" },
+    { name: "เขียว", code: "bg-green-600" },
+    { name: "ฟ้า", code: "bg-sky-400" },
+    { name: "ส้ม", code: "bg-orange-500" },
+    { name: "ไม่มีขน", code: "bg-pink-200" },
+    { name: "ม่วง", code: "bg-fuchsia-500" },
+    { name: "ดำ", code: "bg-black" },
+  ];
+
   const handleMainImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) setMainImage(URL.createObjectURL(file));
@@ -85,6 +142,22 @@ export default function RegisterMissing() {
       setGalleryImages(newImages);
     }
   };
+
+  const [formData, setFormData] = useState<PetData>({
+    name: "",
+    age: "",
+    gender: "",
+    breed: "",
+    sterilized: "",
+    color: "",
+    markings: "",
+    description: "",
+    missingDate: "",
+    postedDate: "",
+    missingLocation: "",
+    missingDetail: "",
+    reward: "",
+  });
 
   const [originalValues, setOriginalValues] = useState<PetData>({
     name,
@@ -255,12 +328,55 @@ export default function RegisterMissing() {
             </div>
             <div className="flex flex-col">
               <p className="sm:text-lg xl:text-xl">เพศ</p>
-              <input
-                value={gender}
-                onChange={(e) => setGender(e.target.value)}
-                disabled={!isEditing}
-                className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 disabled:bg-gray-100"
-              />
+              <div className="relative w-full">
+                <input
+                  name="gender"
+                  value={gender}
+                  readOnly
+                  disabled={!isEditing}
+                  onClick={() => {
+                    if (isEditing)
+                      setGenderDropdownVisible(!isGenderDropdownVisible);
+                  }}
+                  className="w-full mt-1 p-2 pr-10 border border-gray-300 rounded-md disabled:bg-gray-100 cursor-pointer"
+                />
+                <svg
+                  className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-500 cursor-pointer ${
+                    !isEditing ? "pointer-events-none" : ""
+                  }`}
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  onClick={() =>
+                    setGenderDropdownVisible(!isGenderDropdownVisible)
+                  }
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 
+          1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+
+                {isGenderDropdownVisible && (
+                  <div className="absolute top-full left-0 mt-1 w-full bg-white shadow-md rounded-md border border-gray-300 z-10">
+                    <ul>
+                      {["เพศผู้", "เพศเมีย"].map((option) => (
+                        <li
+                          key={option}
+                          className="px-4 py-2 text-sm cursor-pointer hover:bg-gray-200 border-b border-gray-300 last:border-b-0"
+                          onClick={() => {
+                            setGender(option);
+                            setGenderDropdownVisible(false);
+                          }}
+                        >
+                          {option}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -291,7 +407,7 @@ export default function RegisterMissing() {
                   />
                 </svg>
                 {isDropdownVisible && (
-                  <div className="absolute right-3 top-12 w-32 mt-2 bg-white shadow-lg rounded-md border border-gray-300 z-10">
+                  <div className="absolute  top-12 w-full mt-2 bg-white shadow-lg rounded-md border border-gray-300 z-10">
                     <ul>
                       {[
                         "แมว",
@@ -331,24 +447,98 @@ export default function RegisterMissing() {
           </div>
 
           {/* ทำหมัน / สี */}
-          <div className="grid grid-cols-2 gap-4 mb-2">
-            <div className="flex flex-col">
+          <div className="flex flex-col gap-4 mb-2">
+            {/* ทำหมัน */}
+            <div className="flex flex-col relative mb-4">
               <p className="sm:text-lg xl:text-xl">ทำหมัน</p>
-              <input
-                value={sterilized}
-                onChange={(e) => setSterilized(e.target.value)}
-                disabled={!isEditing}
-                className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 disabled:bg-gray-100"
-              />
+              <div className="relative w-full">
+                <input
+                  name="neutered"
+                  value={
+                    formData.neutered === "1"
+                      ? "ทำหมันแล้ว"
+                      : formData.neutered === "0"
+                      ? "ยังไม่ได้ทำหมัน"
+                      : ""
+                  }
+                  readOnly
+                  disabled={!isEditing}
+                  onClick={() => {
+                    if (isEditing)
+                      setNeuteredDropdownVisible(!isNeuteredDropdownVisible);
+                  }}
+                  className="w-full mt-1 p-2 pr-10 border border-gray-300 rounded-md disabled:bg-gray-100 cursor-pointer"
+                />
+                <svg
+                  className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-500 cursor-pointer ${
+                    !isEditing ? "pointer-events-none" : ""
+                  }`}
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  onClick={() =>
+                    setNeuteredDropdownVisible(!isNeuteredDropdownVisible)
+                  }
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 
+         1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+
+                {isNeuteredDropdownVisible && (
+                  <div className="absolute top-full left-0 mt-1 w-full bg-white shadow-md rounded-md border border-gray-300 z-10">
+                    <ul>
+                      {["ทำหมันแล้ว", "ยังไม่ได้ทำหมัน"].map((neutered) => (
+                        <li
+                          key={neutered}
+                          className="px-4 py-2 text-sm cursor-pointer hover:bg-gray-200 border-b border-gray-300 last:border-b-0"
+                          onClick={() => handleSelectNeutered(neutered)}
+                        >
+                          {neutered}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="flex flex-col">
-              <p className="sm:text-lg xl:text-xl">สี</p>
-              <input
-                value={color}
-                onChange={(e) => setColor(e.target.value)}
-                disabled={!isEditing}
-                className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 disabled:bg-gray-100"
-              />
+
+            {/* ช่องกรอกสี */}
+            <div className="flex flex-wrap gap-3 mb-2">
+              {colors.map((color, idx) => {
+                const isSelected = selectedColors.includes(color.name);
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => {
+                      if (!isEditing) return;
+                      setSelectedColors((prev) =>
+                        prev.includes(color.name)
+                          ? prev.filter((c) => c !== color.name)
+                          : [...prev, color.name]
+                      );
+                      setFormData((prevData) => ({
+                        ...prevData,
+                        color: isSelected
+                          ? selectedColors
+                              .filter((c) => c !== color.name)
+                              .join(",")
+                          : [...selectedColors, color.name].join(","),
+                      }));
+                    }}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer ${
+                      isSelected ? "bg-gray-400" : "bg-gray-300"
+                    }`}
+                  >
+                    <div
+                      className={`w-6 h-6 rounded-full  ${color.code}`}
+                    ></div>
+                    <span className="text-sm">{color.name}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
