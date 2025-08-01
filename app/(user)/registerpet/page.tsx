@@ -8,17 +8,12 @@ export default function RegisterPet() {
 
   // ตัวแปรสำหรับจัดการ dropdown
   const [isGenderDropdownVisible, setGenderDropdownVisible] = useState(false);
-  const [isNeuteredDropdownVisible, setNeuteredDropdownVisible] =
-    useState(false);
+  const [isNeuteredDropdownVisible, setNeuteredDropdownVisible] = useState(false);
   const [isDropdownVisible, setDropdownVisible] = useState(false);
 
   // ตัวแปรสำหรับรูปภาพ
   const [mainImage, setMainImage] = useState<string | null>(null);
-  const [galleryImages, setGalleryImages] = useState<(string | null)[]>([
-    null,
-    null,
-    null,
-  ]);
+  const [galleryImages, setGalleryImages] = useState<(string | null)[]>([null, null, null]);
   const mainInputRef = useRef<HTMLInputElement | null>(null);
   const galleryInputRefs = [
     useRef<HTMLInputElement | null>(null),
@@ -49,6 +44,7 @@ export default function RegisterPet() {
   // กำหนดสถานะฟอร์ม
   const [isEditing, setIsEditing] = useState(true);
   const [selectedType, setSelectedType] = useState("");
+  const [speciesList, setSpeciesList] = useState<{ id: number; name: string }[]>([]); // ✅ State สำหรับเก็บข้อมูลจาก API
 
   const [formData, setFormData] = useState({
     name: "",
@@ -61,6 +57,25 @@ export default function RegisterPet() {
     mark: "",
     details: "",
   });
+
+  // ดึงข้อมูลประเภทจาก API
+  useEffect(() => {
+    const fetchSpecies = async () => {
+      try {
+        const res = await fetch("/api/pets/species");
+        if (!res.ok) {
+          throw new Error("ไม่สามารถดึงข้อมูลประเภทสัตว์เลี้ยงได้");
+        }
+        const data = await res.json();
+        setSpeciesList(data);
+      } catch (err) {
+        console.error("เกิดข้อผิดพลาดในการดึงข้อมูลประเภท:", err);
+        alert("ไม่สามารถดึงข้อมูลประเภทสัตว์เลี้ยงได้");
+      }
+    };
+
+    fetchSpecies();
+  }, []);
 
   useEffect(() => {
     if (formData.color) {
@@ -98,10 +113,7 @@ export default function RegisterPet() {
     }
   };
 
-  const handleGalleryImageChange = (
-    e: ChangeEvent<HTMLInputElement>,
-    index: number
-  ) => {
+  const handleGalleryImageChange = (e: ChangeEvent<HTMLInputElement>, index: number) => {
     const file = e.target.files?.[0];
     if (file) {
       if (galleryImages[index]) URL.revokeObjectURL(galleryImages[index]!);
@@ -128,9 +140,7 @@ export default function RegisterPet() {
     setDropdownVisible(false);
   };
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     if (name === "age" && !/^\d*$/.test(value)) return;
     setFormData((prevData) => ({ ...prevData, [name]: value }));
@@ -149,17 +159,7 @@ export default function RegisterPet() {
   };
 
   const validateForm = () => {
-    const requiredFields = [
-      "name",
-      "age",
-      "gender",
-      "type",
-      "breed",
-      "neutered",
-      "mark",
-      "details",
-    ];
-
+    const requiredFields = ["name", "age", "gender", "type", "breed", "neutered", "mark", "details"];
     for (const field of requiredFields) {
       const value = formData[field as keyof typeof formData];
       if (!value || value.trim() === "") {
@@ -194,29 +194,15 @@ export default function RegisterPet() {
       form.append("markings", formData.mark);
       form.append("isNeutered", formData.neutered === "1" ? "1" : "0");
       form.append("color", JSON.stringify(selectedColors));
-      form.append("type", formData.type); // ✅ ส่งประเภท
-      form.append(
-        "sterilized",
-        formData.neutered === "1" ? "ทำหมันแล้ว" : "ยังไม่ได้ทำหมัน"
-      ); // ✅ ส่งสถานะการทำหมัน
+      form.append("type", formData.type);
 
-      const speciesMapping: Record<string, number> = {
-        แมว: 1,
-        สุนัข: 2,
-        นก: 3,
-        หนู: 4,
-        ชูก้าไรเดอร์: 5,
-        เฟอร์ริต: 6,
-        เม่นแคระ: 7,
-        กระรอก: 8,
-        กระต่าย: 9,
-        งู: 10,
-        อื่นๆ: 11,
-      };
-
-      const speciesId = speciesMapping[formData.type];
-      form.append("speciesId", speciesId.toString());
-      form.append("color", JSON.stringify(selectedColors));
+      // ✅ ค้นหา speciesId จาก speciesList
+      const selectedSpecies = speciesList.find((species) => species.name === formData.type);
+      if (!selectedSpecies) {
+        alert("ไม่พบประเภทสัตว์เลี้ยงที่เลือก");
+        return;
+      }
+      form.append("speciesId", selectedSpecies.id.toString());
 
       const files: File[] = [];
       if (mainInputRef.current?.files?.length) {
@@ -279,7 +265,6 @@ export default function RegisterPet() {
         {/* รูปภาพ */}
         <div className="lg:pl-0 md:pl-28 sm:pl-24 pl-20 pb-5">
           <div className="your-container">
-            {/* ปุ่มกดรูปหลัก */}
             <img
               src={mainImage || "/all/image.png"}
               alt="main"
@@ -296,7 +281,6 @@ export default function RegisterPet() {
               onChange={handleMainImageChange}
             />
 
-            {/* ปุ่มเลือกรูป gallery 3 ช่อง */}
             <div className="flex gap-2 pt-3">
               {[0, 1, 2].map((index) => (
                 <div key={index}>
@@ -331,7 +315,6 @@ export default function RegisterPet() {
           />
 
           <div className="grid grid-cols-2 gap-4 mb-2">
-            {/* ช่องกรอกอายุ */}
             <div className="flex flex-col">
               <p className="sm:text-lg xl:text-xl text-md">อายุ</p>
               <input
@@ -344,30 +327,26 @@ export default function RegisterPet() {
               />
             </div>
 
-            {/* ช่องกรอกเพศ */}
             <div className="flex flex-col relative">
               <p className="sm:text-lg xl:text-xl text-md">เพศ</p>
               <input
                 name="gender"
                 value={formData.gender}
                 onChange={handleChange}
-                className="w-full mt-1  pr-10 border border-gray-300 rounded-md mb-3 disabled:bg-gray-100  sm:text-md xl:text-lg text-sm p-2 px-3"
+                className="w-full mt-1 pr-10 border border-gray-300 rounded-md mb-3 disabled:bg-gray-100 sm:text-md xl:text-lg text-sm p-2 px-3"
                 disabled={!isEditing}
                 onClick={() => {
-                  if (isEditing)
-                    setGenderDropdownVisible(!isGenderDropdownVisible);
+                  if (isEditing) setGenderDropdownVisible(!isGenderDropdownVisible);
                 }}
                 readOnly
               />
               <svg
-                className={`absolute right-2 top-8  w-8 h-8 sm:w-10 sm:h-10 text-gray-500 cursor-pointer ${
+                className={`absolute right-2 top-8 w-8 h-8 sm:w-10 sm:h-10 text-gray-500 cursor-pointer ${
                   !isEditing ? "pointer-events-none" : ""
                 }`}
                 viewBox="0 0 20 20"
                 fill="currentColor"
-                onClick={() =>
-                  setGenderDropdownVisible(!isGenderDropdownVisible)
-                }
+                onClick={() => setGenderDropdownVisible(!isGenderDropdownVisible)}
               >
                 <path
                   fillRule="evenodd"
@@ -395,14 +374,13 @@ export default function RegisterPet() {
           </div>
 
           <div className="grid grid-cols-2 gap-4 mb-2">
-            {/* ช่องกรอกประเภท */}
             <div className="flex flex-col">
               <p className="sm:text-lg xl:text-xl text-md">ประเภท</p>
               <div className="relative w-full">
                 <input
                   name="type"
                   value={formData.type}
-                  readOnly // ✅ ห้ามพิมพ์
+                  readOnly
                   onClick={toggleDropdown}
                   className="w-full mt-1 sm:text-md xl:text-lg text-sm p-2 px-3 pr-10 border border-gray-300 rounded-md mb-3 disabled:bg-gray-100"
                   disabled={!isEditing}
@@ -425,34 +403,27 @@ export default function RegisterPet() {
                 {isDropdownVisible && (
                   <div className="absolute top-12 w-full z-10 mt-1 xl:mt-2 bg-white shadow-lg rounded-md border border-gray-300">
                     <ul>
-                      {[
-                        "แมว",
-                        "สุนัข",
-                        "นก",
-                        "หนู",
-                        "ชูก้าไรเดอร์",
-                        "เฟอร์ริต",
-                        "เม่นแคระ",
-                        "กระรอก",
-                        "กระต่าย",
-                        "งู",
-                        "อื่นๆ",
-                      ].map((type) => (
-                        <li
-                          key={type}
-                          className="px-4 py-2 text-sm cursor-pointer border-b border-gray-300 hover:bg-gray-200"
-                          onClick={() => handleSelectType(type)}
-                        >
-                          {type}
+                      {speciesList.length > 0 ? (
+                        speciesList.map((species) => (
+                          <li
+                            key={species.id}
+                            className="px-4 py-2 text-sm cursor-pointer border-b border-gray-300 hover:bg-gray-200"
+                            onClick={() => handleSelectType(species.name)}
+                          >
+                            {species.name}
+                          </li>
+                        ))
+                      ) : (
+                        <li className="px-4 py-2 text-sm text-gray-500">
+                          ไม่มีข้อมูลประเภท
                         </li>
-                      ))}
+                      )}
                     </ul>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* ช่องกรอกสายพันธุ์ */}
             <div className="flex flex-col">
               <p className="sm:text-lg xl:text-xl text-md">สายพันธุ์</p>
               <input
@@ -465,8 +436,7 @@ export default function RegisterPet() {
             </div>
           </div>
 
-          {/* ช่องกรอกทำหมัน */}
-          <div className="grid  gap-4 mb-2">
+          <div className="grid gap-4 mb-2">
             <div className="flex flex-col relative">
               <p className="sm:text-lg xl:text-xl">ทำหมัน</p>
               <input
@@ -479,23 +449,20 @@ export default function RegisterPet() {
                     : ""
                 }
                 onChange={handleChange}
-                className="w-full mt-1 sm:text-md xl:text-lg text-sm p-2 px-3 border border-gray-300 rounded-md mb-3 disabled:bg-gray-100 "
+                className="w-full mt-1 sm:text-md xl:text-lg text-sm p-2 px-3 border border-gray-300 rounded-md mb-3 disabled:bg-gray-100"
                 disabled={!isEditing}
                 onClick={() => {
-                  if (isEditing)
-                    setNeuteredDropdownVisible(!isNeuteredDropdownVisible);
+                  if (isEditing) setNeuteredDropdownVisible(!isNeuteredDropdownVisible);
                 }}
                 readOnly
               />
               <svg
-                className={`absolute right-2 top-8  w-8 h-8 sm:w-10 sm:h-10 text-gray-500 cursor-pointer ${
+                className={`absolute right-2 top-8 w-8 h-8 sm:w-10 sm:h-10 text-gray-500 cursor-pointer ${
                   !isEditing ? "pointer-events-none" : ""
                 }`}
                 viewBox="0 0 20 20"
                 fill="currentColor"
-                onClick={() =>
-                  setNeuteredDropdownVisible(!isNeuteredDropdownVisible)
-                }
+                onClick={() => setNeuteredDropdownVisible(!isNeuteredDropdownVisible)}
               >
                 <path
                   fillRule="evenodd"
@@ -504,7 +471,6 @@ export default function RegisterPet() {
                   clipRule="evenodd"
                 />
               </svg>
-
               {isNeuteredDropdownVisible && (
                 <div className="absolute top-20 left-0 z-10 mt-1 xl:mt-2 w-full bg-white shadow-md rounded-md border border-gray-300">
                   <ul>
@@ -522,7 +488,6 @@ export default function RegisterPet() {
               )}
             </div>
 
-            {/* ช่องกรอกสี */}
             <div className="flex flex-wrap gap-3">
               {colors.map((color, idx) => {
                 const isSelected = selectedColors.includes(color.name);
@@ -539,9 +504,7 @@ export default function RegisterPet() {
                       setFormData((prevData) => ({
                         ...prevData,
                         color: isSelected
-                          ? selectedColors
-                              .filter((c) => c !== color.name)
-                              .join(",")
+                          ? selectedColors.filter((c) => c !== color.name).join(",")
                           : [...selectedColors, color.name].join(","),
                       }));
                     }}
@@ -549,9 +512,7 @@ export default function RegisterPet() {
                       isSelected ? "bg-gray-400" : "bg-gray-300"
                     }`}
                   >
-                    <div
-                      className={`w-6 h-6 rounded-full  ${color.code}`}
-                    ></div>
+                    <div className={`w-6 h-6 rounded-full ${color.code}`}></div>
                     <span className="text-sm">{color.name}</span>
                   </div>
                 );
@@ -559,7 +520,6 @@ export default function RegisterPet() {
             </div>
           </div>
 
-          {/* ช่องกรอกลักษณะเด่น */}
           <p className="sm:text-lg xl:text-xl text-md">ลักษณะเด่น</p>
           <input
             name="mark"
@@ -569,7 +529,6 @@ export default function RegisterPet() {
             disabled={!isEditing}
           />
 
-          {/* ช่องกรอกรายละเอียด */}
           <p className="sm:text-lg xl:text-xl text-md">รายละเอียด</p>
           <textarea
             name="details"
@@ -579,7 +538,6 @@ export default function RegisterPet() {
             disabled={!isEditing}
           />
 
-          {/* ปุ่ม */}
           <div className="flex justify-end ml-20 mt-5 mb-10">
             <div className="flex gap-4">
               <button

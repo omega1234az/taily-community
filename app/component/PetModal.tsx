@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState, useRef, ChangeEvent } from "react";
@@ -15,9 +16,9 @@ type Pet = {
   additionalImages?: string[];
   age?: string;
   gender?: string;
-  type?: string;
+  speciesId?: string;
   breed?: string;
-  sterilized?: string;
+  isNeutered?: number;
   color?: string;
   markings?: string;
   description?: string;
@@ -27,12 +28,12 @@ type Pet = {
   vaccineData?: Vaccine[];
   treatmentData?: Treatment[];
 };
-
+ 
 type PetDetailsModalProps = {
   showModal: boolean;
   setShowModal: (show: boolean) => void;
   selectedPet: Pet | null;
-  activeSection: "history" | "disease" | "vaccine" | "treatment"; // เพิ่ม "treatment" เข้าไป
+  activeSection: "history" | "disease" | "vaccine" | "treatment";
   setActiveSection: React.Dispatch<
     React.SetStateAction<"history" | "disease" | "vaccine" | "treatment">
   >;
@@ -42,6 +43,13 @@ type Vaccine = { name: string; date: string; nextdate: string };
 type Disease = { name: string; date: string };
 type Treatment = { name: string; date: string };
 
+type Species = {
+  id: number;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export default function PetDetailsModal({
   showModal,
   setShowModal,
@@ -49,9 +57,9 @@ export default function PetDetailsModal({
   activeSection,
   setActiveSection,
 }: PetDetailsModalProps) {
+  const [speciesList, setSpeciesList] = useState<Species[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
-  const [sterilizedDropdownVisible, setSterilizedDropdownVisible] =
-    useState(false);
+  const [sterilizedDropdownVisible, setSterilizedDropdownVisible] = useState(false);
   const [genderDropdownVisible, setGenderDropdownVisible] = useState(false);
   const [mainImage, setMainImage] = useState<string | null>(null);
   const [images, setImages] = useState<string[]>([]);
@@ -63,7 +71,7 @@ export default function PetDetailsModal({
   const [gender, setGender] = useState("");
   const [selectedType, setSelectedType] = useState("");
   const [breed, setBreed] = useState("");
-  const [sterilized, setSterilized] = useState("");
+  const [sterilized, setSterilized] = useState<string>("");
   const [color, setColor] = useState("");
   const [markings, setMarkings] = useState("");
   const [description, setDescription] = useState("");
@@ -86,10 +94,25 @@ export default function PetDetailsModal({
     useRef<HTMLInputElement>(null),
     useRef<HTMLInputElement>(null),
   ];
+  const pdfRef = useRef<HTMLDivElement>(null);
+
+  // Fetch species data from API
+  useEffect(() => {
+    const fetchSpecies = async () => {
+      try {
+        const response = await fetch("/api/pets/species");
+        if (!response.ok) throw new Error("Failed to fetch species");
+        const data = await response.json();
+        setSpeciesList(data);
+      } catch (error) {
+        console.error("Error fetching species:", error);
+      }
+    };
+    fetchSpecies();
+  }, []);
 
   useEffect(() => {
     if (!selectedPet) return;
-
     setActiveSection("history");
     setMainImage(selectedPet.imageSrc);
     setImages([
@@ -100,11 +123,13 @@ export default function PetDetailsModal({
     setName(selectedPet.name || "");
     setAge(selectedPet.age || "");
     setGender(selectedPet.gender || "");
-    setSelectedType(selectedPet.type || "");
+    const species = speciesList.find((s) => s.id === Number(selectedPet.speciesId));
+    setSelectedType(species?.name || "");
     setBreed(selectedPet.breed || "");
-    setSterilized(selectedPet.sterilized || "");
-
-    // ✅ แก้ตรงนี้
+    // Set sterilized to "0" or "1" directly
+    const isNeuteredValue = selectedPet.isNeutered ?? 0;
+    setSterilized(isNeuteredValue.toString());
+    console.log("Initial isNeutered from selectedPet:", selectedPet.isNeutered, "Set sterilized to:", isNeuteredValue);
     const parsedColors =
       typeof selectedPet.color === "string"
         ? selectedPet.color
@@ -114,10 +139,8 @@ export default function PetDetailsModal({
         : Array.isArray(selectedPet.color)
         ? selectedPet.color
         : [];
-
     setColor(parsedColors.join(","));
     setSelectedColors(parsedColors);
-
     setMarkings(selectedPet.markings || "");
     setDescription(selectedPet.description || "");
     setEditableVaccineData(selectedPet.vaccineData || []);
@@ -125,18 +148,21 @@ export default function PetDetailsModal({
     setIsEditing(false);
     setIsDropdownVisible(false);
     setCurrentPage(1);
-  }, [selectedPet, setActiveSection]);
+  }, [selectedPet, setActiveSection, speciesList]);
 
   const toggleDropdown = () => {
     if (isEditing) setIsDropdownVisible((prev) => !prev);
   };
+
   const handleSelectType = (type: string) => {
     setSelectedType(type);
     setIsDropdownVisible(false);
   };
+
   const handleMainImageClick = () => {
     if (isEditing) mainInputRef.current?.click();
   };
+
   const handleThumbnailClick = (index: number) => {
     if (isEditing) {
       if (index > 0) galleryInputRefs[index - 1]?.current?.click();
@@ -150,13 +176,14 @@ export default function PetDetailsModal({
       setMainImage(images[index]);
     }
   };
+
   const handleMainImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const newUrl = URL.createObjectURL(file);
     setImages((prev) => [newUrl, ...prev.slice(1)]);
     setMainImage(newUrl);
-    setMainImageFile(file); // เก็บไฟล์จริงที่อัปโหลด
+    setMainImageFile(file);
   };
 
   const handleGalleryImageChange = (
@@ -173,7 +200,7 @@ export default function PetDetailsModal({
     });
     setGalleryImageFiles((prev) => {
       const newFiles = [...prev];
-      newFiles[index - 1] = file; // index -1 เพราะเริ่มจาก image[1]
+      newFiles[index - 1] = file;
       return newFiles;
     });
   };
@@ -183,8 +210,10 @@ export default function PetDetailsModal({
     const lastPageItems = data.slice((pageCount - 1) * rowsPerPage);
     return lastPageItems.length < rowsPerPage ? pageCount : pageCount + 1;
   };
+
   const vaccineTotalPages = calculateTotalPages(editableVaccineData);
   const diseaseTotalPages = calculateTotalPages(editableDiseaseData);
+
   const handleVaccineChange = (
     index: number,
     field: "name" | "date" | "nextdate",
@@ -202,6 +231,7 @@ export default function PetDetailsModal({
       return newData;
     });
   };
+
   const handleDiseaseChange = (
     index: number,
     field: "name" | "date",
@@ -214,23 +244,29 @@ export default function PetDetailsModal({
       return updated;
     });
   };
+
   const handleClose = () => {
     setShowModal(false);
     setIsEditing(false);
   };
+
   const toggleEdit = () => {
     setIsEditing((prev) => !prev);
     setIsDropdownVisible(false);
   };
+
   const handleCancel = () => {
     setIsEditing(false);
     if (selectedPet) {
       setName(selectedPet.name || "");
       setAge(selectedPet.age || "");
       setGender(selectedPet.gender || "");
-      setSelectedType(selectedPet.type || "");
+      const species = speciesList.find((s) => s.id === Number(selectedPet.speciesId));
+      setSelectedType(species?.name || "");
       setBreed(selectedPet.breed || "");
-      setSterilized(selectedPet.sterilized || "");
+      const isNeuteredValue = selectedPet.isNeutered || 0;
+      setSterilized(isNeuteredValue.toString());
+      console.log("Cancel: Reset sterilized to:", isNeuteredValue);
       setColor(selectedPet.color || "");
       setMarkings(selectedPet.markings || "");
       setDescription(selectedPet.description || "");
@@ -244,44 +280,38 @@ export default function PetDetailsModal({
       setEditableDiseaseData(selectedPet.diseaseData || []);
     }
   };
+
   const handleSave = async () => {
     if (!selectedPet) return;
-
     try {
       const formData = new FormData();
       formData.append("name", name);
       formData.append("age", age);
       formData.append("gender", gender);
-      formData.append(
-        "speciesId",
-        speciesMapping[selectedType]?.toString() || ""
-      );
+      const species = speciesList.find((s) => s.name === selectedType);
+      formData.append("speciesId", species?.id.toString() || "");
       formData.append("breed", breed);
-      formData.append("isNeutered", sterilized === "ทำหมันแล้ว" ? "1" : "0");
+      formData.append("isNeutered", sterilized); // Send "0" or "1" directly
+      console.log("Saving isNeutered:", sterilized);
       formData.append("color", JSON.stringify(selectedColors));
       formData.append("markings", markings);
       formData.append("description", description);
       formData.append("phone", phone);
       formData.append("facebook", facebook);
-
       if (mainImageFile) {
         formData.append("images", mainImageFile);
       }
-
       galleryImageFiles.forEach((file) => {
         if (file) {
           formData.append("images", file);
         }
       });
-
-      // อย่าใส่ headers เองเมื่อส่ง FormData
+      console.log("FormData entries:", [...formData.entries()]);
       const response = await fetch(`/api/pets/${selectedPet.id}`, {
         method: "PUT",
         body: formData,
       });
-
       if (!response.ok) throw new Error("Failed to update pet");
-
       alert("บันทึกข้อมูลสำเร็จ");
       setIsEditing(false);
       setIsDropdownVisible(false);
@@ -297,32 +327,6 @@ export default function PetDetailsModal({
       prev.includes(color) ? prev.filter((c) => c !== color) : [...prev, color]
     );
   }
-
-  const speciesMapping: Record<string, number> = {
-    แมว: 1,
-    สุนัข: 2,
-    นก: 3,
-    หนู: 4,
-    ชูก้าไรเดอร์: 5,
-    เฟอร์ริต: 6,
-    เม่นแคระ: 7,
-    กระรอก: 8,
-    กระต่าย: 9,
-    งู: 10,
-    อื่นๆ: 11,
-  };
-
-  const [formData, setFormData] = useState({
-    name: "",
-    age: "",
-    gender: "",
-    type: "",
-    breed: "",
-    neutered: "",
-    color: "",
-    mark: "",
-    details: "",
-  });
 
   const colors = [
     { name: "ขาว", code: "bg-white" },
@@ -340,14 +344,11 @@ export default function PetDetailsModal({
     { name: "ดำ", code: "bg-black" },
   ];
 
-  const pdfRef = useRef<HTMLDivElement>(null);
-
   const handlePrint = () => {
     if (!pdfRef.current) return;
-
     html2canvas(pdfRef.current, {
       scale: 2,
-      useCORS: true, // กรณีมีรูปจาก URL ภายนอก
+      useCORS: true,
       logging: true,
     })
       .then((canvas) => {
@@ -355,7 +356,6 @@ export default function PetDetailsModal({
         const pdf = new jsPDF("p", "mm", "a4");
         const pdfWidth = 210;
         const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
         pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
         pdf.save("pet-details.pdf");
       })
@@ -368,9 +368,8 @@ export default function PetDetailsModal({
   if (!showModal || !selectedPet) return null;
 
   return (
-    <div className="fixed inset-0 k bg-opacity-50 flex justify-center items-center z-50">
-      <div className="bg-white w-full h-full md:mt-16 sm:mt-8 sm:w-[530px] sm:h-[530px] md:w-[600px] md:h-[530px] lg:w-[750px] lg:h-[620px] xl:w-[900px] xl:h-[650px] 2xl:w-[1000px] 2xl:h-[700px]  sm:p-6 shadow-xl relative flex flex-col overflow-y-auto rounded-lg">
-        {/* ปุ่มปิด */}
+    <div className="fixed inset-0  bg-opacity-50 flex justify-center items-center z-50">
+      <div className="bg-white w-full h-full md:mt-16 sm:mt-8 sm:w-[530px] sm:h-[530px] md:w-[600px] md:h-[530px] lg:w-[750px] lg:h-[620px] xl:w-[900px] xl:h-[650px] 2xl:w-[1000px] 2xl:h-[700px] sm:p-6 shadow-xl relative flex flex-col overflow-y-auto rounded-lg">
         <button
           onClick={() => setShowModal(false)}
           className="absolute top-4 right-6 text-black hover:text-gray-500 text-4xl sm:text-5xl font-bold z-50 cursor-pointer"
@@ -378,8 +377,7 @@ export default function PetDetailsModal({
         >
           &times;
         </button>
-
-        <h1 className="font-bold xl:text-3xl text-2xl   lg:ml-64 mt-5 sm:mt-0 ">
+        <h1 className="font-bold xl:text-3xl text-2xl lg:ml-64 mt-5 sm:mt-0">
           <span className="absolute lg:top-4 top-5 xl:right-[270px] lg:right-[220px] right-[310px] lg:w-8 lg:h-8 w-6 h-6 bg-[#EAD64D] rounded-full z-0 -translate-x-1/2"></span>
           <div className="relative z-10 flex justify-center mb-4">
             {activeSection === "history"
@@ -391,21 +389,17 @@ export default function PetDetailsModal({
               : "วัคซีน"}
           </div>
         </h1>
-
-        <div className="flex flex-col lg:flex-row justify-center 2xl:gap-24 xl:gap-20 lg:gap-20  items-center lg:items-start pt-2 sm:px-10 px-5">
-          <span className="absolute top-[-36px]  left-[-14px] lg:w-72 lg:h-44 w-56 h-40 bg-[#EAD64D] rounded-b-full z-0"></span>
+        <div className="flex flex-col lg:flex-row justify-center 2xl:gap-24 xl:gap-20 lg:gap-20 items-center lg:items-start pt-2 sm:px-10 px-5">
+          <span className="absolute top-[-36px] left-[-14px] lg:w-72 lg:h-44 w-56 h-40 bg-[#EAD64D] rounded-b-full z-0"></span>
           <span className="absolute top-40 left-8 w-7 h-7 bg-[#EAD64D] rounded-full z-0 -translate-x-1/2"></span>
-          <span className="absolute top-20 right-0 lg:w-36 lg:h-72 w-28 h-56 bg-[#7CBBEB] rounded-l-full z-0 "></span>
+          <span className="absolute top-20 right-0 lg:w-36 lg:h-72 w-28 h-56 bg-[#7CBBEB] rounded-l-full z-0"></span>
           <span className="absolute top-[460px] right-0 w-10 h-10 bg-[#EAD64D] rounded-full z-0 -translate-x-1/2"></span>
-          <span className="absolute top-[660px] lg:top-[650px] lg:right-3 md:right-12 sm:right-5  right-4 w-7 h-7 bg-[#7CBBEB] rounded-full z-0 -translate-x-1/2"></span>
+          <span className="absolute top-[660px] lg:top-[650px] lg:right-3 md:right-12 sm:right-5 right-4 w-7 h-7 bg-[#7CBBEB] rounded-full z-0 -translate-x-1/2"></span>
           <span className="absolute top-[860px] right-0 w-5 h-5 lg:w-0 lg:h-0 bg-[#EAD64D] rounded-full z-0 -translate-x-1/2"></span>
-
-          <span className="absolute top-[380px] lg:top-[580px]  left-0 w-10 h-10  bg-[#EAD64D] rounded-full z-0 -translate-x-1/2"></span>
-          <span className="absolute top-[580px] lg:top-[328px]  left-12 lg:left-16 w-7 h-7   bg-[#7CBBEB] rounded-full z-0 -translate-x-1/2"></span>
+          <span className="absolute top-[380px] lg:top-[580px] left-0 w-10 h-10 bg-[#EAD64D] rounded-full z-0 -translate-x-1/2"></span>
+          <span className="absolute top-[580px] lg:top-[328px] left-12 lg:left-16 w-7 h-7 bg-[#7CBBEB] rounded-full z-0 -translate-x-1/2"></span>
           <span className="absolute top-[780px] left-0 w-5 h-5 lg:w-0 lg:h-0 bg-[#EAD64D] rounded-full z-0 -translate-x-1/2"></span>
-          {/* ซ้าย: รูปภาพ */}
-          <div className="pb-5 flex flex-col items-center  lg:items-start relative z-10">
-            {/* รูปหลัก */}
+          <div className="pb-5 flex flex-col items-center lg:items-start relative z-10">
             <img
               src={images[0]}
               alt={name}
@@ -419,8 +413,6 @@ export default function PetDetailsModal({
               className="hidden"
               onChange={handleMainImageChange}
             />
-
-            {/* รูปย่อย */}
             <span className="absolute top-[340px] left-5 lg:w-8 lg:h-8 w-0 h-0 bg-[#EAD64D] rounded-full z-0 -translate-x-1/2"></span>
             <span className="absolute top-[350px] left-28 lg:w-28 lg:h-28 w-0 h-0 bg-[#7CBBEB] rounded-full z-0 -translate-x-1/2"></span>
             <div className="grid grid-cols-3 gap-2 pt-3">
@@ -443,16 +435,12 @@ export default function PetDetailsModal({
               ))}
             </div>
           </div>
-
-          {/* ขวา: ปุ่ม section + ข้อมูล + ปุ่มแก้ไข */}
           <div className="w-full flex flex-col gap-4 relative z-10">
-            {/* เนื้อหา */}
             <div className="w-full flex flex-col lg:gap-4">
-              <div className="mx-auto   min-h-[100px] ">
+              <div className="mx-auto min-h-[100px]">
                 {activeSection === "history" && (
-                  <div className="grid grid-cols-2 gap-4  w-full 2xl:max-w-lg xl:max-w-md lg:max-w-md md:max-w-sm sm:max-w-sm max-w-xs">
-                    {/* ชื่อ */}
-                    <div className="flex flex-col ">
+                  <div className="grid grid-cols-2 gap-4 w-full 2xl:max-w-lg xl:max-w-md lg:max-w-md md:max-w-sm sm:max-w-sm max-w-xs">
+                    <div className="flex flex-col">
                       <p className="sm:text-md xl:text-lg">ชื่อ</p>
                       <input
                         value={name}
@@ -461,9 +449,7 @@ export default function PetDetailsModal({
                         className="w-full mt-1 p-2 border border-gray-300 rounded-md disabled:bg-gray-100"
                       />
                     </div>
-
-                    {/* อายุ */}
-                    <div className="flex flex-col ">
+                    <div className="flex flex-col">
                       <p className="sm:text-md xl:text-lg">อายุ</p>
                       <input
                         type="text"
@@ -476,17 +462,12 @@ export default function PetDetailsModal({
                         className="w-full mt-1 p-2 border border-gray-300 rounded-md disabled:bg-gray-100"
                       />
                     </div>
-
-                    {/* เพศ */}
                     <div className="flex flex-col relative">
                       <p className="sm:text-md xl:text-lg">เพศ</p>
-
-                      {/* กล่องที่คลิกได้ทั้ง input และ svg */}
                       <div
                         className="relative w-full"
                         onClick={() =>
-                          isEditing &&
-                          setGenderDropdownVisible(!genderDropdownVisible)
+                          isEditing && setGenderDropdownVisible(!genderDropdownVisible)
                         }
                       >
                         <input
@@ -495,12 +476,9 @@ export default function PetDetailsModal({
                           disabled={!isEditing}
                           className="w-full mt-1 p-2 pr-10 border border-gray-300 rounded-md disabled:bg-gray-100 cursor-pointer"
                         />
-
                         <svg
                           className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-7 h-7 text-gray-500 ${
-                            !isEditing
-                              ? "pointer-events-none"
-                              : "cursor-pointer"
+                            !isEditing ? "pointer-events-none" : "cursor-pointer"
                           }`}
                           viewBox="0 0 24 24"
                           fill="none"
@@ -512,8 +490,6 @@ export default function PetDetailsModal({
                           />
                         </svg>
                       </div>
-
-                      {/* dropdown ตัวเลือกเพศ */}
                       {genderDropdownVisible && isEditing && (
                         <div className="absolute top-20 w-full bg-white border border-gray-300 rounded-md shadow-md z-10">
                           {["เพศผู้", "เพศเมีย"].map((g) => (
@@ -531,8 +507,6 @@ export default function PetDetailsModal({
                         </div>
                       )}
                     </div>
-
-                    {/* ประเภท */}
                     <div className="flex flex-col">
                       <p className="sm:text-md xl:text-lg">ประเภท</p>
                       <div className="relative w-full">
@@ -558,27 +532,15 @@ export default function PetDetailsModal({
                           />
                         </svg>
                         {isDropdownVisible && (
-                          <div className="absolute  top-12 w-full mt-1 bg-white shadow-lg rounded-md border border-gray-300 z-10">
+                          <div className="absolute top-12 w-full mt-1 bg-white shadow-lg rounded-md border border-gray-300 z-10">
                             <ul>
-                              {[
-                                "แมว",
-                                "สุนัข",
-                                "นก",
-                                "หนู",
-                                "ชูก้าไรเดอร์",
-                                "เฟอร์ริต",
-                                "เม่นแคระ",
-                                "กระรอก",
-                                "กระต่าย",
-                                "งู",
-                                "อื่นๆ",
-                              ].map((type) => (
+                              {speciesList.map((species) => (
                                 <li
-                                  key={type}
+                                  key={species.id}
                                   className="px-4 py-2 text-xs sm:text-sm xl:text-md cursor-pointer hover:bg-gray-200 border-b border-gray-300 last:border-b-0"
-                                  onClick={() => handleSelectType(type)}
+                                  onClick={() => handleSelectType(species.name)}
                                 >
-                                  {type}
+                                  {species.name}
                                 </li>
                               ))}
                             </ul>
@@ -586,8 +548,6 @@ export default function PetDetailsModal({
                         )}
                       </div>
                     </div>
-
-                    {/* สายพันธุ์ */}
                     <div className="flex flex-col">
                       <p className="sm:text-md xl:text-lg">สายพันธุ์</p>
                       <input
@@ -597,33 +557,23 @@ export default function PetDetailsModal({
                         className="w-full mt-1 p-2 border border-gray-300 rounded-md disabled:bg-gray-100"
                       />
                     </div>
-
-                    {/* ทำหมัน */}
                     <div className="flex flex-col relative">
                       <p className="sm:text-md xl:text-lg">ทำหมัน</p>
-
-                      {/* กล่องที่คลิกได้ทั้ง input และ svg */}
                       <div
                         className="relative w-full"
                         onClick={() =>
-                          isEditing &&
-                          setSterilizedDropdownVisible(
-                            !sterilizedDropdownVisible
-                          )
+                          isEditing && setSterilizedDropdownVisible(!sterilizedDropdownVisible)
                         }
                       >
                         <input
-                          value={sterilized}
+                          value={sterilized === "1" ? "ทำหมันแล้ว" : "ยังไม่ได้ทำหมัน"}
                           readOnly
                           disabled={!isEditing}
                           className="w-full mt-1 p-2 pr-10 border border-gray-300 rounded-md disabled:bg-gray-100 cursor-pointer"
                         />
-
                         <svg
                           className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-7 h-7 text-gray-500 ${
-                            !isEditing
-                              ? "pointer-events-none"
-                              : "cursor-pointer"
+                            !isEditing ? "pointer-events-none" : "cursor-pointer"
                           }`}
                           viewBox="0 0 24 24"
                           fill="none"
@@ -635,52 +585,35 @@ export default function PetDetailsModal({
                           />
                         </svg>
                       </div>
-
-                      {/* dropdown ตัวเลือกทำหมัน */}
                       {sterilizedDropdownVisible && isEditing && (
                         <div className="absolute top-20 w-full bg-white border border-gray-300 rounded-md shadow-md z-10">
-                          {["ทำหมันแล้ว", "ยังไม่ได้ทำหมัน"].map((status) => (
+                          {[
+                            { label: "ทำหมันแล้ว", value: "1" },
+                            { label: "ยังไม่ได้ทำหมัน", value: "0" },
+                          ].map((status) => (
                             <div
-                              key={status}
+                              key={status.value}
                               className="px-4 py-2 hover:bg-gray-200 cursor-pointer border-b border-gray-300 last:border-b-0 text-xs sm:text-sm xl:text-md"
                               onClick={() => {
-                                setSterilized(status);
+                                setSterilized(status.value);
+                                console.log("Selected sterilized value:", status.value);
                                 setSterilizedDropdownVisible(false);
                               }}
                             >
-                              {status}
+                              {status.label}
                             </div>
                           ))}
                         </div>
                       )}
                     </div>
-
                     <div className="flex flex-col col-span-2">
-                      {/* กล่องเลือกสี */}
                       <div className="flex flex-wrap gap-3">
                         {colors.map((color, idx) => (
                           <div
                             key={idx}
                             onClick={() => {
                               if (!isEditing) return;
-
-                              setSelectedColors((prevSelected) => {
-                                let newSelected: string[];
-                                if (prevSelected.includes(color.name)) {
-                                  newSelected = prevSelected.filter(
-                                    (c) => c !== color.name
-                                  );
-                                } else {
-                                  newSelected = [...prevSelected, color.name];
-                                }
-
-                                setFormData((prevData) => ({
-                                  ...prevData,
-                                  color: newSelected.join(","),
-                                }));
-
-                                return newSelected;
-                              });
+                              toggleColor(color.name);
                             }}
                             className={`flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer ${
                               selectedColors.includes(color.name)
@@ -695,8 +628,6 @@ export default function PetDetailsModal({
                           </div>
                         ))}
                       </div>
-
-                      {/* รอยตำหนิ */}
                       <div className="flex flex-col mt-4">
                         <p className="sm:text-md xl:text-lg">รอยตำหนิ</p>
                         <input
@@ -707,8 +638,6 @@ export default function PetDetailsModal({
                         />
                       </div>
                     </div>
-
-                    {/* รายละเอียด */}
                     <div className="flex flex-col col-span-2">
                       <p className="sm:text-md xl:text-lg">รายละเอียด</p>
                       <textarea
@@ -720,7 +649,6 @@ export default function PetDetailsModal({
                     </div>
                   </div>
                 )}
-
                 {activeSection === "vaccine" && (
                   <div className="overflow-x-auto">
                     <table className="min-w-full bg-white border rounded-lg shadow-md">
@@ -746,9 +674,7 @@ export default function PetDetailsModal({
                           .map((vaccine, index) => (
                             <tr
                               key={index}
-                              className={
-                                index % 2 === 0 ? "bg-white" : "bg-[#7CBBEB]"
-                              }
+                              className={index % 2 === 0 ? "bg-white" : "bg-[#7CBBEB]"}
                             >
                               <td className="py-2 px-2 border-black border-r text-sm">
                                 {isEditing ? (
@@ -762,7 +688,7 @@ export default function PetDetailsModal({
                                         e.target.value
                                       )
                                     }
-                                    className="w-full border border-gray-300 rounded "
+                                    className="w-full border border-gray-300 rounded"
                                   />
                                 ) : (
                                   vaccine.name
@@ -780,7 +706,7 @@ export default function PetDetailsModal({
                                         e.target.value
                                       )
                                     }
-                                    className="w-full border border-gray-300 rounded "
+                                    className="w-full border border-gray-300 rounded"
                                   />
                                 ) : (
                                   vaccine.date
@@ -798,7 +724,7 @@ export default function PetDetailsModal({
                                         e.target.value
                                       )
                                     }
-                                    className="w-full border border-gray-300 rounded "
+                                    className="w-full border border-gray-300 rounded"
                                   />
                                 ) : (
                                   vaccine.nextdate
@@ -806,8 +732,6 @@ export default function PetDetailsModal({
                               </td>
                             </tr>
                           ))}
-
-                        {/* เติมแถวว่างให้ครบ rowsPerPage */}
                         {Array.from({
                           length:
                             rowsPerPage -
@@ -823,20 +747,16 @@ export default function PetDetailsModal({
                               currentPage * rowsPerPage
                             ).length +
                             i;
-
                           const emptyRow = editableVaccineData[emptyIndex] || {
                             name: "",
                             date: "",
-                            nextDate: "",
+                            nextdate: "",
                           };
-
                           return (
                             <tr
                               key={"empty-" + i}
                               className={
-                                emptyIndex % 2 === 0
-                                  ? "bg-white"
-                                  : "bg-[#7CBBEB]"
+                                emptyIndex % 2 === 0 ? "bg-white" : "bg-[#7CBBEB]"
                               }
                             >
                               <td className="py-3 px-6 border-black border-r">
@@ -898,13 +818,9 @@ export default function PetDetailsModal({
                         })}
                       </tbody>
                     </table>
-
-                    {/* Pagination */}
                     <div className="flex justify-center items-center space-x-5 pt-5">
                       <button
-                        onClick={() =>
-                          setCurrentPage((prev) => Math.max(prev - 1, 1))
-                        }
+                        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                         disabled={currentPage === 1}
                         className="flex items-center justify-center bg-[#D9D9D9] rounded sm:p-2.5 p-2 disabled:opacity-50 cursor-pointer"
                       >
@@ -939,7 +855,6 @@ export default function PetDetailsModal({
                     </div>
                   </div>
                 )}
-
                 {activeSection === "disease" && (
                   <div className="overflow-x-auto">
                     <table className="min-w-full bg-white border rounded-lg shadow-md">
@@ -955,21 +870,15 @@ export default function PetDetailsModal({
                       </thead>
                       <tbody>
                         {Array.from({ length: rowsPerPage }).map((_, index) => {
-                          const globalIndex =
-                            (currentPage - 1) * rowsPerPage + index;
+                          const globalIndex = (currentPage - 1) * rowsPerPage + index;
                           const row = editableDiseaseData[globalIndex] || {
                             name: "",
                             date: "",
                           };
-
                           return (
                             <tr
                               key={"row-" + index}
-                              className={
-                                globalIndex % 2 === 0
-                                  ? "bg-white"
-                                  : "bg-[#EAD64D]"
-                              }
+                              className={globalIndex % 2 === 0 ? "bg-white" : "bg-[#EAD64D]"}
                             >
                               <td className="py-3 px-6 border-black border-r">
                                 {isEditing ? (
@@ -977,13 +886,9 @@ export default function PetDetailsModal({
                                     type="text"
                                     value={row.name}
                                     onChange={(e) =>
-                                      handleDiseaseChange(
-                                        globalIndex,
-                                        "name",
-                                        e.target.value
-                                      )
+                                      handleDiseaseChange(globalIndex, "name", e.target.value)
                                     }
-                                    className="w-full border border-gray-300 rounded "
+                                    className="w-full border border-gray-300 rounded"
                                   />
                                 ) : (
                                   row.name
@@ -995,13 +900,9 @@ export default function PetDetailsModal({
                                     type="date"
                                     value={row.date}
                                     onChange={(e) =>
-                                      handleDiseaseChange(
-                                        globalIndex,
-                                        "date",
-                                        e.target.value
-                                      )
+                                      handleDiseaseChange(globalIndex, "date", e.target.value)
                                     }
-                                    className="w-full border border-gray-300 rounded "
+                                    className="w-full border border-gray-300 rounded"
                                   />
                                 ) : (
                                   row.date
@@ -1012,13 +913,9 @@ export default function PetDetailsModal({
                         })}
                       </tbody>
                     </table>
-
-                    {/* Pagination */}
                     <div className="flex justify-center items-center space-x-5 pt-5">
                       <button
-                        onClick={() =>
-                          setCurrentPage((prev) => Math.max(prev - 1, 1))
-                        }
+                        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                         disabled={currentPage === 1}
                         className="flex items-center justify-center bg-[#D9D9D9] rounded sm:p-2.5 p-2 disabled:opacity-50 cursor-pointer"
                       >
@@ -1053,7 +950,6 @@ export default function PetDetailsModal({
                     </div>
                   </div>
                 )}
-
                 {activeSection === "treatment" && (
                   <div className="overflow-x-auto">
                     <table className="min-w-full bg-white border rounded-lg shadow-md">
@@ -1069,21 +965,15 @@ export default function PetDetailsModal({
                       </thead>
                       <tbody>
                         {Array.from({ length: rowsPerPage }).map((_, index) => {
-                          const globalIndex =
-                            (currentPage - 1) * rowsPerPage + index;
+                          const globalIndex = (currentPage - 1) * rowsPerPage + index;
                           const row = editableDiseaseData[globalIndex] || {
                             name: "",
                             date: "",
                           };
-
                           return (
                             <tr
                               key={"row-" + index}
-                              className={
-                                globalIndex % 2 === 0
-                                  ? "bg-white"
-                                  : "bg-[#90ee90]"
-                              }
+                              className={globalIndex % 2 === 0 ? "bg-white" : "bg-[#90ee90]"}
                             >
                               <td className="py-3 px-6 border-black border-r">
                                 {isEditing ? (
@@ -1091,11 +981,7 @@ export default function PetDetailsModal({
                                     type="text"
                                     value={row.name}
                                     onChange={(e) =>
-                                      handleDiseaseChange(
-                                        globalIndex,
-                                        "name",
-                                        e.target.value
-                                      )
+                                      handleDiseaseChange(globalIndex, "name", e.target.value)
                                     }
                                     className="w-full border border-gray-300 rounded"
                                   />
@@ -1109,11 +995,7 @@ export default function PetDetailsModal({
                                     type="date"
                                     value={row.date}
                                     onChange={(e) =>
-                                      handleDiseaseChange(
-                                        globalIndex,
-                                        "date",
-                                        e.target.value
-                                      )
+                                      handleDiseaseChange(globalIndex, "date", e.target.value)
                                     }
                                     className="w-full border border-gray-300 rounded"
                                   />
@@ -1126,13 +1008,9 @@ export default function PetDetailsModal({
                         })}
                       </tbody>
                     </table>
-
-                    {/* Pagination */}
                     <div className="flex justify-center items-center space-x-5 pt-5">
                       <button
-                        onClick={() =>
-                          setCurrentPage((prev) => Math.max(prev - 1, 1))
-                        }
+                        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                         disabled={currentPage === 1}
                         className="flex items-center justify-center bg-[#D9D9D9] rounded sm:p-2.5 p-2 disabled:opacity-50 cursor-pointer"
                       >
@@ -1168,10 +1046,7 @@ export default function PetDetailsModal({
                   </div>
                 )}
               </div>
-
-              {/* ปุ่มเลือก section */}
-              <div className="flex justify-center xl:gap-6 lg:gap-4 sm:gap-6 gap-4 mx-auto mt-5 sm:mt-5 lg:mt-0 ">
-                {/* กล่องที่ 1 */}
+              <div className="flex justify-center xl:gap-6 lg:gap-4 sm:gap-6 gap-4 mx-auto mt-5 sm:mt-5 lg:mt-0">
                 <div
                   onClick={() => setActiveSection("history")}
                   className={`flex flex-col items-center xl:px-6 py-2 lg:px-4.5 md:px-5.5 sm:px-4 px-4.5 rounded-xl w-fit cursor-pointer border-3 ${
@@ -1189,8 +1064,6 @@ export default function PetDetailsModal({
                     ประวัติ
                   </p>
                 </div>
-
-                {/* กล่องที่ 2 */}
                 <div
                   onClick={() => setActiveSection("disease")}
                   className={`flex flex-col items-center xl:px-4 py-1 lg:px-3 md:px-3 sm:px-3 px-2.5 rounded-xl w-fit cursor-pointer border-3 ${
@@ -1208,8 +1081,6 @@ export default function PetDetailsModal({
                     โรคประจำตัว
                   </p>
                 </div>
-
-                {/* กล่องที่ 3 */}
                 <div
                   onClick={() => setActiveSection("vaccine")}
                   className={`flex flex-col items-center xl:px-6 py-2 lg:px-4.5 md:px-5.5 sm:px-4 px-4.5 rounded-xl w-fit cursor-pointer border-3 ${
@@ -1227,8 +1098,6 @@ export default function PetDetailsModal({
                     วัคซีน
                   </p>
                 </div>
-
-                {/* กล่องที่ 4 - การรักษา */}
                 <div
                   onClick={() => setActiveSection("treatment")}
                   className={`flex flex-col items-center xl:px-6 py-2 lg:px-4.5 md:px-5.5 sm:px-4 px-4 rounded-xl w-fit cursor-pointer border-3 ${
@@ -1238,7 +1107,7 @@ export default function PetDetailsModal({
                   }`}
                 >
                   <img
-                    src="/all/treatment.png" // แก้ path ไฟล์รูปตามจริง
+                    src="/all/treatment.png"
                     alt="Treatment"
                     className="lg:w-10 lg:h-10 xl:w-12 xl:h-12 md:w-10 md:h-12 sm:w-10 sm:h-10 w-8 h-8 object-cover"
                   />
@@ -1248,35 +1117,30 @@ export default function PetDetailsModal({
                 </div>
               </div>
             </div>
-
-            {/* ปุ่มแก้ไข/บันทึก/ยกเลิก */}
-            <div className="flex justify-between xl:gap-40 lg:gap-24 2xl:mx-14 xl:mx-6  lg:mx-2 md:mx-2 sm:mx-2 mx-6 mb-5">
+            <div className="flex justify-between xl:gap-40 lg:gap-24 2xl:mx-14 xl:mx-6 lg:mx-2 md:mx-2 sm:mx-2 mx-6 mb-5">
               {!isEditing ? (
                 <>
-                  {/* ปุ่มพิมพ์ */}
                   <button
                     onClick={handlePrint}
                     className="bg-[#EAD64D] border-[#edd017] hover:bg-[#ffef8a] hover:border-[#e0d37a] text-white sm:text-lg xl:text-xl px-6 py-1 rounded-xl cursor-pointer"
                   >
                     พิมพ์
                   </button>
-                  {/* ข้อมูลที่ซ่อนอยู่ใน DOM แต่ไม่แสดง */}
-
                   <div
                     ref={pdfRef}
                     style={{
                       position: "absolute",
                       top: "-10000px",
                       left: "-10000px",
-                      width: "210mm", // A4 width
-                      height: "297mm", // A4 height
+                      width: "210mm",
+                      height: "297mm",
                       backgroundColor: "white",
                       padding: "20px",
                       boxSizing: "border-box",
                       overflow: "hidden",
                     }}
                   >
-                    <div className=" mx-auto bg-white h-full ">
+                    <div className="mx-auto bg-white h-full">
                       <img
                         src="/all/bgprint.png"
                         alt="bg"
@@ -1285,24 +1149,11 @@ export default function PetDetailsModal({
                       <img
                         src="/all/bgprint2.png"
                         alt="bg"
-                        className="w-8 h-8 object-cover ml-[-28] mb-[-20px] mt-[-32px] "
+                        className="w-8 h-8 object-cover ml-[-28] mb-[-20px] mt-[-32px]"
                       />
-
-                      <div className="py-5 flex gap-0 ">
-                        {/* Left: Image + History */}
-                        <img
-                          src="/all/bgprint4.png"
-                          alt="bg"
-                          className="absolute z-0 ml-56 mt-[470px]  w-56 h-48 object-cover  "
-                        />
-                        <img
-                          src="/all/bgprint4.png"
-                          alt="bg"
-                          className="absolute z-0 ml-72 mt-[770px]  w-48 h-40 object-cover  "
-                        />
+                      <div className="py-5 flex gap-0">
                         <div className="flex flex-col border-r-4 relative z-10 border-[#c5b3a2]">
                           <div className="pr-5 pl-3 relative z-10 w-[350px] h-[400px]">
-                            {/* BG อยู่ข้างหลัง */}
                             <img
                               src="/all/bgprint2.png"
                               alt="bg"
@@ -1331,26 +1182,21 @@ export default function PetDetailsModal({
                             <img
                               src="/all/bgprint2.png"
                               alt="bg"
-                              className="object-cover absolute  mt-96 w-3 h-3"
+                              className="object-cover absolute mt-96 w-3 h-3"
                             />
-
-                            {/* รูปสัตว์เลี้ยง */}
                             <img
                               src={selectedPet?.imageSrc}
                               alt="pet"
                               className="w-[350px] h-[400px] object-cover relative z-10"
                             />
                           </div>
-
                           <div className="border-b-4 border-[#c5b3a2] w-full my-5"></div>
-                          {/* History Section */}
                           <div className="mt-5 px-2 relative flex-1 flex flex-col justify-start">
                             <img
                               src="/all/bgprint2.png"
                               alt="bg"
-                              className="absolute mt-[-30px] right-64  w-3 h-3 object-cover"
+                              className="absolute mt-[-30px] right-64 w-3 h-3 object-cover"
                             />
-
                             <div className="relative flex items-center gap-2 mb-4 pl-8 z-10">
                               <img
                                 src="/all/print2.png"
@@ -1367,27 +1213,26 @@ export default function PetDetailsModal({
                                 alt="bg"
                                 className="absolute left-[-10px] mt-10 w-4 h-4 object-cover z-0"
                               />
-                              <h2 className="text-2xl font-bold pb-5 pl-9  pr-10 border-3 rounded-3xl border-[#c77932] relative z-0">
+                              <h2 className="text-2xl font-bold pb-5 pl-9 pr-10 border-3 rounded-3xl border-[#c77932] relative z-0">
                                 ประวัติ
                               </h2>
                             </div>
-                            <div className="text-xl   ">
+                            <div className="text-xl">
                               <img
                                 src="/all/bgprint3.png"
                                 alt="bg"
-                                className="absolute  ml-[-20px] w-56 h-40 object-cover z-0"
+                                className="absolute ml-[-20px] w-56 h-40 object-cover z-0"
                               />
                               <p className="pb-3 relative z-10 pl-4">
                                 ชื่อเจ้าของ: {selectedPet?.owner}
                               </p>
-
                               <p className="pb-3 relative z-10 pl-4">
                                 ชื่อสัตว์เลี้ยง: {selectedPet?.name}
                               </p>
                               <img
                                 src="/all/bgprint2.png"
                                 alt="bg"
-                                className="absolute  ml-32 w-5 h-5 object-cover z-0"
+                                className="absolute ml-32 w-5 h-5 object-cover z-0"
                               />
                               <p className="pb-3 relative z-10 pl-4">
                                 อายุ: {selectedPet?.age}
@@ -1395,29 +1240,28 @@ export default function PetDetailsModal({
                               <img
                                 src="/all/bgprint2.png"
                                 alt="bg"
-                                className="absolute  ml-[-20px] w-2 h-2 object-cover z-0"
+                                className="absolute ml-[-20px] w-2 h-2 object-cover z-0"
                               />
-
                               <p className="pb-3 z-10 pl-4">
                                 สายพันธุ์: {selectedPet?.breed}
                               </p>
                               <img
                                 src="/all/bgprint2.png"
                                 alt="bg"
-                                className="absolute mb-20  ml-56 w-10 h-10 object-cover z-0"
+                                className="absolute mb-20 ml-56 w-10 h-10 object-cover z-0"
                               />
                               <p className="pb-3 z-10 pl-4">
-                                ทำหมัน: {selectedPet?.sterilized}
+                                ทำหมัน: {selectedPet?.isNeutered === 1 ? "ทำหมันแล้ว" : "ยังไม่ได้ทำหมัน"}
                               </p>
                               <img
                                 src="/all/bgprint4.png"
                                 alt="bg"
-                                className="absolute  ml-[-140px] w-36 h-36 object-cover z-0"
+                                className="absolute ml-[-140px] w-36 h-36 object-cover z-0"
                               />
                               <img
                                 src="/all/bgprint2.png"
                                 alt="bg"
-                                className="absolute mb-20  ml-20 w-4 h-4 object-cover z-0"
+                                className="absolute mb-20 ml-20 w-4 h-4 object-cover z-0"
                               />
                               <p className="pb-3 z-10 pl-4">
                                 รอยตำหนิ: {selectedPet?.markings}
@@ -1425,22 +1269,19 @@ export default function PetDetailsModal({
                               <img
                                 src="/all/bgprint2.png"
                                 alt="bg"
-                                className="absolute  ml-40 w-5 h-5 object-cover z-0"
+                                className="absolute ml-40 w-5 h-5 object-cover z-0"
                               />
-
                               <p className="pb-3 z-10 pl-4">
                                 รายละเอียด: {selectedPet?.description}
                               </p>
                               <img
                                 src="/all/bgprint2.png"
                                 alt="bg"
-                                className="absolute   ml-5 w-2 h-2 object-cover z-0"
+                                className="absolute ml-5 w-2 h-2 object-cover z-0"
                               />
                             </div>
                           </div>
                         </div>
-
-                        {/* Right: Pet Name + Icons + Diseases + Vaccines */}
                         <div className="flex flex-col flex-1 relative z-10">
                           <div className="pl-5 pb-5">
                             <img
@@ -1466,7 +1307,7 @@ export default function PetDetailsModal({
                             <img
                               src="/all/bgprint2.png"
                               alt="bg"
-                              className="absolute w-5 h-5 object-cover top-0  right-72 z-0"
+                              className="absolute w-5 h-5 object-cover top-0 right-72 z-0"
                             />
                             <img
                               src="/all/bgprint2.png"
@@ -1476,45 +1317,43 @@ export default function PetDetailsModal({
                             <img
                               src="/all/bgprint2.png"
                               alt="bg"
-                              className="absolute w-3 h-3 object-cover top-40  right-72 z-0"
+                              className="absolute w-3 h-3 object-cover top-40 right-72 z-0"
                             />
                             <img
                               src="/all/bgprint2.png"
                               alt="bg"
-                              className="absolute w-7 h-7 object-cover top-[420px]  right-64 z-0"
+                              className="absolute w-7 h-7 object-cover top-[420px] right-64 z-0"
                             />
                             <img
                               src="/all/bgprint2.png"
                               alt="bg"
-                              className="absolute w-5 h-6 object-cover top-[290px]  right-36 z-0"
+                              className="absolute w-5 h-6 object-cover top-[290px] right-36 z-0"
                             />
                             <img
                               src="/all/bgprint2.png"
                               alt="bg"
-                              className="absolute w-4 h-4 object-cover top-[250px]  right-10 z-0"
-                            />
-
-                            <img
-                              src="/all/bgprint2.png"
-                              alt="bg"
-                              className="absolute w-7 h-7 object-cover top-[210px]  right-[200px] z-0"
+                              className="absolute w-4 h-4 object-cover top-[250px] right-10 z-0"
                             />
                             <img
                               src="/all/bgprint2.png"
                               alt="bg"
-                              className="absolute w-3 h-3 object-cover top-[360px]  right-[360px] z-0"
+                              className="absolute w-7 h-7 object-cover top-[210px] right-[200px] z-0"
                             />
                             <img
                               src="/all/bgprint2.png"
                               alt="bg"
-                              className="absolute w-10 h-10 object-cover top-[340px]  right-10 z-0"
+                              className="absolute w-3 h-3 object-cover top-[360px] right-[360px] z-0"
+                            />
+                            <img
+                              src="/all/bgprint2.png"
+                              alt="bg"
+                              className="absolute w-10 h-10 object-cover top-[340px] right-10 z-0"
                             />
                             <img
                               src="/all/bgprint5.png"
                               alt="bg"
-                              className="absolute w-48 h-52 object-cover top-[420px]  -right-5 z-0"
+                              className="absolute w-48 h-52 object-cover top-[420px] -right-5 z-0"
                             />
-                            {/* Pet Name + Icon */}
                             <div className="flex items-center space-x-2 mb-5 relative z-10">
                               <h1 className="text-5xl font-semibold">
                                 {selectedPet?.name || "ไข่ตุ๋น"}
@@ -1525,9 +1364,7 @@ export default function PetDetailsModal({
                                 className="w-14 h-14 object-cover mt-5"
                               />
                             </div>
-
-                            {/* Contact Info */}
-                            <div className="text-xl space-y-2 ">
+                            <div className="text-xl space-y-2">
                               <div className="flex items-center gap-2">
                                 <img
                                   src="/all/call.png"
@@ -1550,12 +1387,9 @@ export default function PetDetailsModal({
                               </div>
                             </div>
                           </div>
-
-                          <div className="border-b-4 border-[#c5b3a2] relative z-20  w-full"></div>
-
-                          {/* Disease Section */}
+                          <div className="border-b-4 border-[#c5b3a2] relative z-20 w-full"></div>
                           <div className="p-5 mb-5">
-                            <div className="relative flex items-center gap-2 mb-4 mt-4 space-y-2 pl-3  z-10">
+                            <div className="relative flex items-center gap-2 mb-4 mt-4 space-y-2 pl-3 z-10">
                               <img
                                 src="/all/print1.png"
                                 alt="Disease"
@@ -1565,13 +1399,13 @@ export default function PetDetailsModal({
                                 โรคประจำตัว
                               </h2>
                             </div>
-                            <table className="min-w-full border-2   shadow-md mb-0 relative z-10">
+                            <table className="min-w-full border-2 shadow-md mb-0 relative z-10">
                               <thead>
                                 <tr className="text-black text-base border-2">
-                                  <th className="py-2 px-4 border-black border-2 border-r text-center  text-xl ">
+                                  <th className="py-2 px-4 border-black border-2 border-r text-center text-xl">
                                     โรคประจำตัว
                                   </th>
-                                  <th className="py-2 px-4 border-black border-2 border-r text-center  text-xl ">
+                                  <th className="py-2 px-4 border-black border-2 border-r text-center text-xl">
                                     วันที่พบแพทย์
                                   </th>
                                 </tr>
@@ -1588,10 +1422,7 @@ export default function PetDetailsModal({
                                   </tr>
                                 )) || (
                                   <tr>
-                                    <td
-                                      colSpan={2}
-                                      className="text-center py-2"
-                                    >
+                                    <td colSpan={2} className="text-center py-2">
                                       ไม่มีข้อมูล
                                     </td>
                                   </tr>
@@ -1599,13 +1430,10 @@ export default function PetDetailsModal({
                               </tbody>
                             </table>
                           </div>
-
                           <div className="border-b-4 border-[#c5b3a2] relative z-20 w-full"></div>
-
-                          {/* Vaccine Section */}
                           <div className="p-5">
-                            <div className="relative grid grid-cols-[auto_64px] items-center ] mt-2 pl-20 pr-0">
-                              <h2 className="text-2xl font-bold  pb-5 px-16 border-3 border-[#bfb2a6] rounded-3xl relative z-0">
+                            <div className="relative grid grid-cols-[auto_64px] items-center mt-2 pl-20 pr-0">
+                              <h2 className="text-2xl font-bold pb-5 px-16 border-3 border-[#bfb2a6] rounded-3xl relative z-0">
                                 วัคซีน
                               </h2>
                               <img
@@ -1614,17 +1442,16 @@ export default function PetDetailsModal({
                                 className="w-16 h-24 object-cover relative z-10 -ml-8"
                               />
                             </div>
-
                             <table className="min-w-full border-2 shadow-md mt-3 mb-5">
                               <thead>
                                 <tr className="text-black text-base border-2">
-                                  <th className="py-2 px-2 pb-2  border-black border-2 border-r border-b text-md text-center ">
+                                  <th className="py-2 px-2 pb-2 border-black border-2 border-r border-b text-md text-center">
                                     วัคซีน
                                   </th>
-                                  <th className="py-2 px-2  border-black border-2 border-r border-b text-md text-center ">
+                                  <th className="py-2 px-2 border-black border-2 border-r border-b text-md text-center">
                                     วันที่ได้รับวัคซีน
                                   </th>
-                                  <th className="py-2 px-2  border-black border-2 border-r border-b text-md text-center ">
+                                  <th className="py-2 px-2 border-black border-2 border-r border-b text-md text-center">
                                     วัคซีนครั้งต่อไป
                                   </th>
                                 </tr>
@@ -1635,19 +1462,16 @@ export default function PetDetailsModal({
                                     <td className="py-2 px-2 border-black border-2 border-r border-b">
                                       {v.name}
                                     </td>
-                                    <td className="py-2 px-2 border-black  border-2 border-b">
+                                    <td className="py-2 px-2 border-black border-2 border-b">
                                       {v.date}
                                     </td>
-                                    <td className="py-2 px-2 border-black  border-2 border-b">
+                                    <td className="py-2 px-2 border-black border-2 border-b">
                                       {v.nextdate}
                                     </td>
                                   </tr>
                                 )) || (
                                   <tr>
-                                    <td
-                                      colSpan={2}
-                                      className="text-center py-2"
-                                    >
+                                    <td colSpan={2} className="text-center py-2">
                                       ไม่มีข้อมูล
                                     </td>
                                   </tr>
@@ -1655,12 +1479,9 @@ export default function PetDetailsModal({
                               </tbody>
                             </table>
                           </div>
-
                           <div className="border-b-4 border-[#c5b3a2] relative z-20 w-full"></div>
-
-                          {/* Treatment Section */}
                           <div className="p-5">
-                            <div className="relative flex items-center gap-2 mb-4 mt-4 space-y-2 pl-6  z-10">
+                            <div className="relative flex items-center gap-2 mb-4 mt-4 space-y-2 pl-6 z-10">
                               <img
                                 src="/all/print4.png"
                                 alt="Treatment"
@@ -1670,7 +1491,6 @@ export default function PetDetailsModal({
                                 การรักษา
                               </h2>
                             </div>
-
                             <table className="min-w-full border-2 shadow-md mt-3 mb-10">
                               <thead>
                                 <tr className="text-black text-base border-2">
@@ -1696,10 +1516,7 @@ export default function PetDetailsModal({
                                   ))
                                 ) : (
                                   <tr>
-                                    <td
-                                      colSpan={2}
-                                      className="text-center py-2"
-                                    >
+                                    <td colSpan={2} className="text-center py-2">
                                       ไม่มีข้อมูล
                                     </td>
                                   </tr>
@@ -1709,67 +1526,67 @@ export default function PetDetailsModal({
                           </div>
                         </div>
                       </div>
+                      <img
+                        src="/all/bgprint2.png"
+                        alt="bg"
+                        className="absolute bottom-10 ml-10 w-7 h-7 object-cover z-0"
+                      />
+                      <img
+                        src="/all/bgprint4.png"
+                        alt="bg"
+                        className="absolute -bottom-20 ml-20 w-56 h-40 object-cover z-0"
+                      />
+                      <img
+                        src="/all/bgprint2.png"
+                        alt="bg"
+                        className="absolute bottom-1 ml-[490px] w-9 h-9 object-cover z-0"
+                      />
+                      <img
+                        src="/all/bgprint2.png"
+                        alt="bg"
+                        className="absolute bottom-24 ml-[560px] w-5 h-5 object-cover z-0"
+                      />
+                      <img
+                        src="/all/bgprint2.png"
+                        alt="bg"
+                        className="absolute -bottom-4 ml-[380px] w-7 h-7 object-cover z-0"
+                      />
+                      <img
+                        src="/all/bgprint2.png"
+                        alt="bg"
+                        className="absolute -bottom-1 ml-[620px] w-3 h-3 object-cover z-0"
+                      />
+                      <img
+                        src="/all/bgprint4.png"
+                        alt="bg"
+                        className="absolute -bottom-32 -right-24 w-40 h-40 object-cover z-0"
+                      />
+                      <img
+                        src="/all/bgprint4.png"
+                        alt="bg"
+                        className="absolute bottom-20 -right-24 w-64 h-52 object-cover z-0"
+                      />
+                      <img
+                        src="/all/bgprint2.png"
+                        alt="bg"
+                        className="absolute bottom-[310px] right-16 w-10 h-10 object-cover z-0"
+                      />
+                      <img
+                        src="/all/bgprint2.png"
+                        alt="bg"
+                        className="absolute bottom-[255px] right-64 w-3 h-3 object-cover z-0"
+                      />
+                      <img
+                        src="/all/bgprint2.png"
+                        alt="bg"
+                        className="absolute bottom-[360px] right-56 w-6 h-6 object-cover z-0"
+                      />
+                      <img
+                        src="/all/bgprint2.png"
+                        alt="bg"
+                        className="absolute bottom-[445px] right-32 w-6 h-6 object-cover z-0"
+                      />
                     </div>
-                    <img
-                      src="/all/bgprint2.png"
-                      alt="bg"
-                      className="absolute bottom-10 ml-10 w-7 h-7 object-cover z-0"
-                    />
-                    <img
-                      src="/all/bgprint4.png"
-                      alt="bg"
-                      className="absolute -bottom-20 ml-20 w-56 h-40 object-cover z-0"
-                    />
-                    <img
-                      src="/all/bgprint2.png"
-                      alt="bg"
-                      className="absolute bottom-1 ml-[490px] w-9 h-9 object-cover z-0"
-                    />
-                    <img
-                      src="/all/bgprint2.png"
-                      alt="bg"
-                      className="absolute bottom-24 ml-[560px] w-5 h-5 object-cover z-0"
-                    />
-                    <img
-                      src="/all/bgprint2.png"
-                      alt="bg"
-                      className="absolute -bottom-4 ml-[380px] w-7 h-7 object-cover z-0"
-                    />
-                    <img
-                      src="/all/bgprint2.png"
-                      alt="bg"
-                      className="absolute -bottom-1 ml-[620px] w-3 h-3 object-cover z-0"
-                    />
-                    <img
-                      src="/all/bgprint4.png"
-                      alt="bg"
-                      className="absolute -bottom-32 -right-24 w-40 h-40 object-cover z-0"
-                    />
-                    <img
-                      src="/all/bgprint4.png"
-                      alt="bg"
-                      className="absolute bottom-20 -right-24 w-64 h-52 object-cover z-0"
-                    />
-                    <img
-                      src="/all/bgprint2.png"
-                      alt="bg"
-                      className="absolute bottom-[310px] right-16 w-10 h-10 object-cover z-0"
-                    />
-                    <img
-                      src="/all/bgprint2.png"
-                      alt="bg"
-                      className="absolute bottom-[255px] right-64 w-3 h-3 object-cover z-0"
-                    />
-                    <img
-                      src="/all/bgprint2.png"
-                      alt="bg"
-                      className="absolute bottom-[360px] right-56 w-6 h-6 object-cover z-0"
-                    />
-                    <img
-                      src="/all/bgprint2.png"
-                      alt="bg"
-                      className="absolute bottom-[445px] right-32 w-6 h-6 object-cover z-0"
-                    />
                   </div>
                   <button
                     onClick={() => setIsEditing(true)}

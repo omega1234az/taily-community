@@ -27,9 +27,9 @@ interface Pet {
   breed: string;
   age: string;
   gender: string;
-  type: string;
+  speciesId: string;
   color: string;
-  sterilized: string;
+  isNeutered: number;
   markings: string;
   description: string;
   phone: string;
@@ -59,6 +59,7 @@ export default function Pet() {
       if (!res.ok) throw new Error("โหลดข้อมูลสัตว์เลี้ยงล้มเหลว");
       const data: Pet[] = await res.json();
       setPets(data);
+      console.log("Pets data:", data);
       setIsRegistered(data.length > 0);
     } catch (error) {
       console.error(error);
