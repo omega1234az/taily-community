@@ -19,27 +19,34 @@ interface Vaccine {
   nextdate: string;
 }
 
+interface Treatment {
+  id?: number;
+  name: string;
+  date: string;
+  description?: string;
+}
+
 interface Pet {
   id: number;
-  owner: string;
+  ownerName?: string;
   name: string;
-  imageSrc: string;
-  breed: string;
-  age: string;
-  gender: string;
-  speciesId: string;
-  color: string;
-  isNeutered: number;
-  markings: string;
-  description: string;
-  phone: string;
-  facebook: string;
-  additionalImages?: string[];
+  images?: { id: number; url: string; petId: number }[]; // Updated to match API
+  history?: string;
+  disease?: string;
+  vaccine?: string;
+  age?: string;
+  gender?: string;
+  speciesId?: number; // Changed to number to match API
+  breed?: string;
+  isNeutered?: number;
+  color?: string[] | string; // Support both array and string
+  markings?: string;
+  description?: string;
+  phone?: string;
+  facebook?: string;
   diseaseData?: Disease[];
   vaccineData?: Vaccine[];
-
-  // ✅ เพิ่มตรงนี้
-  images?: { url: string }[];
+  treatmentData?: Treatment[];
 }
 
 export default function Pet() {
