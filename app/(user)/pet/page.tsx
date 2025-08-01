@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import PetCard from "@/app/component/PetCard";
 import PetModal from "@/app/component/PetModal";
-
+import { useRouter } from "next/navigation";
 interface Disease {
   id?: number;
   name: string;
@@ -56,23 +56,33 @@ export default function Pet() {
   const [activeSection, setActiveSection] = useState<
     "history" | "disease" | "vaccine" | "treatment"
   >("history");
-
+  const router = useRouter();
   const [pets, setPets] = useState<Pet[]>([]);
 
   // โหลดข้อมูลสัตว์เลี้ยง
   const fetchPets = async () => {
-    try {
-      const res = await fetch("/api/pets/me");
-      if (!res.ok) throw new Error("โหลดข้อมูลสัตว์เลี้ยงล้มเหลว");
-      const data: Pet[] = await res.json();
-      setPets(data);
-      console.log("Pets data:", data);
-      setIsRegistered(data.length > 0);
-    } catch (error) {
-      console.error(error);
-      setIsRegistered(false);
+  
+
+  try {
+    const res = await fetch("/api/pets/me");
+
+    if (res.status === 401) {
+      
+      router.push("/login");
+      return;
     }
-  };
+
+    if (!res.ok) throw new Error("โหลดข้อมูลสัตว์เลี้ยงล้มเหลว");
+
+    const data: Pet[] = await res.json();
+    setPets(data);
+    console.log("Pets data:", data);
+    setIsRegistered(data.length > 0);
+  } catch (error) {
+    console.error(error);
+    setIsRegistered(false);
+  }
+};
 
   useEffect(() => {
     fetchPets();
