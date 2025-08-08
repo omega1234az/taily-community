@@ -99,7 +99,6 @@ model VerificationToken {
 // ---------- PET PROFILE ----------
 model LostPet {
   id          Int          @id @default(autoincrement())
-  title       String
   description String
   location    String
   lat         Float?
@@ -109,11 +108,11 @@ model LostPet {
   status      LostPetStatus @default(lost)
   userId      String
   user        User         @relation(fields: [userId], references: [id])
-
-  // 🔗 เชื่อมกับ Pet แบบบังคับ
-  petId       Int
+  petId       Int          
   pet         Pet          @relation(fields: [petId], references: [id])
-
+  facebook   String? 
+  ownerName  String?
+  phone      String?
   images      LostPetImage[]
   clues       Clue[]
   createdAt   DateTime     @default(now())
