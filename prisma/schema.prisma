@@ -162,6 +162,7 @@ model PetImage {
   id      Int    @id @default(autoincrement())
   url     String // URL ของภาพ
   petId   Int    // petId ของสัตว์เลี้ยง
+  mainImage    Boolean  @default(false)
   pet     Pet    @relation(fields: [petId], references: [id])
 }
 

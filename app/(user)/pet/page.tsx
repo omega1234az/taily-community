@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -6,6 +7,7 @@ import Image from "next/image";
 import PetCard from "@/app/component/PetCard";
 import PetModal from "@/app/component/PetModal";
 import { useRouter } from "next/navigation";
+
 interface Disease {
   id?: number;
   name: string;
@@ -30,16 +32,16 @@ interface Pet {
   id: number;
   ownerName?: string;
   name: string;
-  images?: { id: number; url: string; petId: number }[]; // Updated to match API
+  images?: { id: number; url: string; petId: number; mainImage: boolean }[];
   history?: string;
   disease?: string;
   vaccine?: string;
   age?: string;
   gender?: string;
-  speciesId?: number; // Changed to number to match API
+  speciesId?: number;
   breed?: string;
   isNeutered?: number;
-  color?: string[] | string; // Support both array and string
+  color?: string[] | string;
   markings?: string;
   description?: string;
   phone?: string;
@@ -61,28 +63,22 @@ export default function Pet() {
 
   // โหลดข้อมูลสัตว์เลี้ยง
   const fetchPets = async () => {
-  
-
-  try {
-    const res = await fetch("/api/pets/me");
-
-    if (res.status === 401) {
-      
-      router.push("/login");
-      return;
+    try {
+      const res = await fetch("/api/pets/me");
+      if (res.status === 401) {
+        router.push("/login");
+        return;
+      }
+      if (!res.ok) throw new Error("โหลดข้อมูลสัตว์เลี้ยงล้มเหลว");
+      const data: Pet[] = await res.json();
+      setPets(data);
+      console.log("Pets data:", data);
+      setIsRegistered(data.length > 0);
+    } catch (error) {
+      console.error(error);
+      setIsRegistered(false);
     }
-
-    if (!res.ok) throw new Error("โหลดข้อมูลสัตว์เลี้ยงล้มเหลว");
-
-    const data: Pet[] = await res.json();
-    setPets(data);
-    console.log("Pets data:", data);
-    setIsRegistered(data.length > 0);
-  } catch (error) {
-    console.error(error);
-    setIsRegistered(false);
-  }
-};
+  };
 
   useEffect(() => {
     fetchPets();
@@ -97,7 +93,7 @@ export default function Pet() {
         body: JSON.stringify(pet),
       });
       if (!res.ok) throw new Error("เพิ่มสัตว์เลี้ยงไม่สำเร็จ");
-      await fetchPets(); // โหลดข้อมูลใหม่หลังเพิ่ม
+      await fetchPets();
     } catch (error) {
       console.error(error);
     }
@@ -199,7 +195,6 @@ export default function Pet() {
     if (!res.ok) throw new Error("ลบวัคซีนไม่สำเร็จ");
   };
 
-  // ฟังก์ชันอื่น ๆ เช่น handlePetClick, UI render เหมือนเดิม
   const handlePetClick = (pet: Pet) => {
     setSelectedPet(pet);
     setShowModal(true);
@@ -250,18 +245,22 @@ export default function Pet() {
 
       {/* Pet Cards */}
       <div className="flex flex-wrap py-5 lg:gap-10 sm:gap-6 gap-5">
-        {pets.map((pet) => (
-          <div
-            key={pet.id}
-            onClick={() => handlePetClick(pet)}
-            className="cursor-pointer"
-          >
-            <PetCard
-              imageSrc={pet.images?.[0]?.url || "/default.png"}
-              name={pet.name}
-            />
-          </div>
-        ))}
+        {pets.map((pet) => {
+          // เลือกภาพที่มี mainImage: true หรือภาพแรกถ้าไม่มี mainImage
+          const mainImage = pet.images?.find((img) => img.mainImage) || pet.images?.[0];
+          return (
+            <div
+              key={pet.id}
+              onClick={() => handlePetClick(pet)}
+              className="cursor-pointer"
+            >
+              <PetCard
+                imageSrc={mainImage?.url || "/default.png"}
+                name={pet.name}
+              />
+            </div>
+          );
+        })}
 
         {/* Register Button */}
         <div

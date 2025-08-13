@@ -242,7 +242,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
                 .jpeg({ quality: 65, progressive: true })
                 .toBuffer();
 
-              const compressedBlob = new Blob([compressedImgBuffer], { type: 'image/jpeg' });
+              const compressedBlob = new Blob([new Uint8Array(compressedImgBuffer)], { type: 'image/jpeg' });
               const fileName = `pet-${session.user.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.jpg`;
               const { url } = await put(`pets/${session.user.id}/${fileName}`, compressedBlob, { access: 'public' });
               imageUrls.push(url);

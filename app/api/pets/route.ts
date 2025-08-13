@@ -72,6 +72,7 @@ export async function POST(request: Request) {
     const markings = formData.get('markings')?.toString();
     const isNeuteredRaw = formData.get('isNeutered')?.toString();
     const images = formData.getAll('images') as File[];
+    // รูปแรกจะเป็น mainImage เสมอ
 
     // ตรวจสอบข้อมูลที่จำเป็น
     if (!name || !speciesId) {
@@ -118,7 +119,6 @@ export async function POST(request: Request) {
     }
 
     // ตรวจสอบ color (ต้องเป็น array หรือ undefined)
-    // ตรวจสอบ color (ต้องเป็น array หรือ undefined)
     let color;
     if (colorRaw) {
       try {
@@ -135,7 +135,8 @@ export async function POST(request: Request) {
     }
 
 
-    // ตรวจสอบและอัปโหลดรูปภาพ (แก้ไขให้ทำงานแบบ Sequential)
+
+    // ตรวจสอบและอัปโหลดรูปภาพ
     const allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp'];
     const imageUrls: string[] = [];
     if (images.length > 4) {
@@ -144,6 +145,7 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+
     // ใช้ for...of loop เพื่อให้ await ทำงานอย่างถูกต้อง
     for (const image of images) {
       if (image && image.size > 0) {
@@ -180,7 +182,7 @@ export async function POST(request: Request) {
             .toBuffer();
 
           // สร้าง Blob จาก Buffer ที่บีบอัด
-          const compressedBlob = new Blob([compressedImgBuffer], { type: 'image/jpeg' });
+          const compressedBlob = new Blob([new Uint8Array(compressedImgBuffer)], { type: 'image/jpeg' });
 
           // อัปโหลดไป Vercel Blob
           const fileName = `pet-${session.user.id}-${Date.now()}-${Math.random().toString(36).substring(2, 15)}.jpg`;
@@ -217,7 +219,10 @@ export async function POST(request: Request) {
           connect: { id: session.user.id },
         },
         images: {
-          create: imageUrls.map((url) => ({ url })),
+          create: imageUrls.map((url, index) => ({
+            url,
+            mainImage: index === 0, // รูปแรกเป็น mainImage
+          })),
         },
       },
       include: {
