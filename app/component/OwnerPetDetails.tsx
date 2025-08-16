@@ -73,7 +73,7 @@ export default function OwnerPetDetails({ pet }: Props) {
   return (
     <div>
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold mb-5">
+        <h1 className="lg:text-3xl text-2xl font-semibold mb-5">
           <span className="bg-[#EAD64D] lg:py-6 lg:pl-6 sm:py-5 sm:pl-5 py-3 pl-4 rounded-full">
             {pet.name.slice(0, 2)}
           </span>
@@ -255,71 +255,85 @@ export default function OwnerPetDetails({ pet }: Props) {
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row  items-start gap-10 xl:gap-16 pt-8 xl:pt-10">
-        <div className="ml-20 sm:ml-0">
-          {/* รูปหลัก */}
-          <img
-            src={mainImage}
-            alt={pet.name}
-            className="2xl:w-72 2xl:h-80 xl:w-64 xl:h-72 lg:w-60 lg:h-64 md:w-56 md:h-60 sm:w-48 sm:h-56 w-36 h-48 object-cover rounded-2xl overflow-hidden"
-          />
-
-          {/* รูปเล็ก (thumbnail) */}
-          <div className="grid grid-cols-3 gap-2 pt-3">
-            {pet.images
-              .filter((img) => img !== mainImage)
-              .map((img, idx) => (
-                <img
-                  key={idx}
-                  src={img}
-                  alt={`${pet.name} ${idx + 1}`}
-                  onClick={() => setMainImage(img)}
-                  className="2xl:w-22 2xl:h-22 xl:w-20 xl:h-20 lg:w-18 lg:h-18 md:w-17 md:h-17 sm:w-14 sm:h-14 w-11 h-12 object-cover cursor-pointer rounded-md"
-                />
-              ))}
+      <div className="flex flex-col sm:gap-6 gap-4 lg:pt-14 pt-8">
+        {/* ส่วนแสดงรูปเรียงแบบเลื่อนแนวนอน */}
+        <div className="flex overflow-x-auto scrollbar-hide pl-6">
+          <div className="flex gap-6">
+            {pet.images.slice(0, 4).map((img, idx) => (
+              <img
+                key={idx}
+                src={img}
+                alt={`${pet.name}-${idx}`}
+                className="2xl:w-[600px] 2xl:h-[420px] xl:w-[500px] xl:h-[350px] lg:w-[400px] lg:h-[300px] sm:w-[300px] sm:h-[200px] w-[287px] h-[180px] object-cover flex-shrink-0"
+              />
+            ))}
           </div>
         </div>
+      </div>
 
-        <div className="flex flex-col  mt-2 xl:mt-5 text-lg lg:text-xl space-y-6">
-          <p>เพศ: {pet.gender}</p>
-          <p>สายพันธุ์: {pet.breed}</p>
-          <p>ประเภท: {pet.type}</p>
-          <p>สี: {pet.color}</p>
-          <p>พบวันที่: {pet.lostDate}</p>
+      <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-5 md:gap-10 lg:gap-28 xl:gap-40 2xl:gap-52">
+        {/* คอลัมน์ซ้าย */}
+        <div className="mt-2 xl:mt-5 text-lg lg:text-2xl space-y-6">
+          <p>
+            <span className="text-lg lg:text-2xl">เพศ:</span>{" "}
+            <span className="text-[16px] lg:text-xl">{pet.gender}</span>
+          </p>
+          <p>
+            <span className="text-lg lg:text-2xl">ประเภท:</span>{" "}
+            <span className="text-[16px] lg:text-xl">{pet.type}</span>
+          </p>
+          <p>
+            <span className="text-lg lg:text-2xl">สายพันธุ์:</span>{" "}
+            <span className="text-[16px] lg:text-xl">{pet.breed}</span>
+          </p>
+          <p>
+            <span className="text-lg lg:text-2xl">สี:</span>{" "}
+            <span className="text-[16px] lg:text-xl">{pet.color}</span>
+          </p>
+          <p>
+            <span className="text-lg lg:text-2xl">พบวันที่:</span>{" "}
+            <span className="text-[16px] lg:text-xl">{pet.lostDate}</span>
+          </p>
+        </div>
+
+        {/* คอลัมน์ขวา */}
+        <div className="mt-2 xl:mt-5 space-y-6">
+          <div>
+            <h2 className="text-lg lg:text-2xl">รอยตำหนิ</h2>
+            <p className="text-[16px] lg:text-lg mb-5">{pet.marks}</p>
+          </div>
+          <div>
+            <h2 className="text-lg lg:text-2xl">รายละเอียด</h2>
+            <p className="text-[16px] lg:text-lg">{pet.description}</p>
+          </div>
         </div>
       </div>
-      <div className="mt-10">
-        <h2 className="text-lg lg:text-xl">รอยตำหนิ</h2>
-        <p className="text-sm lg:text-md mb-5">{pet.marks}</p>
 
-        <h2 className="text-lg lg:text-xl">รายละเอียด</h2>
-        <p className="text-sm lg:text-md mb-5">{pet.description}</p>
-      </div>
-      <div className="flex row space-x-3 mt-8">
+      <div className="flex row space-x-3 mt-10">
         <img
           src="/home/f.png"
           alt="image"
-          className="lg:w-11 sm:w-10 w-8 h-auto object-cover"
+          className="lg:w-14 sm:w-12 w-10 h-auto object-cover"
         />
         <img
           src="/home/l.png"
           alt="image"
-          className="lg:w-11 sm:w-10 w-8 h-auto object-cover"
+          className="lg:w-14 sm:w-12 w-10 h-auto object-cover"
         />
         <img
           src="/home/x.png"
           alt="image"
-          className="lg:w-11 sm:w-10 w-8 h-auto object-cover"
+          className="lg:w-14 sm:w-12 w-10 h-auto object-cover"
         />
         <img
           src="/home/ch.png"
           alt="image"
-          className="lg:w-11 sm:w-10 w-8 h-auto object-cover"
+          className="lg:w-14 sm:w-12 w-10 h-auto object-cover"
         />
       </div>
 
-      <h2 className="text-lg lg:text-xl mt-8">สถานที่หาย</h2>
-      <p className="text-sm lg:text-md mb-5">{pet.lostLocation}</p>
+      <h2 className="text-lg lg:text-2xl mt-10">สถานที่หาย</h2>
+      <p className="text-[16px] lg:text-xl mb-5">{pet.lostLocation}</p>
 
       <img
         src="/home/map2.png"
@@ -327,10 +341,10 @@ export default function OwnerPetDetails({ pet }: Props) {
         className="w-full h-auto object-contain"
       />
 
-      <p className="text-lg lg:text-xl lg:my-8 my-5 sm:my-5 ">
+      <p className="text-lg lg:text-2xl lg:my-8 my-5 sm:my-5 ">
         ช่องทางการติดต่อ
       </p>
-      <div className="inline-flex gap-5 xl:p-8 p-5 bg-[#AFDAFB] rounded-xl items-center mb-10">
+      <div className="inline-flex gap-8 sm:gap-12 xl:p-8 p-5 bg-[#AFDAFB] rounded-xl items-center sm:mb-20 mb-10">
         <div className="flex justify-center items-start">
           <img
             src="/all/owen.png"
@@ -341,32 +355,32 @@ export default function OwnerPetDetails({ pet }: Props) {
 
         <div className="space-y-3">
           <div>
-            <p className="text-sm lg:text-md mb-1">ชื่อ</p>
+            <p className="text-[16px] lg:text-lg mb-1">ชื่อ</p>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full bg-white border border-gray-300 rounded-xl lg:px-4 px-2 lg:py-2 py-1.5 lg:text-sm sm:text-xs"
+              className="w-full bg-white border border-gray-300 rounded-xl lg:px-4 px-2 lg:py-2 py-1.5 lg:text-[16px]  sm:text-sm text-xs"
             />
           </div>
 
           <div>
-            <p className="text-sm lg:text-md mb-1">เบอร์ติดต่อ</p>
+            <p className="text-[16px] lg:text-lg mb-1">เบอร์ติดต่อ</p>
             <input
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="w-full bg-white border border-gray-300 rounded-xl lg:px-4 px-2 lg:py-2 py-1.5 lg:text-sm sm:text-xs"
+              className="w-full bg-white border border-gray-300 rounded-xl lg:px-4 px-2 lg:py-2 py-1.5 lg:text-[16px]  sm:text-sm text-xs"
             />
           </div>
 
           <div>
-            <p className="text-sm lg:text-md mb-1">Facebook</p>
+            <p className="text-[16px] lg:text-lg mb-1">Facebook</p>
             <input
               type="text"
               value={facebook}
               onChange={(e) => setFacebook(e.target.value)}
-              className="w-full bg-white border border-gray-300 rounded-xl lg:px-4 px-2 lg:py-2 py-1.5 lg:text-sm sm:text-xs"
+              className="w-full bg-white border border-gray-300 rounded-xl lg:px-4 px-2 lg:py-2 py-1.5 lg:text-[16px]  sm:text-sm text-xs"
             />
           </div>
         </div>
