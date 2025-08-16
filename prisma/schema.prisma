@@ -56,6 +56,7 @@ model User {
   foundPets     FoundPet[]
   notifications Notification[]
   passwordResetTokens PasswordResetToken[]
+  status  Boolean @default(true)
 }
 
 model Account {
