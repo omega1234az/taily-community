@@ -42,14 +42,34 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 }
 
 // 🔹 ลบ LostPet
+
+
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    await prisma.lostPet.delete({
-      where: { id: Number(params.id) },
-    })
+    const { id } = params;
 
-    return NextResponse.json({ message: 'ลบเรียบร้อยแล้ว' })
+    // อ่าน status จาก body ของ request
+    const body = await req.json();
+    const { status } = body;
+
+    if (!status) {
+      return NextResponse.json({ message: 'กรุณาส่งค่า status ด้วย' }, { status: 400 });
+    }
+
+    const updatedPet = await prisma.lostPet.update({
+      where: { id: Number(id) },
+      data: { status },
+    });
+
+    return NextResponse.json({ 
+      message: `อัพเดทสถานะเป็น ${status} เรียบร้อยแล้ว`,
+      status: updatedPet.status
+    });
   } catch (error) {
-    return NextResponse.json({ message: 'ไม่สามารถลบข้อมูลได้', error }, { status: 500 })
+    console.error(error);
+    return NextResponse.json(
+      { message: 'ไม่สามารถอัพเดทสถานะได้', error },
+      { status: 500 }
+    );
   }
 }

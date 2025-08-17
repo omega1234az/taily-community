@@ -2,8 +2,24 @@
 
 import Link from "next/link";
 import React, { useState } from "react";
-
-interface AnCardhProps {
+interface Pet {
+  id: number;
+  name: string;
+  species: {
+    name: string;
+  };
+  breed: string;
+  age: number;
+  gender: string;
+  color: string[];
+  description: string;
+  markings: string;
+  images: Array<{
+    url: string;
+  }>;
+}
+interface AnCardProps {
+  id: number;
   imageSrc: string;
   name: string;
   age: string;
@@ -12,10 +28,19 @@ interface AnCardhProps {
   lostDate: string;
   lostLocation: string;
   reward: string;
+  status?: string;
+  daysSinceLost?: number;
+  ownerName?: string;
+  species?: string;
+  color?: string[] | string;
+  pet: Pet;
+  onDelete?: () => void; // ✅ callback จาก parent
 }
 
-const PetCard: React.FC<AnCardhProps> = ({
+const PetCard: React.FC<AnCardProps> = ({
+  id,
   imageSrc,
+  pet,
   name,
   age,
   gender,
@@ -23,30 +48,52 @@ const PetCard: React.FC<AnCardhProps> = ({
   lostDate,
   lostLocation,
   reward,
+  onDelete, // ✅ รับเข้ามา
 }) => {
-  // ในฟังก์ชัน component
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [reportType, setReportType] = useState("");
   const [showOtherInput, setShowOtherInput] = useState(false);
   const [reportMessage, setReportMessage] = useState("");
 
-  const handleSubmitReport = () => {
-    if (!reportType) {
-      alert("กรุณาเลือกเหตุผลก่อนลบโพสต์");
-      return;
-    }
+  const handleSubmitReport = async () => {
+  if (!reportType) {
+    alert("กรุณาเลือกเหตุผลก่อนลบโพสต์");
+    return;
+  }
 
-    // ส่งรายงานที่เลือก + ข้อความเพิ่มเติมถ้ามี
-    console.log("ลบโพสต์:", reportType, reportMessage);
+  // mapping เหตุผล -> status ที่จะส่งไป API
+  let statusToUpdate = "closed";
+  if (reportType === "พบสัตว์เลี้ยง,พบเจ้าของแล้ว") statusToUpdate = "closed";
+  if (reportType === "โพสต์ซ้ำ,โพสต์ผิด") statusToUpdate = "fake";
+  if (reportType === "ไม่ต้องการเผยแพร่แล้ว") statusToUpdate = "closed";
+  if (reportType === "อื่นๆ") statusToUpdate = "closed";
 
-    // ปิด popup และรีเซ็ตค่า
-    setIsReportOpen(false);
-    setReportType("");
-    setReportMessage("");
-    setShowOtherInput(false);
-  };
+  try {
+    const res = await fetch(`/api/lostpet/${id}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: statusToUpdate }),
+    });
+
+    const data = await res.json();
+    alert(data.message);
+
+    if (onDelete) onDelete();
+    location.reload();// refresh list หรือ remove card
+  } catch (err) {
+    console.error("Error:", err);
+    alert("ไม่สามารถลบโพสต์ได้");
+  }
+
+  setIsReportOpen(false);
+  setReportType("");
+  setReportMessage("");
+  setShowOtherInput(false);
+  
+};
+
   return (
-    <div className="flex flex-col  md:flex-row  gap-6 p-6   rounded-2xl shadow-lg bg-[#E5EEFF] w-full 2xl:max-w-md xl:max-w-md lg:max-w-md md:max-w-md  sm:max-w-[300px] max-w-[240px]  hover:bg-gray-200 ml-4  sm:ml-10 md:ml-0">
+    <div className="flex flex-col  md:flex-row  gap-6 p-6 rounded-2xl shadow-lg bg-[#E5EEFF] w-full 2xl:max-w-md xl:max-w-md lg:max-w-md md:max-w-md  sm:max-w-[300px] max-w-[240px]  hover:bg-gray-200 ml-4  sm:ml-10 md:ml-0">
       {/* รูปภาพ */}
       <div className="mx-auto xl:w-[300px] xl:h-[250px] md:w-[250px] md:h-[200px] sm:w-[150px] sm:h-[180px] w-[100px] h-[120px] rounded-xl overflow-hidden">
         <img src={imageSrc} alt={name} className="w-full h-full object-cover" />
@@ -86,7 +133,7 @@ const PetCard: React.FC<AnCardhProps> = ({
               รายละเอียด
             </button>
           </Link>
-          {/* ปุ่มลบที่เปิด Popup รายงาน */}
+          {/* ปุ่มลบ */}
           <button
             className="rounded-xl shadow-md bg-red-500 text-white text-[10px] sm:text-sm sm:px-4 sm:py-2 px-4 py-1.5 hover:bg-red-400 transition duration-300 cursor-pointer"
             onClick={() => setIsReportOpen(true)}

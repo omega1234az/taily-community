@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>Map Center Pin</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    #map { height: 500px; width: 100%; position: relative; }
+    #pin {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -100%); /* ให้ปลายหมุดชี้ตรงกลาง */
+      z-index: 999;
+      pointer-events: none; /* ให้ map ยังรับคลิกได้ */
+    }
+    #coords { margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+<div id="map"></div>
+<img id="pin" src="https://cdn-icons-png.flaticon.com/512/684/684908.png" width="40" />
+
+<div id="coords">Lat: -, Lng: -</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  // สร้าง map
+  const map = L.map('map').setView([13.736717, 100.523186], 13);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+  }).addTo(map);
+
+  const coordsDiv = document.getElementById('coords');
+
+  // ฟังก์ชันอัปเดตค่า lat/lng ของตำแหน่งตรงกลาง
+  function updateCenterCoords() {
+    const center = map.getCenter();
+    coordsDiv.textContent = `Lat: ${center.lat.toFixed(6)}, Lng: ${center.lng.toFixed(6)}`;
+  }
+
+  map.on('move', updateCenterCoords);
+  updateCenterCoords(); // เริ่มต้น
+</script>
+
+</body>
+</html>

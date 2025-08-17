@@ -117,11 +117,18 @@ export async function POST(req: NextRequest) {
 // GET - ปลอดภัยแล้ว ไม่เปิดเผยข้อมูลส่วนตัว
 export async function GET(req: NextRequest) {
   try {
+    const session = await getServerSession(options);
+
+    if (!session || !session.user || !session.user.id) {
+      return NextResponse.json({ message: 'ไม่ได้รับอนุญาต' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const species = searchParams.get('species');
-    const province = searchParams.get('province');
+    // จัดการกรณีที่ไม่มี page หรือ limit โดยกำหนดค่า default
+    const page = parseInt(searchParams.get('page') || '1', 10) || 1;
+    const limit = parseInt(searchParams.get('limit') || '10', 10) || 10;
+    const species = searchParams.get('species') || undefined;
+    const province = searchParams.get('province') || undefined;
     const status = searchParams.get('status') || 'lost';
 
     // Validate pagination
@@ -131,22 +138,38 @@ export async function GET(req: NextRequest) {
 
     const skip = (page - 1) * limit;
 
-    // Build where clause
+    // Build where clause - แก้ไขการสร้าง whereClause
     const whereClause: any = {
-      status: status
+      status: status as any, // Cast เป็น LostPetStatus enum
     };
 
-    if (species) {
+    // เพิ่มเงื่อนไขสำหรับ species และ province พร้อมกัน
+    if (species && province) {
+      whereClause.AND = [
+        {
+          pet: {
+            species: {
+              name: species,
+            },
+          },
+        },
+        {
+          user: {
+            province,
+          },
+        },
+      ];
+    } else if (species) {
+      // เพิ่มเงื่อนไขเฉพาะเมื่อมีค่า species
       whereClause.pet = {
         species: {
-          name: species
-        }
+          name: species,
+        },
       };
-    }
-
-    if (province) {
+    } else if (province) {
+      // เพิ่มเงื่อนไขเฉพาะเมื่อมีค่า province
       whereClause.user = {
-        province: province
+        province,
       };
     }
 
@@ -165,19 +188,23 @@ export async function GET(req: NextRequest) {
               color: true,
               description: true,
               markings: true,
-              images: { select: { url: true } }
-            }
+              images: { 
+                select: { 
+                  url: true,
+                  mainImage: true // เพิ่ม mainImage field
+                } 
+              },
+            },
           },
           user: {
             select: {
               id: true,
               firstName: true,
-              // ไม่เอา email, phone, address เพื่อความปลอดภัย
-              province: true // เอาแค่จังหวัดเพื่อแสดงพื้นที่โดยทั่วไป
-            }
+              province: true,
+            },
           },
           images: {
-            select: { url: true }
+            select: { url: true },
           },
           clues: {
             select: {
@@ -185,36 +212,38 @@ export async function GET(req: NextRequest) {
               content: true,
               location: true,
               createdAt: true,
-              // ไม่เอา lat, lng เพื่อความปลอดภัย
               user: {
                 select: {
-                  firstName: true
-                }
+                  firstName: true,
+                },
               },
               images: {
-                select: { url: true }
-              }
-            }
+                select: { url: true },
+              },
+            },
+            orderBy: { createdAt: 'desc' }, // เรียงลำดับ clues ตามวันที่สร้าง
           },
         },
-        skip: skip,
+        skip,
         take: limit,
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
       }),
-      prisma.lostPet.count({ where: whereClause })
+      prisma.lostPet.count({ where: whereClause }),
     ]);
 
-    // เพิ่มความปลอดภัยโดยการซ่อนข้อมูลเพิ่มเติม
+    // แปลงข้อมูลให้ปลอดภัย
     const safeLostPets = lostPets.map(lostPet => ({
       id: lostPet.id,
       description: lostPet.description,
       location: lostPet.location,
-      // ไม่ส่ง lat, lng เพื่อความปลอดภัย - จะส่งเมื่อมีการติดต่อ
+      lat: lostPet.lat, // เพิ่ม lat
+      lng: lostPet.lng, // เพิ่ม lng
       lostDate: lostPet.lostDate,
       reward: lostPet.reward,
       status: lostPet.status,
-      // ไม่ส่งข้อมูล phone, facebook - จะแสดงเมื่อมีการติดต่อ
+      facebook: lostPet.facebook, // เพิ่ม facebook
       ownerName: lostPet.ownerName,
+      phone: lostPet.phone, // เพิ่ม phone
       pet: lostPet.pet,
       user: lostPet.user,
       images: lostPet.images,
@@ -228,12 +257,14 @@ export async function GET(req: NextRequest) {
         page,
         limit,
         total,
-        totalPages: Math.ceil(total / limit)
-      }
+        totalPages: Math.ceil(total / limit),
+      },
     });
-
   } catch (error) {
     console.error("Error fetching lost pets:", error);
-    return NextResponse.json({ message: 'ไม่สามารถดึงข้อมูลได้' }, { status: 500 });
+    return NextResponse.json({ 
+      message: 'ไม่สามารถดึงข้อมูลได้',
+      error: process.env.NODE_ENV === 'development' ? error : undefined 
+    }, { status: 500 });
   }
 }
