@@ -1,6 +1,9 @@
 "use client";
 
-import React, { useRef, useState, ChangeEvent } from "react";
+import React, { useRef, useState, useEffect, ChangeEvent } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import { useParams } from 'next/navigation';
 
 type PetData = {
   name: string;
@@ -8,7 +11,7 @@ type PetData = {
   gender: string;
   breed: string;
   sterilized: string;
-  neutered?: string; // เพิ่มถ้าจำเป็น
+  neutered?: string;
   color: string;
   markings: string;
   description: string;
@@ -23,7 +26,7 @@ export default function RegisterMissing() {
   const [isDropdownVisible, setDropdownVisible] = useState(false);
   const [selectedType, setSelectedType] = useState<string>("");
   const [isEditing, setIsEditing] = useState(false);
-
+  const params = useParams<{ id: string }>();
   const [name, setName] = useState<string>("");
   const [age, setAge] = useState<string>("");
   const [gender, setGender] = useState<string>("");
@@ -31,7 +34,7 @@ export default function RegisterMissing() {
   const [sterilized, setSterilized] = useState<string>("");
   const [color, setColor] = useState<string>("");
   const [markings, setMarkings] = useState<string>("");
-  const [description, setDescription] = useState<string>(" ");
+  const [description, setDescription] = useState<string>("");
   const [missingDate, setMissingDate] = useState<string>("");
   const [postedDate, setPostedDate] = useState<string>("");
   const [missingLocation, setMissingLocation] = useState<string>("");
@@ -40,76 +43,27 @@ export default function RegisterMissing() {
   const [ownerName, setOwnerName] = useState<string>("");
   const [contactNumber, setContactNumber] = useState<string>("");
   const [facebook, setFacebook] = useState<string>("");
+  const [coords, setCoords] = useState<{ lat: number; lng: number }>({
+    lat: 13.736717,
+    lng: 100.523186,
+  });
 
   const [mainImage, setMainImage] = useState<string | null>(null);
-  const [galleryImages, setGalleryImages] = useState<(string | null)[]>([
-    null,
-    null,
-    null,
-  ]);
+  const [galleryImages, setGalleryImages] = useState<(string | null)[]>([null, null, null]);
 
+  const mapRef = useRef<L.Map | null>(null);
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mainInputRef = useRef<HTMLInputElement | null>(null);
   const galleryInputRefs = [
     useRef<HTMLInputElement | null>(null),
-    useRef(null),
-    useRef(null),
+    useRef<HTMLInputElement | null>(null),
+    useRef<HTMLInputElement | null>(null),
   ];
-  const handleGalleryImageClick = (index: number) => {
-    if (isEditing) {
-      // กดตอนแก้ไข ให้เปิด input รูปย่อยอันนั้น
-      galleryInputRefs[index]?.current?.click();
-    } else {
-      // ตอนไม่แก้ไข ให้สลับรูปหลักกับรูปย่อย
-      setGalleryImages((prev) => {
-        const newGallery = [...prev];
-        const temp = newGallery[index];
-        newGallery[index] = mainImage;
-        setMainImage(temp);
-        return newGallery;
-      });
-    }
-  };
 
   const [isGenderDropdownVisible, setGenderDropdownVisible] = useState(false);
-  const handleSelectGender = (gender: string) => {
-    setGender(gender);
-    setGenderDropdownVisible(false); // หรือ setDropdownVisible(false) ตามที่คุณใช้
-  };
-  const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const [isNeuteredDropdownVisible, setNeuteredDropdownVisible] =
-    useState(false);
-
-  const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSelectNeutered = (value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      neutered: value === "ทำหมันแล้ว" ? "1" : "0",
-    }));
-    setNeuteredDropdownVisible(false);
-  };
-
+  const [isNeuteredDropdownVisible, setNeuteredDropdownVisible] = useState(false);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
 
-  // ตัวแปรสีทั้งหมด
   const colors = [
     { name: "ขาว", code: "bg-white" },
     { name: "เหลือง", code: "bg-yellow-300" },
@@ -125,6 +79,97 @@ export default function RegisterMissing() {
     { name: "ม่วง", code: "bg-fuchsia-500" },
     { name: "ดำ", code: "bg-black" },
   ];
+
+  // Fetch pet data from API
+  useEffect(() => {
+    const fetchPetData = async () => {
+      if (params.id) {
+        try {
+          const response = await fetch(`http://localhost:3000/api/pets/${params.id}`);
+          const data = await response.json();
+
+          // Update state with API data
+          setName(data.name || "");
+          setAge(data.age ? data.age.toString() : "");
+          setGender(data.gender || "");
+          setBreed(data.breed || "");
+          setSterilized(data.isNeutered === 1 ? "ทำหมันแล้ว" : "ยังไม่ได้ทำหมัน");
+          setColor(data.color || "");
+          setSelectedColors(data.color ? data.color.split(",") : []);
+          setMarkings(data.markings || "");
+          setDescription(data.description || "");
+          setOwnerName(data.user?.name || "");
+          setContactNumber(data.user?.phone || "");
+          setSelectedType(data.species?.name || "");
+
+          // Set images
+          const mainImg = data.images?.find((img: any) => img.mainImage)?.url || null;
+          const galleryImgs = data.images
+            ?.filter((img: any) => !img.mainImage)
+            ?.map((img: any) => img.url)
+            .slice(0, 3); // Limit to 3 gallery images
+          setMainImage(mainImg);
+          setGalleryImages([
+            galleryImgs?.[0] || null,
+            galleryImgs?.[1] || null,
+            galleryImgs?.[2] || null,
+          ]);
+
+          // Initialize missing fields (not provided by API)
+          setMissingDate("");
+          setPostedDate("");
+          setMissingLocation("");
+          setMissingDetail("");
+          setReward("");
+          setFacebook("");
+
+          // Update originalValues for cancel functionality
+          setOriginalValues({
+            name: data.name || "",
+            age: data.age ? data.age.toString() : "",
+            gender: data.gender || "",
+            breed: data.breed || "",
+            sterilized: data.isNeutered === 1 ? "ทำหมันแล้ว" : "ยังไม่ได้ทำหมัน",
+            color: data.color || "",
+            markings: data.markings || "",
+            description: data.description || "",
+            missingDate: "",
+            postedDate: "",
+            missingLocation: "",
+            missingDetail: "",
+          });
+        } catch (error) {
+          console.error("Error fetching pet data:", error);
+        }
+      }
+    };
+
+    fetchPetData();
+  }, [params.id]);
+
+  const handleGalleryImageClick = (index: number) => {
+    if (isEditing) {
+      galleryInputRefs[index]?.current?.click();
+    } else {
+      setGalleryImages((prev) => {
+        const newGallery = [...prev];
+        const temp = newGallery[index];
+        newGallery[index] = mainImage;
+        setMainImage(temp);
+        return newGallery;
+      });
+    }
+  };
+
+  const handleSelectGender = (gender: string) => {
+    setGender(gender);
+    setGenderDropdownVisible(false);
+  };
+
+  const handleSelectNeutered = (value: string) => {
+    setSterilized(value);
+    setNeuteredDropdownVisible(false);
+  };
 
   const handleMainImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -160,18 +205,18 @@ export default function RegisterMissing() {
   });
 
   const [originalValues, setOriginalValues] = useState<PetData>({
-    name,
-    age,
-    gender,
-    breed,
-    sterilized,
-    color,
-    markings,
-    description,
-    missingDate,
-    postedDate,
-    missingLocation,
-    missingDetail,
+    name: "",
+    age: "",
+    gender: "",
+    breed: "",
+    sterilized: "",
+    color: "",
+    markings: "",
+    description: "",
+    missingDate: "",
+    postedDate: "",
+    missingLocation: "",
+    missingDetail: "",
   });
 
   const toggleDropdown = () => {
@@ -184,13 +229,11 @@ export default function RegisterMissing() {
   };
 
   const handleSave = () => {
-    // ตรวจสอบว่าค่าวันที่หายไม่สามารถเกินวันที่ประกาศได้
     if (new Date(missingDate) > new Date(postedDate)) {
-      alert("วันที่ห้ามากกว่าวันที่ประกาศ");
+      alert("วันที่หายมากกว่าวันที่ประกาศ");
       return;
     }
 
-    // บันทึกข้อมูล
     console.log("Data saved:", {
       name,
       age,
@@ -208,6 +251,7 @@ export default function RegisterMissing() {
       ownerName,
       contactNumber,
       facebook,
+      coords,
     });
 
     setIsEditing(false);
@@ -228,7 +272,6 @@ export default function RegisterMissing() {
   };
 
   const handleCancel = () => {
-    // รีเซ็ตข้อมูลกลับไปยังค่าที่บันทึกไว้
     setName(originalValues.name);
     setAge(originalValues.age);
     setGender(originalValues.gender);
@@ -244,6 +287,38 @@ export default function RegisterMissing() {
     setIsEditing(false);
   };
 
+  // Initialize Leaflet map
+  useEffect(() => {
+    if (mapContainerRef.current && !mapRef.current) {
+      mapRef.current = L.map(mapContainerRef.current).setView(
+        [13.736717, 100.523186],
+        13
+      );
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+      }).addTo(mapRef.current);
+
+      const updateCenterCoords = () => {
+        const center = mapRef.current?.getCenter();
+        if (center) {
+          setCoords({
+            lat: center.lat,
+            lng: center.lng,
+          });
+        }
+      };
+
+      mapRef.current.on("move", updateCenterCoords);
+      updateCenterCoords();
+
+      return () => {
+        mapRef.current?.remove();
+        mapRef.current = null;
+      };
+    }
+  }, []);
+
   return (
     <div>
       <h1 className="text-xl font-semibold">
@@ -254,11 +329,8 @@ export default function RegisterMissing() {
       </h1>
 
       <div className="flex flex-col lg:flex-row 2xl:gap-56 xl:gap-44 lg:gap-24 md:gap-5 sm:gap-8 lg:pl-12 md:pl-28 sm:pl-20 pl-7 pt-18">
-        {/* รูปภาพ */}
         <div className="lg:pl-0 md:pl-28 sm:pl-24 pl-20 pb-5">
-          {/* รูปหลัก */}
           <div className="your-container">
-            {/* ปุ่มกดรูปหลัก */}
             <img
               src={mainImage || "/all/image.png"}
               alt="main"
@@ -275,7 +347,6 @@ export default function RegisterMissing() {
               onChange={handleMainImageChange}
             />
 
-            {/* ปุ่มเลือกรูป gallery 3 ช่อง */}
             <div className="flex gap-2 pt-3">
               {[0, 1, 2].map((index) => (
                 <div key={index}>
@@ -299,7 +370,6 @@ export default function RegisterMissing() {
         </div>
 
         <div className="flex flex-col w-full 2xl:max-w-xl xl:max-w-lg md:max-w-md sm:max-w-sm max-w-xs mb-2">
-          {/* ชื่อ */}
           <p className="sm:text-lg xl:text-xl">ชื่อ</p>
           <input
             value={name}
@@ -308,7 +378,6 @@ export default function RegisterMissing() {
             className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 disabled:bg-gray-100"
           />
 
-          {/* อายุ / เพศ */}
           <div className="grid grid-cols-2 gap-4 mb-2">
             <div className="flex flex-col">
               <p className="sm:text-lg xl:text-xl">อายุ</p>
@@ -318,7 +387,6 @@ export default function RegisterMissing() {
                 onChange={(e) => {
                   const value = e.target.value;
                   if (/^\d*$/.test(value)) {
-                    // ตรวจสอบว่าเป็นตัวเลขเท่านั้น
                     setAge(value);
                   }
                 }}
@@ -352,12 +420,10 @@ export default function RegisterMissing() {
                 >
                   <path
                     fillRule="evenodd"
-                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 
-          1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
                     clipRule="evenodd"
                   />
                 </svg>
-
                 {isGenderDropdownVisible && (
                   <div className="absolute top-full left-0 mt-1 w-full bg-white shadow-md rounded-md border border-gray-300 z-10">
                     <ul>
@@ -380,7 +446,6 @@ export default function RegisterMissing() {
             </div>
           </div>
 
-          {/* ประเภท / สายพันธุ์ */}
           <div className="grid grid-cols-2 gap-4 mb-2">
             <div className="flex flex-col">
               <p className="sm:text-lg xl:text-xl">ประเภท</p>
@@ -407,7 +472,7 @@ export default function RegisterMissing() {
                   />
                 </svg>
                 {isDropdownVisible && (
-                  <div className="absolute  top-12 w-full mt-2 bg-white shadow-lg rounded-md border border-gray-300 z-10">
+                  <div className="absolute top-12 w-full mt-2 bg-white shadow-lg rounded-md border border-gray-300 z-10">
                     <ul>
                       {[
                         "แมว",
@@ -446,21 +511,13 @@ export default function RegisterMissing() {
             </div>
           </div>
 
-          {/* ทำหมัน / สี */}
           <div className="flex flex-col gap-4 mb-2">
-            {/* ทำหมัน */}
             <div className="flex flex-col relative mb-4">
               <p className="sm:text-lg xl:text-xl">ทำหมัน</p>
               <div className="relative w-full">
                 <input
                   name="neutered"
-                  value={
-                    formData.neutered === "1"
-                      ? "ทำหมันแล้ว"
-                      : formData.neutered === "0"
-                      ? "ยังไม่ได้ทำหมัน"
-                      : ""
-                  }
+                  value={sterilized}
                   readOnly
                   disabled={!isEditing}
                   onClick={() => {
@@ -481,12 +538,10 @@ export default function RegisterMissing() {
                 >
                   <path
                     fillRule="evenodd"
-                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 
-         1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
                     clipRule="evenodd"
                   />
                 </svg>
-
                 {isNeuteredDropdownVisible && (
                   <div className="absolute top-full left-0 mt-1 w-full bg-white shadow-md rounded-md border border-gray-300 z-10">
                     <ul>
@@ -505,7 +560,6 @@ export default function RegisterMissing() {
               </div>
             </div>
 
-            {/* ช่องกรอกสี */}
             <div className="flex flex-wrap gap-3 mb-2">
               {colors.map((color, idx) => {
                 const isSelected = selectedColors.includes(color.name);
@@ -519,21 +573,20 @@ export default function RegisterMissing() {
                           ? prev.filter((c) => c !== color.name)
                           : [...prev, color.name]
                       );
-                      setFormData((prevData) => ({
-                        ...prevData,
-                        color: isSelected
+                      setColor(
+                        selectedColors.includes(color.name)
                           ? selectedColors
                               .filter((c) => c !== color.name)
                               .join(",")
-                          : [...selectedColors, color.name].join(","),
-                      }));
+                          : [...selectedColors, color.name].join(",")
+                      );
                     }}
                     className={`flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer ${
                       isSelected ? "bg-gray-400" : "bg-gray-300"
                     }`}
                   >
                     <div
-                      className={`w-6 h-6 rounded-full  ${color.code}`}
+                      className={`w-6 h-6 rounded-full ${color.code}`}
                     ></div>
                     <span className="text-sm">{color.name}</span>
                   </div>
@@ -542,7 +595,6 @@ export default function RegisterMissing() {
             </div>
           </div>
 
-          {/* รอยตำหนิ */}
           <div className="flex flex-col mb-2">
             <p className="sm:text-lg xl:text-xl">รอยตำหนิ</p>
             <input
@@ -553,7 +605,6 @@ export default function RegisterMissing() {
             />
           </div>
 
-          {/* รายละเอียด */}
           <div className="flex flex-col mb-2">
             <p className="sm:text-lg xl:text-xl">รายละเอียด</p>
             <input
@@ -564,7 +615,6 @@ export default function RegisterMissing() {
             />
           </div>
 
-          {/* วันที่หาย / วันที่ประกาศ */}
           <div className="grid grid-cols-2 gap-4 mb-2">
             <div className="flex flex-col">
               <p className="sm:text-lg xl:text-xl">วันที่หาย</p>
@@ -588,7 +638,6 @@ export default function RegisterMissing() {
             </div>
           </div>
 
-          {/* รายละเอียดการหาย */}
           <div className="flex flex-col mb-2">
             <p className="sm:text-lg xl:text-xl">รายละเอียดการหาย</p>
             <input
@@ -599,7 +648,6 @@ export default function RegisterMissing() {
             />
           </div>
 
-          {/* รายละเอียดเงินรางวัล */}
           <div className="flex flex-col mb-20">
             <p className="sm:text-lg xl:text-xl">เงินรางวัล</p>
             <input
@@ -613,7 +661,6 @@ export default function RegisterMissing() {
       </div>
 
       <div className="flex flex-col mb-10 2xl:mr-40 xl:mr-32 lg:mr-28 lg:ml-10 md:mr-20 sm:mr-18 mr-10">
-        {/* สถานที่หาย */}
         <div className="mt-2">
           <p className="sm:text-lg xl:text-xl">สถานที่หาย</p>
           <input
@@ -624,12 +671,21 @@ export default function RegisterMissing() {
           />
         </div>
 
-        <div>
+        <div className="relative">
+          <div
+            ref={mapContainerRef}
+            id="map"
+            className="w-full h-[500px] relative"
+          ></div>
           <img
-            src="/all/map.png"
-            alt="image"
-            className="w-full  h-auto object-cover"
+            id="pin"
+            src="https://cdn-icons-png.flaticon.com/512/684/684908.png"
+            width="40"
+            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-full z-[999] pointer-events-none"
           />
+          <div className="mt-3 text-sm">
+            Lat: {coords.lat.toFixed(6)}, Lng: {coords.lng.toFixed(6)}
+          </div>
         </div>
 
         <div className="mt-10 mb-5">
@@ -656,7 +712,7 @@ export default function RegisterMissing() {
           </div>
 
           <div className="flex flex-col mb-2">
-            <p className="sm:text-lg xl:text-xl">facebook</p>
+            <p className="sm:text-lg xl:text-xl">Facebook</p>
             <input
               value={facebook}
               onChange={(e) => setFacebook(e.target.value)}
@@ -666,7 +722,6 @@ export default function RegisterMissing() {
           </div>
         </div>
 
-        {/* ปุ่ม */}
         <div className="flex justify-end ml-20 mt-5 lg:mb-8 mb-5">
           {!isEditing ? (
             <button
