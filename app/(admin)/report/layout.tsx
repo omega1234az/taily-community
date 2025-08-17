@@ -8,7 +8,7 @@ const ReportLayout = ({ children }: { children: React.ReactNode }) => {
     <div>
       <TopNavbar />
 
-      <main className=" m-12 overflow-auto">{children}</main>
+      <main className="m-10 sm:m-12 lg:m-18 overflow-auto">{children}</main>
     </div>
   );
 };

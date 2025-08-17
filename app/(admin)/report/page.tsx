@@ -95,7 +95,7 @@ export default function Report() {
 
   return (
     <div className="w-full">
-      <div className="grid grid-cols-4 font-semibold bg-[#AFDAFB] p-3 xl:text-xl lg:text-lg md:text-sm sm:text-xs text-[8px]">
+      <div className="grid grid-cols-4 font-semibold bg-[#AFDAFB] sm:p-5 p-3 xl:text-xl lg:text-lg md:text-sm sm:text-xs text-[10px]">
         <div>ชื่อ</div>
         <div>อีเมล</div>
         <div className="lg:pl-3 sm:pl-7 pl-6">การรายงาน</div>
@@ -114,13 +114,13 @@ export default function Report() {
           <div className="text-right space-x-2">
             <button
               onClick={() => handleHide(index)}
-              className="bg-[#EAD64D] hover:bg-yellow-300 text-black md:px-7 sm:px-5 px-2 py-1 rounded cursor-pointer"
+              className="bg-[#EAD64D] hover:bg-yellow-300 text-black sm:px-5 sm:py-1.5 px-3 py-1 rounded cursor-pointer"
             >
               ซ่อน
             </button>
             <button
               onClick={() => handleDelete(index)}
-              className="bg-[#EA3434] hover:bg-red-700 text-black md:px-7 sm:px-5 px-2 py-1 rounded cursor-pointer"
+              className="bg-[#EA3434] hover:bg-red-700 text-black sm:px-5 sm:py-1.5 px-3 py-1 rounded cursor-pointer"
             >
               ลบ
             </button>
@@ -128,39 +128,29 @@ export default function Report() {
         </div>
       ))}
 
-      <div className="flex justify-center items-center space-x-5 pt-8">
+      <div className="flex justify-center items-center space-x-5 lg:pt-14 sm:pt-10 pt-8">
         <button
           onClick={() => paginate(Math.max(1, currentPage - 1))}
           disabled={currentPage === 1}
-          className="flex items-center justify-center bg-[#D9D9D9] rounded sm:p-2 p-1.5 disabled:opacity-50 cursor-pointer"
+          className="bg-[#D9D9D9] rounded sm:p-3 p-2 disabled:opacity-50 cursor-pointer"
         >
-          <img
-            src="/home/arrow.svg"
-            alt="arrow"
-            className="xl:w-7 lg:w-5 md:w-3 sm:w-2.5 w-2 object-contain"
-          />
+          <img src="/home/arrow.svg" alt="arrow" className="w-3 sm:w-5" />
         </button>
 
-        <span className="bg-[#D9D9D9] rounded xl:px-5 xl:py-2 py-1 lg:px-4 sm:px-3 px-2 text-center xl:text-xl lg:text-lg md:text-sm sm:text-xs text-[8px]">
+        <span className="bg-[#D9D9D9] rounded lg:px-5 sm:py-2 sm:px-4.5 px-3 py-1.5 lg:text-lg sm:text-[16px] text-[10px]">
           {currentPage}
         </span>
-        <span className="xl:text-xl lg:text-lg md:text-sm sm:text-xs text-[8px]">
-          ถึง
-        </span>
-        <span className="bg-[#D9D9D9] rounded xl:px-5 xl:py-2 py-1 lg:px-4 sm:px-3 px-2 text-center xl:text-xl lg:text-lg md:text-sm sm:text-xs text-[8px]">
+        <span className="lg:text-lg sm:text-[16px] text-[12px]">ถึง</span>
+        <span className="bg-[#D9D9D9] rounded lg:px-5 sm:py-2 sm:px-4.5 px-3 py-1.5 lg:text-lg sm:text-[16px] text-[10px]">
           {totalPages}
         </span>
 
         <button
           onClick={() => paginate(Math.min(totalPages, currentPage + 1))}
           disabled={currentPage === totalPages}
-          className="flex items-center justify-center bg-[#D9D9D9] rounded sm:p-2 p-1.5 disabled:opacity-50 cursor-pointer"
+          className="bg-[#D9D9D9] rounded sm:p-3 p-2 disabled:opacity-50 cursor-pointer"
         >
-          <img
-            src="/home/arrowl.svg"
-            alt="arrowl"
-            className="xl:w-7 lg:w-5 md:w-3 sm:w-2.5 w-2 object-contain"
-          />
+          <img src="/home/arrowl.svg" alt="arrowl" className="w-3 sm:w-5" />
         </button>
       </div>
     </div>
