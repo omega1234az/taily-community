@@ -1,9 +1,8 @@
-
 "use client";
 
-import React from 'react';
-import SideNavbar from '@/app/component/SideNavbar';
-import TopNavbar from '@/app/component/TopNavbar';
+import React from "react";
+import SideNavbar from "@/app/component/SideNavbar";
+import TopNavbar from "@/app/component/TopNavbar";
 
 const AnnouncementLayout = ({ children }: { children: React.ReactNode }) => {
   return (
@@ -15,7 +14,7 @@ const AnnouncementLayout = ({ children }: { children: React.ReactNode }) => {
           <SideNavbar />
         </div>
 
-        <main className="flex-1 xl:p-11  md:pt-16 sm:pt-14 pt-11 overflow-auto">
+        <main className="flex-1  xl:p-11  md:pt-16 sm:pt-9 pt-7 overflow-auto">
           {children}
         </main>
       </div>
