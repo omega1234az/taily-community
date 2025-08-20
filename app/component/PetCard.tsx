@@ -10,18 +10,13 @@ export default function PetCard({ imageSrc, name }: PetCardProps) {
     <div className="cursor-pointer">
       {" "}
       {/* ตรงนี้! */}
-      <div className="bg-[#E5EEFF] hover:bg-gray-200 inline-block rounded-xl p-3 shadow-lg">
+      <div className="bg-[#E5EEFF] hover:bg-gray-200 inline-block rounded-xl sm:p-5 p-3 shadow-lg transition-transform duration-200 transform hover:scale-105">
         <img
           src={imageSrc}
           alt={name}
-          className="  object-cover mb-2  rounded-2xl shadow-lg 2xl:w-[175px] 2xl:h-[190px]
-                        xl:w-[150px] xl:h-[170px]
-                        lg:w-[133px] lg:h-[140px]
-                        md:w-[110px] md:h-[120px]
-                        sm:w-[90px] sm:h-[100px]
-                        w-[80px] h-[90px]"
+          className="object-cover mb-2 rounded-2xl shadow-lg  2xl:h-[240px] xl:h-[210px] lg:h-[190px] md:h-[180px] sm:h-[155px] h-[110px] 2xl:max-w-[205px] xl:max-w-[190px] lg:max-w-[170px] md:max-w-[160px] sm:max-w-[140px] max-w-[105px]"
         />
-        <span className="flex justify-center font-medium 2xl:text-xl xl:text-lg lg:text-md md:text-sm sm:text-xs text-[10px]">
+        <span className="flex justify-center font-medium 2xl:text-xl xl:text-lg lg:text-[16px] md:text-[16px] sm:text-sm text-[12px]">
           {name}
         </span>
       </div>

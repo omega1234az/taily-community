@@ -56,52 +56,51 @@ const PetCard: React.FC<AnCardProps> = ({
   const [reportMessage, setReportMessage] = useState("");
 
   const handleSubmitReport = async () => {
-  if (!reportType) {
-    alert("กรุณาเลือกเหตุผลก่อนลบโพสต์");
-    return;
-  }
+    if (!reportType) {
+      alert("กรุณาเลือกเหตุผลก่อนลบโพสต์");
+      return;
+    }
 
-  // mapping เหตุผล -> status ที่จะส่งไป API
-  let statusToUpdate = "closed";
-  if (reportType === "พบสัตว์เลี้ยง,พบเจ้าของแล้ว") statusToUpdate = "closed";
-  if (reportType === "โพสต์ซ้ำ,โพสต์ผิด") statusToUpdate = "fake";
-  if (reportType === "ไม่ต้องการเผยแพร่แล้ว") statusToUpdate = "closed";
-  if (reportType === "อื่นๆ") statusToUpdate = "closed";
+    // mapping เหตุผล -> status ที่จะส่งไป API
+    let statusToUpdate = "closed";
+    if (reportType === "พบสัตว์เลี้ยง,พบเจ้าของแล้ว") statusToUpdate = "closed";
+    if (reportType === "โพสต์ซ้ำ,โพสต์ผิด") statusToUpdate = "fake";
+    if (reportType === "ไม่ต้องการเผยแพร่แล้ว") statusToUpdate = "closed";
+    if (reportType === "อื่นๆ") statusToUpdate = "closed";
 
-  try {
-    const res = await fetch(`/api/lostpet/${id}`, {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: statusToUpdate }),
-    });
+    try {
+      const res = await fetch(`/api/lostpet/${id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: statusToUpdate }),
+      });
 
-    const data = await res.json();
-    alert(data.message);
+      const data = await res.json();
+      alert(data.message);
 
-    if (onDelete) onDelete();
-    location.reload();// refresh list หรือ remove card
-  } catch (err) {
-    console.error("Error:", err);
-    alert("ไม่สามารถลบโพสต์ได้");
-  }
+      if (onDelete) onDelete();
+      location.reload(); // refresh list หรือ remove card
+    } catch (err) {
+      console.error("Error:", err);
+      alert("ไม่สามารถลบโพสต์ได้");
+    }
 
-  setIsReportOpen(false);
-  setReportType("");
-  setReportMessage("");
-  setShowOtherInput(false);
-  
-};
+    setIsReportOpen(false);
+    setReportType("");
+    setReportMessage("");
+    setShowOtherInput(false);
+  };
 
   return (
-    <div className="flex flex-col  md:flex-row  gap-6 p-6 rounded-2xl shadow-lg bg-[#E5EEFF] w-full 2xl:max-w-md xl:max-w-md lg:max-w-md md:max-w-md  sm:max-w-[300px] max-w-[240px]  hover:bg-gray-200 ml-4  sm:ml-10 md:ml-0">
+    <div className="flex flex-col  sm:flex-row  gap-6 p-6 rounded-2xl shadow-lg bg-[#E5EEFF]  2xl:w-[450px]  2xl:h-[320px] xl:w-[430px] xl:h-[300px] lg:w-[350px] lg:h-[290px]  md:w-[450px] md:h-[290px] sm:w-[380px] sm:h-[290px] w-[280px] h-[420px]  hover:bg-gray-200   transition-transform duration-200 transform hover:scale-105">
       {/* รูปภาพ */}
-      <div className="mx-auto xl:w-[300px] xl:h-[250px] md:w-[250px] md:h-[200px] sm:w-[150px] sm:h-[180px] w-[100px] h-[120px] rounded-xl overflow-hidden">
+      <div className="mx-auto 2xl:w-[370px] 2xl:h-[240px] xl:w-[370px] xl:h-[230px] lg:w-[300px] lg:h-[195px] md:w-[300px] md:h-[210px] sm:w-[320px] sm:h-[195px] w-[110px] h-[140px] rounded-xl overflow-hidden">
         <img src={imageSrc} alt={name} className="w-full h-full object-cover" />
       </div>
 
       {/* เนื้อหา */}
       <div className="flex flex-col justify-between  w-full ">
-        <div className="sm:space-y-2 space-y-2 text-[10px]  sm:text-sm   sm:pl-12 pl-10 md:pl-0">
+        <div className="sm:space-y-2 space-y-2 text-[13px] sm:text-[14px] lg:text-[14px] xl:text-[15px]  2xl:text-[16px]   sm:pl-0 pl-5 xl:pl-3">
           <p>
             <strong>ชื่อ:</strong> {name}
           </p>
@@ -127,15 +126,15 @@ const PetCard: React.FC<AnCardProps> = ({
         </div>
 
         {/* ปุ่ม */}
-        <div className="flex justify-center md:justify-start items-center mt-3 text-center md:text-left gap-4">
+        <div className="flex justify-center md:justify-start items-center mt-3 text-center md:text-left gap-2">
           <Link href="/eggtunmissing">
-            <button className="rounded-xl shadow-md bg-[#EAD64D] text-black text-[10px] sm:text-sm sm:px-4 sm:py-2 px-4 py-1.5 hover:bg-yellow-200 transition duration-300 cursor-pointer">
+            <button className="rounded-xl shadow-md bg-[#EAD64D] text-black text-[13px] sm:text-[14px] lg:text-[12px] xl:text-[15px] 2xl:text-[16px] sm:px-2 md:px-4 lg:px-1.5 xl:px-2.5 sm:py-2 px-4 py-1.5 hover:bg-yellow-200 transition duration-300 cursor-pointer">
               รายละเอียด
             </button>
           </Link>
           {/* ปุ่มลบ */}
           <button
-            className="rounded-xl shadow-md bg-red-500 text-white text-[10px] sm:text-sm sm:px-4 sm:py-2 px-4 py-1.5 hover:bg-red-400 transition duration-300 cursor-pointer"
+            className="rounded-xl shadow-md bg-red-500 text-white text-[13px] sm:text-[14px] lg:text-[12px] xl:text-[15px] 2xl:text-[16px] sm:px-2 md:px-6 lg:px-2.5 xl:px-4 2xl:px-4.5 sm:py-2 px-6 py-1.5 hover:bg-red-400 transition duration-300 cursor-pointer"
             onClick={() => setIsReportOpen(true)}
           >
             ลบโพสต์

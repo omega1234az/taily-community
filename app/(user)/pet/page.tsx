@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -238,16 +237,17 @@ export default function Pet() {
           xmlns="http://www.w3.org/2000/svg"
           className="w-2.5 h-2.5 sm:w-3 sm:h-3 xl:w-3.5 xl:h-3.5 2xl:w-6 2xl:h-10"
         >
-          <ellipse cx="9.5" cy="7.5" rx="9.5" ry="7.5" fill="#7CBBEB" />
+          <ellipse cx="9.5" cy="9" rx="9.5" ry="9" fill="#7CBBEB" />
         </svg>
-        <h1 className="sm:text-lg xl:text-2xl font-bold">สัตว์เลี้ยง</h1>
+        <h1 className="sm:text-xl xl:text-2xl  font-bold">สัตว์เลี้ยง</h1>
       </div>
 
       {/* Pet Cards */}
-      <div className="flex flex-wrap py-5 lg:gap-10 sm:gap-6 gap-5">
+      <div className="flex flex-wrap py-5 2xl:gap-18 xl:gap-14 lg:gap-12 md:gap-12 sm:gap-8 gap-5">
         {pets.map((pet) => {
           // เลือกภาพที่มี mainImage: true หรือภาพแรกถ้าไม่มี mainImage
-          const mainImage = pet.images?.find((img) => img.mainImage) || pet.images?.[0];
+          const mainImage =
+            pet.images?.find((img) => img.mainImage) || pet.images?.[0];
           return (
             <div
               key={pet.id}
@@ -263,21 +263,14 @@ export default function Pet() {
         })}
 
         {/* Register Button */}
-        <div
-          className="group cursor-pointer hover:bg-gray-200 transition duration-200 flex justify-center items-center flex-col md:flex-row gap-6 p-6 rounded-2xl shadow-lg bg-[#E5EEFF]  2xl:w-[185px] 2xl:h-[250px]
-                        xl:w-[170px] xl:h-[232px]
-                        lg:w-[140px] lg:h-[192px]
-                        md:w-[130px] md:h-[172px]
-                        sm:w-[110px] sm:h-[150px]
-                        w-[95px] h-[140px]"
-        >
+        <div className="group cursor-pointer hover:bg-gray-200 lg:mb-10 sm:mb-7 mb-5  flex justify-center items-center flex-col md:flex-row gap-6  rounded-2xl shadow-lg bg-[#E5EEFF] w-full  2xl:h-[315px] xl:h-[288px] lg:h-[257px] md:h-[248px] sm:h-[220px] h-[160px] 2xl:max-w-[230px] xl:max-w-[225px] lg:max-w-[200px] md:max-w-[195px] sm:max-w-[176px] max-w-[128px] transition-transform duration-200 transform hover:scale-105">
           <Link
             href="/registerpet"
             className="w-full h-full flex justify-center items-center"
           >
             <div className="bg-[#7CBBEB] group-hover:bg-[#addbf7] transition-colors duration-200 rounded-full p-2 flex justify-center items-center">
               <svg
-                className="2xl:w-14 2xl:h-14 xl:w-14 xl:h-14 lg:w-11 lg:h-11 md:w-10 md:h-10 sm:w-9 sm:h-9 w-8 h-8"
+                className="2xl:w-20 2xl:h-20 xl:w-[65px] xl:h-[65px] lg:w-14 lg:h-14 md:w-14 md:h-14 sm:w-12 sm:h-12 w-10 h-10"
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 100 100"
               >

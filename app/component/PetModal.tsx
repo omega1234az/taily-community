@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useState, useRef, ChangeEvent } from "react";
@@ -54,7 +53,8 @@ export default function PetDetailsModal({
 }: PetDetailsModalProps) {
   const [speciesList, setSpeciesList] = useState<Species[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
-  const [sterilizedDropdownVisible, setSterilizedDropdownVisible] = useState(false);
+  const [sterilizedDropdownVisible, setSterilizedDropdownVisible] =
+    useState(false);
   const [genderDropdownVisible, setGenderDropdownVisible] = useState(false);
   const [mainImage, setMainImage] = useState<PetImage | null>(null);
   const [images, setImages] = useState<PetImage[]>([]);
@@ -116,12 +116,20 @@ export default function PetDetailsModal({
         }))
       : [];
     while (petImages.length < 4) {
-      petImages.push({ id: 0, url: "", petId: selectedPet.id, mainImage: false });
+      petImages.push({
+        id: 0,
+        url: "",
+        petId: selectedPet.id,
+        mainImage: false,
+      });
     }
     // เรียงลำดับให้ mainImage อยู่ index 0
     const mainIndex = petImages.findIndex((img) => img.mainImage);
     if (mainIndex !== -1 && mainIndex !== 0) {
-      [petImages[0], petImages[mainIndex]] = [petImages[mainIndex], petImages[0]];
+      [petImages[0], petImages[mainIndex]] = [
+        petImages[mainIndex],
+        petImages[0],
+      ];
     }
     setImages(petImages);
     const main = petImages.find((img) => img.mainImage) || petImages[0];
@@ -200,21 +208,35 @@ export default function PetDetailsModal({
         mainImage: img.mainImage,
       }));
       while (updatedImages.length < 4) {
-        updatedImages.push({ id: 0, url: "", petId: selectedPet.id, mainImage: false });
+        updatedImages.push({
+          id: 0,
+          url: "",
+          petId: selectedPet.id,
+          mainImage: false,
+        });
       }
       // เรียงลำดับให้ mainImage อยู่ index 0
-      const mainIndex = updatedImages.findIndex((img: PetImage) => img.mainImage);
+      const mainIndex = updatedImages.findIndex(
+        (img: PetImage) => img.mainImage
+      );
       if (mainIndex !== -1 && mainIndex !== 0) {
-        [updatedImages[0], updatedImages[mainIndex]] = [updatedImages[mainIndex], updatedImages[0]];
+        [updatedImages[0], updatedImages[mainIndex]] = [
+          updatedImages[mainIndex],
+          updatedImages[0],
+        ];
       }
       setImages(updatedImages);
-      const newMain = updatedImages.find((img: PetImage) => img.mainImage) || updatedImages[0];
+      const newMain =
+        updatedImages.find((img: PetImage) => img.mainImage) ||
+        updatedImages[0];
       setMainImage(newMain.url ? newMain : null);
       setMainImageFile(null);
       alert("อัปโหลดภาพหลักสำเร็จ");
     } catch (error) {
       console.error("Error uploading main image:", error);
-      alert(error instanceof Error ? error.message : "ไม่สามารถอัปโหลดภาพหลักได้");
+      alert(
+        error instanceof Error ? error.message : "ไม่สามารถอัปโหลดภาพหลักได้"
+      );
     }
   };
 
@@ -239,7 +261,9 @@ export default function PetDetailsModal({
       });
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || `Failed to upload gallery image ${index}`);
+        throw new Error(
+          errorData.message || `Failed to upload gallery image ${index}`
+        );
       }
       const updatedPet = await response.json();
       const updatedImages = updatedPet.images.map((img: PetImage) => ({
@@ -249,15 +273,27 @@ export default function PetDetailsModal({
         mainImage: img.mainImage,
       }));
       while (updatedImages.length < 4) {
-        updatedImages.push({ id: 0, url: "", petId: selectedPet.id, mainImage: false });
+        updatedImages.push({
+          id: 0,
+          url: "",
+          petId: selectedPet.id,
+          mainImage: false,
+        });
       }
       // เรียงลำดับให้ mainImage อยู่ index 0
-      const mainIndex = updatedImages.findIndex((img: PetImage) => img.mainImage);
+      const mainIndex = updatedImages.findIndex(
+        (img: PetImage) => img.mainImage
+      );
       if (mainIndex !== -1 && mainIndex !== 0) {
-        [updatedImages[0], updatedImages[mainIndex]] = [updatedImages[mainIndex], updatedImages[0]];
+        [updatedImages[0], updatedImages[mainIndex]] = [
+          updatedImages[mainIndex],
+          updatedImages[0],
+        ];
       }
       setImages(updatedImages);
-      const newMain = updatedImages.find((img: PetImage) => img.mainImage) || updatedImages[0];
+      const newMain =
+        updatedImages.find((img: PetImage) => img.mainImage) ||
+        updatedImages[0];
       setMainImage(newMain.url ? newMain : null);
       setGalleryImageFiles((prev) => {
         const newFiles = [...prev];
@@ -267,7 +303,11 @@ export default function PetDetailsModal({
       alert(`อัปโหลดภาพแกลเลอรี่ ${index} สำเร็จ`);
     } catch (error) {
       console.error(`Error uploading gallery image ${index}:`, error);
-      alert(error instanceof Error ? error.message : `ไม่สามารถอัปโหลดภาพแกลเลอรี่ ${index} ได้`);
+      alert(
+        error instanceof Error
+          ? error.message
+          : `ไม่สามารถอัปโหลดภาพแกลเลอรี่ ${index} ได้`
+      );
     }
   };
 
@@ -295,15 +335,27 @@ export default function PetDetailsModal({
         mainImage: img.mainImage,
       }));
       while (updatedImages.length < 4) {
-        updatedImages.push({ id: 0, url: "", petId: selectedPet.id, mainImage: false });
+        updatedImages.push({
+          id: 0,
+          url: "",
+          petId: selectedPet.id,
+          mainImage: false,
+        });
       }
       // สลับตำแหน่งให้รูปที่ตั้งเป็น main ไปอยู่ index 0
-      const mainIndex = updatedImages.findIndex((img: PetImage) => img.mainImage);
+      const mainIndex = updatedImages.findIndex(
+        (img: PetImage) => img.mainImage
+      );
       if (mainIndex !== -1 && mainIndex !== 0) {
-        [updatedImages[0], updatedImages[mainIndex]] = [updatedImages[mainIndex], updatedImages[0]];
+        [updatedImages[0], updatedImages[mainIndex]] = [
+          updatedImages[mainIndex],
+          updatedImages[0],
+        ];
       }
       setImages(updatedImages);
-      const newMain = updatedImages.find((img: PetImage) => img.mainImage) || updatedImages[0];
+      const newMain =
+        updatedImages.find((img: PetImage) => img.mainImage) ||
+        updatedImages[0];
       setMainImage(newMain.url ? newMain : null);
       alert("ตั้งภาพหลักสำเร็จ");
     } catch (error) {
@@ -336,15 +388,27 @@ export default function PetDetailsModal({
         mainImage: img.mainImage,
       }));
       while (updatedImages.length < 4) {
-        updatedImages.push({ id: 0, url: "", petId: selectedPet.id, mainImage: false });
+        updatedImages.push({
+          id: 0,
+          url: "",
+          petId: selectedPet.id,
+          mainImage: false,
+        });
       }
       // เรียงลำดับให้ mainImage อยู่ index 0
-      const mainIndex = updatedImages.findIndex((img: PetImage) => img.mainImage);
+      const mainIndex = updatedImages.findIndex(
+        (img: PetImage) => img.mainImage
+      );
       if (mainIndex !== -1 && mainIndex !== 0) {
-        [updatedImages[0], updatedImages[mainIndex]] = [updatedImages[mainIndex], updatedImages[0]];
+        [updatedImages[0], updatedImages[mainIndex]] = [
+          updatedImages[mainIndex],
+          updatedImages[0],
+        ];
       }
       setImages(updatedImages);
-      const newMain = updatedImages.find((img: PetImage) => img.mainImage) || updatedImages[0];
+      const newMain =
+        updatedImages.find((img: PetImage) => img.mainImage) ||
+        updatedImages[0];
       setMainImage(newMain.url ? newMain : null);
       setGalleryImageFiles((prev) => {
         const newFiles = [...prev];
@@ -403,12 +467,20 @@ export default function PetDetailsModal({
           }))
         : [];
       while (petImages.length < 4) {
-        petImages.push({ id: 0, url: "", petId: selectedPet.id, mainImage: false });
+        petImages.push({
+          id: 0,
+          url: "",
+          petId: selectedPet.id,
+          mainImage: false,
+        });
       }
       // เรียงลำดับให้ mainImage อยู่ index 0
       const mainIndex = petImages.findIndex((img) => img.mainImage);
       if (mainIndex !== -1 && mainIndex !== 0) {
-        [petImages[0], petImages[mainIndex]] = [petImages[mainIndex], petImages[0]];
+        [petImages[0], petImages[mainIndex]] = [
+          petImages[mainIndex],
+          petImages[0],
+        ];
       }
       setImages(petImages);
       const main = petImages.find((img) => img.mainImage) || petImages[0];
@@ -522,9 +594,7 @@ export default function PetDetailsModal({
         </button>
         <h1 className="font-bold xl:text-3xl text-2xl lg:ml-64 mt-5 sm:mt-0">
           <span className="absolute lg:top-4 top-5 xl:right-[270px] lg:right-[220px] right-[310px] lg:w-8 lg:h-8 w-6 h-6 bg-[#EAD64D] rounded-full z-0 -translate-x-1/2"></span>
-          <div className="relative z-10 flex justify-center mb-4">
-            ประวัติ
-          </div>
+          <div className="relative z-10 flex justify-center mb-4">ประวัติ</div>
         </h1>
         <div className="flex flex-col lg:flex-row justify-center 2xl:gap-24 xl:gap-20 lg:gap-20 items-center lg:items-start pt-2 sm:px-10 px-5">
           <span className="absolute top-[-36px] left-[-14px] lg:w-72 lg:h-44 w-56 h-40 bg-[#EAD64D] rounded-b-full z-0"></span>
@@ -540,7 +610,7 @@ export default function PetDetailsModal({
             <img
               src={mainImage?.url || "/all/bgprint4.png"}
               alt={name || "Pet"}
-              className="2xl:w-72 2xl:h-56 xl:w-64 xl:h-52 lg:w-56 lg:h-48 md:w-64 md:h-60 sm:w-52 sm:h-48 w-48 h-48 object-cover rounded-xl cursor-pointer"
+              className="2xl:w-72 2xl:h-64  xl:w-64 xl:h-52 lg:w-56 lg:h-48 md:w-64 md:h-60 sm:w-52 sm:h-48 w-48 h-48 object-cover rounded-xl cursor-pointer"
               onClick={handleMainImageClick}
             />
             <input
@@ -558,7 +628,7 @@ export default function PetDetailsModal({
                   <img
                     src={img.url || "/all/bgprint4.png"}
                     alt={`${name || "Pet"}-${idx + 1}`}
-                    className="cursor-pointer 2xl:w-36 2xl:h-20 xl:w-32 xl:h-16 lg:w-32 lg:h-16 md:w-20 md:h-20 sm:w-16 sm:h-16 w-14 h-14 object-cover rounded-md"
+                    className="cursor-pointer 2xl:w-36 2xl:h-[86px] xl:w-32 xl:h-[70px] lg:w-32 lg:h-16 md:w-20 md:h-20 sm:w-16 sm:h-16 w-[57px] h-[57px] object-cover rounded-md"
                     onClick={() => {
                       if (isEditing && !img.url) {
                         galleryInputRefs[idx]?.current?.click();
@@ -625,7 +695,8 @@ export default function PetDetailsModal({
                     <div
                       className="relative w-full"
                       onClick={() =>
-                        isEditing && setGenderDropdownVisible(!genderDropdownVisible)
+                        isEditing &&
+                        setGenderDropdownVisible(!genderDropdownVisible)
                       }
                     >
                       <input
@@ -720,11 +791,14 @@ export default function PetDetailsModal({
                     <div
                       className="relative w-full"
                       onClick={() =>
-                        isEditing && setSterilizedDropdownVisible(!sterilizedDropdownVisible)
+                        isEditing &&
+                        setSterilizedDropdownVisible(!sterilizedDropdownVisible)
                       }
                     >
                       <input
-                        value={sterilized === "1" ? "ทำหมันแล้ว" : "ยังไม่ได้ทำหมัน"}
+                        value={
+                          sterilized === "1" ? "ทำหมันแล้ว" : "ยังไม่ได้ทำหมัน"
+                        }
                         readOnly
                         disabled={!isEditing}
                         className="w-full mt-1 p-2 pr-10 border border-gray-300 rounded-md disabled:bg-gray-100 cursor-pointer"
@@ -973,16 +1047,15 @@ export default function PetDetailsModal({
                       alt="bg"
                       className="absolute ml-[-20px] w-2 h-2 object-cover z-0"
                     />
-                    <p className="pb-3 z-10 pl-4">
-                      สายพันธุ์: {breed || "-"}
-                    </p>
+                    <p className="pb-3 z-10 pl-4">สายพันธุ์: {breed || "-"}</p>
                     <img
                       src="/all/bgprint2.png"
                       alt="bg"
                       className="absolute mb-20 ml-56 w-10 h-10 object-cover z-0"
                     />
                     <p className="pb-3 z-10 pl-4">
-                      ทำหมัน: {sterilized === "1" ? "ทำหมันแล้ว" : "ยังไม่ได้ทำหมัน"}
+                      ทำหมัน:{" "}
+                      {sterilized === "1" ? "ทำหมันแล้ว" : "ยังไม่ได้ทำหมัน"}
                     </p>
                     <img
                       src="/all/bgprint4.png"
@@ -1097,14 +1170,8 @@ export default function PetDetailsModal({
                   </div>
                   <div className="text-xl space-y-2">
                     <div className="flex items-center gap-2">
-                      <img
-                        src="/all/call.png"
-                        alt="Call"
-                        className="w-6 h-6"
-                      />
-                      <span className="pb-5">
-                        {phone || "เบอร์โทร"}
-                      </span>
+                      <img src="/all/call.png" alt="Call" className="w-6 h-6" />
+                      <span className="pb-5">{phone || "เบอร์โทร"}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <img
@@ -1112,9 +1179,7 @@ export default function PetDetailsModal({
                         alt="Facebook"
                         className="w-6 h-6"
                       />
-                      <span className="pb-5">
-                        {facebook || "Facebook"}
-                      </span>
+                      <span className="pb-5">{facebook || "Facebook"}</span>
                     </div>
                   </div>
                 </div>
