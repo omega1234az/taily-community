@@ -1,13 +1,32 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type Pet = {
   id: number;
   name: string;
-  image: string;
+  speciesId: number;
+  breed: string;
+  gender: string;
+  age: number;
+  color: string[];
+  description: string;
+  userId: string;
+  markings: string;
+  isNeutered: number;
+  createdAt: string;
+  images: {
+    id: number;
+    url: string;
+    petId: number;
+    mainImage: boolean;
+  }[];
+  chronicDiseases: any[];
+  vaccines: any[];
+  ownerName: string;
 };
 
 interface RegistrationProps {
@@ -15,19 +34,41 @@ interface RegistrationProps {
 }
 
 export default function Registration({ onClose }: RegistrationProps) {
-  const [pets, setPets] = useState<Pet[]>([
-    // ตัวอย่างกรณีลงทะเบียนแล้ว
-    { id: 1, name: "ไข่ตุ๋น", image: "/home/eggtun.png" },
-    { id: 2, name: "ดัสตี้", image: "/home/dusty.jpg" },
-    { id: 3, name: "ดัสตี้", image: "/home/dusty.jpg" },
-    { id: 4, name: "ดัสตี้", image: "/home/dusty.jpg" },
-    { id: 5, name: "ไข่ตุ๋น", image: "/home/eggtun.png" },
-    { id: 6, name: "ดัสตี้", image: "/home/dusty.jpg" },
-    { id: 7, name: "ดัสตี้", image: "/home/dusty.jpg" },
-    { id: 8, name: "ดัสตี้", image: "/home/dusty.jpg" },
-  ]);
-
+  const [pets, setPets] = useState<Pet[]>([]);
   const [selectedPet, setSelectedPet] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  // Fetch pets from API
+  useEffect(() => {
+    const fetchPets = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/pets/me/available', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            // เพิ่ม authentication headers หากจำเป็น
+            // 'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        setPets(data);
+      } catch (err) {
+        console.error('Error fetching pets:', err);
+        setError('ไม่สามารถโหลดข้อมูลสัตว์เลี้ยงได้');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPets();
+  }, []);
 
   const handleSelectPet = (id: number) => {
     setSelectedPet(id);
@@ -35,10 +76,29 @@ export default function Registration({ onClose }: RegistrationProps) {
 
   const handleConfirm = () => {
     if (selectedPet) {
-      alert(`คุณเลือกสัตว์เลี้ยง ID: ${selectedPet}`);
+      const selectedPetData = pets.find(pet => pet.id === selectedPet);
+      router.push(`/registermissing/${selectedPetData?.id}`);
       onClose?.();
     }
   };
+
+  // Get main image for pet
+  const getPetMainImage = (pet: Pet): string => {
+    const mainImage = pet.images.find(img => img.mainImage);
+    return mainImage?.url || pet.images[0]?.url || '/placeholder-pet.jpg';
+  };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="fixed inset-0 z-50 flex justify-center items-center sm:p-4 bg-opacity-30">
+        <div className="bg-white shadow-lg sm:rounded-2xl sm:p-6 p-8 flex flex-col items-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#7CBBEB] mb-4"></div>
+          <p className="text-lg">กำลังโหลดข้อมูลสัตว์เลี้ยง...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex justify-center items-center sm:p-4 bg-opacity-30">
@@ -47,8 +107,15 @@ export default function Registration({ onClose }: RegistrationProps) {
     ${pets.length > 0 ? "sm:pt-10" : ""} 
     2xl:w-[800px] 2xl:h-[730px] xl:w-[780px] xl:h-[680px] lg:w-[680px] lg:h-[600px] md:w-[580px] md:h-[565px] sm:w-[520px] sm:h-[500px] w-full h-full relative`}
       >
-        {/* กรณียังไม่ลงทะเบียน */}
-        {pets.length === 0 ? (
+        {/* Error state */}
+        {error && (
+          <div className="absolute top-4 left-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            {error}
+          </div>
+        )}
+
+        {/* กรณียังไม่ลงทะเบียนหรือไม่มีสัตว์เลี้ยง */}
+        {pets.length === 0 && !loading ? (
           <>
             {/* กากบาทปิด modal */}
             <button
@@ -87,38 +154,48 @@ export default function Registration({ onClose }: RegistrationProps) {
           </>
         ) : (
           // กรณีลงทะเบียนแล้ว
-          <>
-            <h2 className="xl:text-2xl text-xl font-bold mb-6 text-center">
-              สัตว์เลี้ยงหาย
-            </h2>
-            <div className="overflow-y-auto h-[calc(100%-70px)] px-2">
-              <div className="flex flex-wrap xl:gap-8 sm:gap-6 lg:p-4 sm:p-2 gap-12 p-7">
-                {pets.map((pet) => (
-                  <div
-                    key={pet.id}
-                    onClick={() => handleSelectPet(pet.id)}
-                    className={`cursor-pointer rounded-xl p-5 2xl:w-52 xl:w-48 lg:w-44 md:w-[150px] sm:w-[130px] w-[150px] transition-transform duration-200 transform hover:scale-105 ${
-                      selectedPet === pet.id
-                        ? "bg-[#AFDAFB] shadow-xl"
-                        : "bg-[#E5EEFF] shadow-md hover:shadow-lg"
-                    }`}
-                  >
-                    <div className="relative 2xl:w-[165px] 2xl:h-44 xl:w-[160px] xl:h-[165px] lg:w-[145px] lg:h-[150px] md:w-[110px] md:h-[120px] sm:w-[90px] sm:h-[95px] w-[110px] h-[110px] overflow-hidden rounded-lg flex items-center justify-center">
-                      <Image
-                        src={pet.image}
-                        alt={pet.name}
-                        fill
-                        className="object-cover object-center"
-                      />
+          pets.length > 0 && (
+            <>
+              <h2 className="xl:text-2xl text-xl font-bold mb-6 text-center">
+                สัตว์เลี้ยงหาย
+              </h2>
+              <div className="overflow-y-auto h-[calc(100%-70px)] px-2">
+                <div className="flex flex-wrap xl:gap-8 sm:gap-6 lg:p-4 sm:p-2 gap-12 p-7">
+                  {pets.map((pet) => (
+                    <div
+                      key={pet.id}
+                      onClick={() => handleSelectPet(pet.id)}
+                      className={`cursor-pointer rounded-xl p-5 2xl:w-52 xl:w-48 lg:w-44 md:w-[150px] sm:w-[130px] w-[150px] transition-transform duration-200 transform hover:scale-105 ${
+                        selectedPet === pet.id
+                          ? "bg-[#AFDAFB] shadow-xl"
+                          : "bg-[#E5EEFF] shadow-md hover:shadow-lg"
+                      }`}
+                    >
+                      <div className="relative 2xl:w-[165px] 2xl:h-44 xl:w-[160px] xl:h-[165px] lg:w-[145px] lg:h-[150px] md:w-[110px] md:h-[120px] sm:w-[90px] sm:h-[95px] w-[110px] h-[110px] overflow-hidden rounded-lg flex items-center justify-center">
+                        <Image
+                          src={getPetMainImage(pet)}
+                          alt={pet.name}
+                          fill
+                          className="object-cover object-center"
+                          onError={(e) => {
+                            // Fallback to placeholder if image fails to load
+                            const target = e.target as HTMLImageElement;
+                            target.src = '/placeholder-pet.jpg';
+                          }}
+                        />
+                      </div>
+                      <p className="mt-3 text-base font-medium text-center">
+                        {pet.name}
+                      </p>
+                      <p className="text-sm text-gray-500 text-center">
+                        {pet.breed} • {pet.gender}
+                      </p>
                     </div>
-                    <p className="mt-3 text-base font-medium text-center">
-                      {pet.name}
-                    </p>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          </>
+            </>
+          )
         )}
 
         {/* ปุ่มยืนยัน/ยกเลิก สำหรับกรณีลงทะเบียนแล้ว */}
@@ -132,7 +209,12 @@ export default function Registration({ onClose }: RegistrationProps) {
             </button>
             <button
               onClick={handleConfirm}
-              className="px-5 py-2 rounded-lg bg-[#7CBBEB] text-white hover:bg-[#28a7f7] cursor-pointer"
+              disabled={!selectedPet}
+              className={`px-5 py-2 rounded-lg text-white cursor-pointer ${
+                selectedPet
+                  ? "bg-[#7CBBEB] hover:bg-[#28a7f7]"
+                  : "bg-gray-400 cursor-not-allowed"
+              }`}
             >
               ยืนยัน
             </button>

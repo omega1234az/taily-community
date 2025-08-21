@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import React, { useState } from "react";
+
 interface Pet {
   id: number;
   name: string;
@@ -16,13 +17,15 @@ interface Pet {
   markings: string;
   images: Array<{
     url: string;
+    mainImage: boolean; // Updated to include mainImage
   }>;
 }
+
 interface AnCardProps {
   id: number;
-  imageSrc: string;
   name: string;
   age: string;
+  imageSrc: string;
   gender: string;
   breed: string;
   lostDate: string;
@@ -34,12 +37,11 @@ interface AnCardProps {
   species?: string;
   color?: string[] | string;
   pet: Pet;
-  onDelete?: () => void; // ✅ callback จาก parent
+  onDelete?: () => void;
 }
 
 const PetCard: React.FC<AnCardProps> = ({
   id,
-  imageSrc,
   pet,
   name,
   age,
@@ -48,12 +50,16 @@ const PetCard: React.FC<AnCardProps> = ({
   lostDate,
   lostLocation,
   reward,
-  onDelete, // ✅ รับเข้ามา
+  onDelete,
 }) => {
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [reportType, setReportType] = useState("");
   const [showOtherInput, setShowOtherInput] = useState(false);
   const [reportMessage, setReportMessage] = useState("");
+
+  // Select the image with mainImage: true, or fall back to the first image if none is marked as main
+  const imageSrc =
+    pet.images.find((image) => image.mainImage)?.url || pet.images[0]?.url || "/default-image.jpg";
 
   const handleSubmitReport = async () => {
     if (!reportType) {
@@ -61,7 +67,7 @@ const PetCard: React.FC<AnCardProps> = ({
       return;
     }
 
-    // mapping เหตุผล -> status ที่จะส่งไป API
+    // Mapping เหตุผล -> status ที่จะส่งไป API
     let statusToUpdate = "closed";
     if (reportType === "พบสัตว์เลี้ยง,พบเจ้าของแล้ว") statusToUpdate = "closed";
     if (reportType === "โพสต์ซ้ำ,โพสต์ผิด") statusToUpdate = "fake";
@@ -79,7 +85,7 @@ const PetCard: React.FC<AnCardProps> = ({
       alert(data.message);
 
       if (onDelete) onDelete();
-      location.reload(); // refresh list หรือ remove card
+      location.reload(); // Refresh list or remove card
     } catch (err) {
       console.error("Error:", err);
       alert("ไม่สามารถลบโพสต์ได้");
@@ -92,15 +98,15 @@ const PetCard: React.FC<AnCardProps> = ({
   };
 
   return (
-    <div className="flex flex-col  sm:flex-row  gap-6 p-6 rounded-2xl shadow-lg bg-[#E5EEFF]  2xl:w-[450px]  2xl:h-[320px] xl:w-[430px] xl:h-[300px] lg:w-[350px] lg:h-[290px]  md:w-[450px] md:h-[290px] sm:w-[380px] sm:h-[290px] w-[280px] h-[420px]  hover:bg-gray-200   transition-transform duration-200 transform hover:scale-105">
+    <div className="flex flex-col sm:flex-row gap-6 p-6 rounded-2xl shadow-lg bg-[#E5EEFF] 2xl:w-[500px] 2xl:h-[320px] xl:w-[430px] xl:h-[300px] lg:w-[350px] lg:h-[290px] md:w-[450px] md:h-[290px] sm:w-[380px] sm:h-[290px] w-[280px] h-[420px] hover:bg-gray-200 transition-transform duration-200 transform hover:scale-105">
       {/* รูปภาพ */}
       <div className="mx-auto 2xl:w-[370px] 2xl:h-[240px] xl:w-[370px] xl:h-[230px] lg:w-[300px] lg:h-[195px] md:w-[300px] md:h-[210px] sm:w-[320px] sm:h-[195px] w-[110px] h-[140px] rounded-xl overflow-hidden">
         <img src={imageSrc} alt={name} className="w-full h-full object-cover" />
       </div>
 
       {/* เนื้อหา */}
-      <div className="flex flex-col justify-between  w-full ">
-        <div className="sm:space-y-2 space-y-2 text-[13px] sm:text-[14px] lg:text-[14px] xl:text-[15px]  2xl:text-[16px]   sm:pl-0 pl-5 xl:pl-3">
+      <div className="flex flex-col justify-between w-full">
+        <div className="sm:space-y-2 space-y-2 text-[13px] sm:text-[14px] lg:text-[14px] xl:text-[15px] 2xl:text-[16px] sm:pl-0 pl-5 xl:pl-3">
           <p>
             <strong>ชื่อ:</strong> {name}
           </p>
@@ -120,13 +126,12 @@ const PetCard: React.FC<AnCardProps> = ({
             <strong>สถานที่หาย:</strong> {lostLocation}
           </p>
           <p>
-            <strong>เงินรางวัล:</strong>{" "}
-            {reward ? `${reward} บาท` : "ไม่มีระบุ"}
+            <strong>เงินรางวัล:</strong> {reward ? `${reward} บาท` : "ไม่มีระบุ"}
           </p>
         </div>
 
         {/* ปุ่ม */}
-        <div className="flex justify-center md:justify-start items-center mt-3 text-center md:text-left gap-2">
+        <div className="flex justify-center md:justify-start items-center mt-2 text-center md:text-left gap-2">
           <Link href="/eggtunmissing">
             <button className="rounded-xl shadow-md bg-[#EAD64D] text-black text-[13px] sm:text-[14px] lg:text-[12px] xl:text-[15px] 2xl:text-[16px] sm:px-2 md:px-4 lg:px-1.5 xl:px-2.5 sm:py-2 px-4 py-1.5 hover:bg-yellow-200 transition duration-300 cursor-pointer">
               รายละเอียด
@@ -142,7 +147,7 @@ const PetCard: React.FC<AnCardProps> = ({
 
           {/* Popup ลบโพสต์ */}
           {isReportOpen && (
-            <div className="fixed inset-0 flex justify-center items-center z-50  bg-opacity-50">
+            <div className="fixed inset-0 flex justify-center items-center z-50 bg-opacity-50">
               <div className="bg-white lg:w-[500px] sm:w-[400px] w-full h-full sm:h-auto rounded-md shadow-lg p-4 relative">
                 <button
                   onClick={() => setIsReportOpen(false)}

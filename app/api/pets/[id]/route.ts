@@ -49,19 +49,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json({ message: 'ไม่พบสัตว์เลี้ยงที่มี ID นี้' }, { status: 404 });
     }
 
-    // Sanitize color
-    let color;
-    try {
-      color = pet.color ? JSON.parse(pet.color as string) : null;
-      if (!Array.isArray(color) || !color.every(item => typeof item === 'string')) {
-        color = null;
-      }
-    } catch (error) {
-      console.warn(`Invalid JSON in color for pet ID ${pet.id}:`, pet.color);
-      color = null;
-    }
-
-    return NextResponse.json({ ...pet, color });
+    return NextResponse.json(pet);
   } catch (error) {
     console.error('[GET_PET_BY_ID_ERROR]', error);
     return NextResponse.json({ message: 'เกิดข้อผิดพลาดในการดึงข้อมูลสัตว์เลี้ยง' }, { status: 500 });

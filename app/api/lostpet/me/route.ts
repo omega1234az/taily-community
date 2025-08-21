@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
               color: true,
               description: true,
               markings: true,
-              images: { select: { url: true } }
+              images: { select: { url: true, mainImage: true } } // เพิ่ม mainImage ใน select
             }
           },
           user: {

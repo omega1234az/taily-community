@@ -23,7 +23,6 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const {
       description,
-      location,
       lat,
       lng,
       lostDate,
@@ -36,11 +35,10 @@ export async function POST(req: NextRequest) {
     } = body;
 
     // Validate input data
-    if (!description || !location || !lostDate || !petId) {
+    if (!description || !lostDate || !petId) {
       return NextResponse.json({ message: "ข้อมูลไม่ครบถ้วน" }, { status: 400 });
     }
 
-    // Validate coordinate values
     if (lat && (lat < -90 || lat > 90)) {
       return NextResponse.json({ message: "ค่าละติจูดไม่ถูกต้อง" }, { status: 400 });
     }
@@ -48,15 +46,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "ค่าลองจิจูดไม่ถูกต้อง" }, { status: 400 });
     }
 
-    // Validate phone number format (if provided)
-    if (phone && !/^[0-9]{9,10}$/.test(phone.replace(/[-\s]/g, ''))) {
+    if (phone && !/^[0-9]{9,10}$/.test(phone.replace(/[-\s]/g, ""))) {
       return NextResponse.json({ message: "รูปแบบเบอร์โทรศัพท์ไม่ถูกต้อง" }, { status: 400 });
     }
 
     // เช็คว่า petId นี้เป็นของ user นี้หรือไม่
-    const pet = await prisma.pet.findUnique({
-      where: { id: petId },
-    });
+    const pet = await prisma.pet.findUnique({ where: { id: petId } });
     if (!pet) {
       return NextResponse.json({ message: "ไม่พบสัตว์เลี้ยงนี้" }, { status: 404 });
     }
@@ -64,16 +59,42 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "สัตว์เลี้ยงนี้ไม่ใช่ของคุณ" }, { status: 403 });
     }
 
-    // เช็คว่า petId นี้ถูกประกาศหายแล้วหรือยัง (เพราะ petId ต้อง unique)
-    const exists = await prisma.lostPet.findFirst({
+    // เช็คว่ามีประกาศที่ยังใช้งานอยู่หรือไม่ (สถานะที่ยังไม่จบ)
+    const existsActive = await prisma.lostPet.findFirst({
       where: { 
-        petId: petId,
-        status: { not: 'reunited' } // ยกเว้นกรณีที่เจอแล้ว
+        petId: petId, 
+        OR: [
+          { status: "lost" },
+          { status: "pending" }
+        ]
       },
     });
+    if (existsActive) {
+      return NextResponse.json({ 
+        message: `สัตว์เลี้ยงตัวนี้มีประกาศที่ยังใช้งานอยู่ (สถานะ: ${existsActive.status}) กรุณาอัพเดทสถานะโพสเก่าก่อนสร้างโพสใหม่` 
+      }, { status: 400 });
+    }
 
-    if (exists) {
-      return NextResponse.json({ message: "สัตว์เลี้ยงตัวนี้ถูกประกาศหายไปแล้ว" }, { status: 400 });
+    // -------------------
+    // เรียก Longdo API แปลง lat/lng -> location
+    // -------------------
+    let location = "ไม่ระบุ";
+
+    if (lat && lng) {
+      try {
+        const res = await fetch(
+          `https://api.longdo.com/map/services/address?lon=${lng}&lat=${lat}&key=50965cbe89a74a5d1e45c7add11d5b39`
+        );
+        const data = await res.json();
+        if (data && data.subdistrict) {
+          location = `${data.subdistrict} ${data.district} ${data.province}`.trim();
+        } else {
+          location = "ไม่พบที่อยู่";
+        }
+      } catch (err) {
+        console.error("Longdo API Error:", err);
+        location = "ไม่พบที่อยู่";
+      }
     }
 
     // สร้าง LostPet
@@ -85,7 +106,7 @@ export async function POST(req: NextRequest) {
         lng: lng ? parseFloat(lng) : null,
         lostDate: new Date(lostDate),
         reward: reward ? parseFloat(reward) : null,
-        status: status || 'lost',
+        status: status || "lost",
         userId: user.id,
         petId: petId,
         ownerName,
@@ -94,7 +115,6 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Return created data without sensitive information
     const safeResponse = {
       id: lostPet.id,
       description: lostPet.description,
@@ -107,7 +127,6 @@ export async function POST(req: NextRequest) {
     };
 
     return NextResponse.json(safeResponse, { status: 201 });
-
   } catch (error) {
     console.error("Error creating lost pet:", error);
     return NextResponse.json({ message: "เกิดข้อผิดพลาดในการประกาศสัตว์หาย" }, { status: 500 });

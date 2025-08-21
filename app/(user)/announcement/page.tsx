@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import AnCard from "@/app/component/AnCard";
 import Registration from "@/app/component/Registration";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 // Type definitions
 interface Pet {
@@ -20,6 +21,7 @@ interface Pet {
   markings: string;
   images: Array<{
     url: string;
+    mainImage: boolean; 
   }>;
 }
 
@@ -52,6 +54,7 @@ export default function Announcement() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+  const router = useRouter();
 
   // ฟังก์ชันดึงข้อมูลสัตว์หาย
   const fetchLostPets = async () => {
@@ -69,7 +72,7 @@ export default function Announcement() {
   // ฟังก์ชันดึงข้อมูลสัตว์หาเจ้าของ
   const fetchFoundPets = async () => {
     try {
-      const response = await fetch("/api/lostpet");
+      const response = await fetch("/api/lostpet/me");
       if (!response.ok) throw new Error("Failed to fetch found pets");
       const data = await response.json();
       setFoundPets(data.data || []);
@@ -101,6 +104,11 @@ export default function Announcement() {
       (new Date().getTime() - new Date(lostDate).getTime()) /
         (1000 * 60 * 60 * 24)
     );
+  };
+
+  // ฟังก์ชันจัดการคลิกไปหน้ารายละเอียด
+  const handleFoundPetClick = (petId: number) => {
+    router.push(`/foundpet/${petId}`);
   };
 
   // Loading Component
@@ -153,6 +161,7 @@ export default function Announcement() {
           ? // แสดงข้อมูลสัตว์หาย
             lostPets.map((lostPet) => (
               <AnCard
+                key={lostPet.id}
                 id={lostPet.id}
                 imageSrc={lostPet.pet.images[0]?.url || "/placeholder.jpg"}
                 name={lostPet.pet.name}
@@ -173,7 +182,6 @@ export default function Announcement() {
           : null}
 
         {/* ปุ่มเพิ่มรายการใหม่ */}
-        {/* ปุ่ม + card */}
         <div
           className="group cursor-pointer hover:bg-gray-200 flex justify-center items-center flex-col md:flex-row gap-6 p-6  rounded-2xl shadow-lg bg-[#E5EEFF] 2xl:h-[315px] 2xl:w-[220px] xl:h-[300px] xl:w-[210px] lg:h-[290px] lg:w-[190px] md:h-[290px] md:w-[200px] sm:w-[180px] sm:h-[250px] h-[380px] w-[280px] transition-transform duration-200 transform hover:scale-105"
           onClick={() => setOpen(true)}
@@ -237,7 +245,7 @@ export default function Announcement() {
           ))
         ) : foundPets.length > 0 ? (
           foundPets.map((foundPet) => (
-            <Link key={foundPet.id} href={`/foundpet/${foundPet.id}`}>
+            <div key={foundPet.id} onClick={() => handleFoundPetClick(foundPet.id)}>
               <AnCard
                 id={foundPet.id}
                 imageSrc={foundPet.pet?.images[0]?.url || "/placeholder.jpg"}
@@ -253,7 +261,7 @@ export default function Announcement() {
                 color={foundPet.pet?.color || []}
                 pet={foundPet.pet}
               />
-            </Link>
+            </div>
           ))
         ) : (
           <Link

@@ -1,9 +1,10 @@
+
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import L from "leaflet";
+import L, { Map } from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 // Fix Leaflet default marker icons
@@ -14,7 +15,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "/leaflet/marker-shadow.png",
 });
 
-// Interfaces based on API response
+// Interfaces
 interface LostPetImage {
   url: string;
   mainImage?: boolean;
@@ -22,7 +23,7 @@ interface LostPetImage {
 
 interface LostPet {
   id: number;
-  title: string; // Map to pet.name
+  title: string;
   description: string;
   location: string;
   lat?: number;
@@ -70,7 +71,7 @@ interface FoundPet {
   userId: string;
   createdAt: string;
   updatedAt: string;
-  images: { id: number; url: string; foundPetId: number }[];
+  images: { id: number; url: string; foundPetId: number; mainImage?: boolean }[];
 }
 
 interface ApiResponse {
@@ -150,12 +151,16 @@ const createCustomIcon = (imageUrl?: string, isLostPet: boolean = true) => {
 };
 
 // PetCardh component for LostPet
-const PetCardh = ({ id, title, description, location, lostDate, reward, images }: LostPet) => (
+const PetCardh = ({ id, title, description, location, lostDate, reward, pet }: LostPet) => (
   <div className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden border border-gray-100">
     <div className="relative overflow-hidden">
-      {images && images.length > 0 ? (
+      {pet.images && pet.images.length > 0 ? (
         <img
-          src={images[0].url}
+          src={
+            pet.images.find((image) => image.mainImage)?.url ||
+            pet.images[0].url ||
+            "/images/default_pet.png"
+          }
           alt={title}
           className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
         />
@@ -205,13 +210,17 @@ const PetCardh = ({ id, title, description, location, lostDate, reward, images }
   </div>
 );
 
-// PetCardj component for FoundPet (kept for reference, can be removed if not used)
+// PetCardj component for FoundPet
 const PetCardj = ({ id, title, description, location, foundDate, species, images }: FoundPet) => (
   <div className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden border border-gray-100">
     <div className="relative overflow-hidden">
       {images && images.length > 0 ? (
         <img
-          src={images[0].url}
+          src={
+            images.find((image) => image.mainImage)?.url ||
+            images[0].url ||
+            "/images/default_pet.png"
+          }
           alt={title}
           className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
         />
@@ -276,16 +285,14 @@ export default function Home() {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
+  const mapRef = useRef<Map | null>(null);
   const friendSectionRef = useRef<HTMLDivElement>(null);
   const petsPerPage = 10;
 
-  // Mock data for FoundPet (since no API provided for found pets)
-  const foundPets: FoundPet[] = [
-    // ... (keep your existing foundPets mock data here if needed)
-  ];
+  // Mock data for FoundPet
+  const foundPets: FoundPet[] = [];
 
-  // Fetch lost pets from API
+  // Fetch lost pets
   useEffect(() => {
     const fetchLostPets = async () => {
       setLoading(true);
@@ -295,7 +302,7 @@ export default function Home() {
           page: currentPage.toString(),
           limit: petsPerPage.toString(),
           ...(selectedType && selectedType !== "ทั้งหมด" ? { species: selectedType } : {}),
-          ...(filterLocation ? { province: filterLocation } : {}),
+          ...(filterLocation ? { location: filterLocation } : {}),
           status: "lost",
         });
 
@@ -311,12 +318,11 @@ export default function Home() {
         }
 
         const data: ApiResponse = await response.json();
-        // Map API data to match LostPet interface
         const mappedPets = data.data.map((pet) => ({
           ...pet,
-          title: pet.pet.name, // Map pet.name to title
+          title: pet.pet.name,
           userId: pet.user.id,
-          images: pet.pet.images, // Use pet images instead of lostPet images
+          images: pet.pet.images,
         }));
 
         setLostPets(mappedPets);
@@ -333,6 +339,11 @@ export default function Home() {
     }
   }, [currentPage, selectedType, filterLocation, showLostPets]);
 
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterLocation, selectedType, showLostPets]);
+
   // Get user location
   useEffect(() => {
     if (navigator.geolocation) {
@@ -343,7 +354,7 @@ export default function Home() {
         },
         (error) => {
           console.error("Error getting user location:", error);
-          setUserLocation([16.4707, 99.5367]); // Fallback to Kamphaeng Phet
+          setUserLocation([16.4707, 99.5367]);
         }
       );
     } else {
@@ -363,26 +374,35 @@ export default function Home() {
   const handleSelectType = (type: string) => {
     setSelectedType(type);
     setIsDropdownVisible(false);
-    setCurrentPage(1); // Reset to first page when filter changes
+    setCurrentPage(1);
   };
 
   const handleScrollToFriends = () => {
     friendSectionRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // Filter lost pets (optional client-side filtering, but API handles most of it)
+  const handleGoToMyLocation = () => {
+    if (mapRef.current && userLocation) {
+      mapRef.current.setView([userLocation[0], userLocation[1]], 12);
+    }
+  };
+
+  // Filter pets
   const filteredLostPets = lostPets.filter((pet) => {
     const matchDate = !filterDate || pet.lostDate.includes(filterDate);
-    return matchDate;
+    const matchLocation =
+      !filterLocation ||
+      pet.location.toLowerCase().includes(filterLocation.toLowerCase());
+    return matchDate && matchLocation;
   });
 
-  // Use mock foundPets for now
   const filteredFoundPets = foundPets.filter((pet) => {
     const matchType =
       !selectedType || selectedType === "ทั้งหมด" || pet.species === selectedType;
     const matchDate = !filterDate || pet.foundDate === filterDate;
     const matchLocation =
-      !filterLocation || pet.location.toLowerCase().includes(filterLocation.toLowerCase());
+      !filterLocation ||
+      pet.location.toLowerCase().includes(filterLocation.toLowerCase());
     return matchType && matchLocation && matchDate;
   });
 
@@ -395,8 +415,6 @@ export default function Home() {
     (currentPage - 1) * petsPerPage,
     currentPage * petsPerPage
   );
-
-  const allFilteredPets: (LostPet | FoundPet)[] = [...filteredLostPets, ...filteredFoundPets];
   const currentMapPets = showLostPets ? filteredLostPets : filteredFoundPets;
 
   return (
@@ -434,7 +452,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Pet Type Selection Section */}
+      {/* Pet Type Selection */}
       <div className="flex justify-center">
         <div className="grid grid-cols-2 lg:gap-60 sm:gap-36 gap-20 place-items-center lg:py-10 py-5">
           <div className="flex flex-col items-center" onClick={() => setShowLostPets(true)}>
@@ -510,6 +528,7 @@ export default function Home() {
               value={filterLocation}
               onChange={(e) => setFilterLocation(e.target.value)}
               className="w-full text-[10px] xl:text-lg md:text-md sm:text-sm mt-1 lg:p-2 sm:p-1 p-1.5 border border-gray-300 rounded-md mb-3 disabled:bg-gray-100"
+              placeholder="ค้นหาตามสถานที่..."
             />
           </div>
           <div className="flex flex-col">
@@ -585,18 +604,27 @@ export default function Home() {
             <p className="sm:text-xl xl:text-lg mb-4 font-semibold text-gray-700">
               สถานที่{showLostPets ? "หาย" : "พบ"}
             </p>
-            <input
-              type="text"
-              value={filterLocation}
-              onChange={(e) => setFilterLocation(e.target.value)}
-              placeholder="ค้นหาตามสถานที่..."
-              className="w-full text-center mt-1 p-3 border-2 border-gray-300 rounded-lg mb-6 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
-            />
+            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
+              <input
+                type="text"
+                value={filterLocation}
+                onChange={(e) => setFilterLocation(e.target.value)}
+                placeholder="ค้นหาตามสถานที่..."
+                className="w-full text-center mt-1 p-3 border-2 border-gray-300 rounded-lg mb-6 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+              />
+              <button
+                onClick={handleGoToMyLocation}
+                className="w-full sm:w-auto bg-[#EAD64D] text-black sm:text-sm text-xs py-3 px-6 rounded-lg mb-6 hover:bg-yellow-200 transition duration-300 shadow-md"
+              >
+                ไปยังตำแหน่งของฉัน
+              </button>
+            </div>
             <div className="h-[700px] w-full rounded-2xl overflow-hidden shadow-2xl border-4 border-gray-200">
               <MapContainer
                 center={mapCenter}
                 zoom={12}
                 style={{ height: "100%", width: "100%" }}
+                ref={mapRef}
               >
                 <TileLayer
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -608,7 +636,11 @@ export default function Home() {
                       key={pet.id}
                       position={[pet.lat, pet.lng]}
                       icon={createCustomIcon(
-                        pet.images && pet.images.length > 0 ? pet.images[0].url : undefined,
+                        showLostPets
+                          ? (pet as LostPet).pet.images.find((image) => image.mainImage)?.url ||
+                            (pet as LostPet).pet.images[0]?.url
+                          : (pet as FoundPet).images.find((image) => image.mainImage)?.url ||
+                            (pet as FoundPet).images[0]?.url,
                         showLostPets
                       )}
                     >
@@ -624,13 +656,27 @@ export default function Home() {
                               {showLostPets ? "หาย" : "พบแล้ว"}
                             </span>
                           </div>
-                          {pet.images && pet.images.length > 0 && (
-                            <img
-                              src={pet.images[0].url}
-                              alt={pet.title}
-                              className="w-full h-32 object-cover rounded-lg mb-3"
-                            />
-                          )}
+                          {showLostPets
+                            ? (pet as LostPet).pet.images && (pet as LostPet).pet.images.length > 0 && (
+                                <img
+                                  src={
+                                    (pet as LostPet).pet.images.find((image) => image.mainImage)?.url ||
+                                    (pet as LostPet).pet.images[0].url
+                                  }
+                                  alt={pet.title}
+                                  className="w-full h-32 object-cover rounded-lg mb-3"
+                                />
+                              )
+                            : (pet as FoundPet).images && (pet as FoundPet).images.length > 0 && (
+                                <img
+                                  src={
+                                    (pet as FoundPet).images.find((image) => image.mainImage)?.url ||
+                                    (pet as FoundPet).images[0].url
+                                  }
+                                  alt={pet.title}
+                                  className="w-full h-32 object-cover rounded-lg mb-3"
+                                />
+                              )}
                           <div className="space-y-2">
                             <div className="flex items-center text-sm text-gray-600">
                               <svg
@@ -685,6 +731,12 @@ export default function Home() {
                                 <span>ประเภท: {(pet as FoundPet).species}</span>
                               </div>
                             )}
+                            <Link
+                              href={showLostPets ? `/lostpet/${pet.id}` : `/foundpet/${pet.id}`}
+                              className="block bg-blue-600 text-white px-3 py-2 rounded-lg text-center text-sm font-semibold mt-3 hover:bg-blue-700 transition duration-300"
+                            >
+                              ดูรายละเอียด
+                            </Link>
                           </div>
                         </div>
                       </Popup>
