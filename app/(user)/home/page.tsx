@@ -1,9 +1,8 @@
-
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, ZoomControl } from "react-leaflet";
 import L, { Map } from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -89,14 +88,15 @@ const createCustomIcon = (imageUrl?: string, isLostPet: boolean = true) => {
   const markerHtml = `
     <div style="
       position: relative;
-      width: 60px;
-      height: 60px;
+      width: 64px;
+      height: 64px;
       border-radius: 50%;
       border: 4px solid ${isLostPet ? "#ef4444" : "#3b82f6"};
       background: white;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.25);
       overflow: hidden;
       transform: translate(-50%, -50%);
+      transition: transform 0.3s ease;
     ">
       <img 
         src="${imageUrl || "/images/default_pet.png"}" 
@@ -105,37 +105,38 @@ const createCustomIcon = (imageUrl?: string, isLostPet: boolean = true) => {
           height: 100%;
           object-fit: cover;
           border-radius: 50%;
+          transition: transform 0.3s ease;
         "
         onerror="this.src='/images/default_pet.png'"
       />
       <div style="
         position: absolute;
-        bottom: -8px;
+        bottom: -10px;
         left: 50%;
         transform: translateX(-50%);
         width: 0;
         height: 0;
-        border-left: 8px solid transparent;
-        border-right: 8px solid transparent;
-        border-top: 12px solid ${isLostPet ? "#ef4444" : "#3b82f6"};
-        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+        border-left: 10px solid transparent;
+        border-right: 10px solid transparent;
+        border-top: 14px solid ${isLostPet ? "#ef4444" : "#3b82f6"};
+        filter: drop-shadow(0 3px 5px rgba(0,0,0,0.2));
       "></div>
       <div style="
         position: absolute;
-        top: -8px;
-        right: -8px;
-        width: 20px;
-        height: 20px;
+        top: -10px;
+        right: -10px;
+        width: 24px;
+        height: 24px;
         background: ${isLostPet ? "#ef4444" : "#3b82f6"};
         border-radius: 50%;
         border: 2px solid white;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 12px;
+        font-size: 14px;
         color: white;
         font-weight: bold;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        box-shadow: 0 3px 10px rgba(0,0,0,0.25);
       ">
         ${isLostPet ? "!" : "✓"}
       </div>
@@ -143,71 +144,73 @@ const createCustomIcon = (imageUrl?: string, isLostPet: boolean = true) => {
   `;
   return L.divIcon({
     html: markerHtml,
-    iconSize: [60, 60],
-    iconAnchor: [30, 60],
-    popupAnchor: [0, -60],
+    iconSize: [64, 64],
+    iconAnchor: [32, 64],
+    popupAnchor: [0, -64],
     className: "custom-pet-marker",
   });
 };
 
 // PetCardh component for LostPet
 const PetCardh = ({ id, title, description, location, lostDate, reward, pet }: LostPet) => (
-  <div className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden border border-gray-100">
-    <div className="relative overflow-hidden">
-      {pet.images && pet.images.length > 0 ? (
-        <img
-          src={
-            pet.images.find((image) => image.mainImage)?.url ||
-            pet.images[0].url ||
-            "/images/default_pet.png"
-          }
-          alt={title}
-          className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
-        />
-      ) : (
-        <div className="w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-          <div className="text-center">
-            <div className="w-16 h-16 mx-auto mb-2 bg-gray-300 rounded-full flex items-center justify-center">
-              <svg className="w-8 h-8 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-              </svg>
+  <Link href={`/home/${id}`}>
+    <div className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden border border-gray-100 cursor-pointer">
+      <div className="relative overflow-hidden">
+        {pet.images && pet.images.length > 0 ? (
+          <img
+            src={
+              pet.images.find((image) => image.mainImage)?.url ||
+              pet.images[0].url ||
+              "/images/default_pet.png"
+            }
+            alt={title}
+            className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
+          />
+        ) : (
+          <div className="w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-2 bg-gray-300 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <span className="text-sm text-gray-500">ไม่มีรูปภาพ</span>
             </div>
-            <span className="text-sm text-gray-500">ไม่มีรูปภาพ</span>
+          </div>
+        )}
+        <div className="absolute top-3 right-3 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
+          หาย
+        </div>
+      </div>
+      <div className="p-6">
+        <h3 className="text-xl font-bold text-gray-800 mb-2 group-hover:text-red-600 transition-colors">
+          {title}
+        </h3>
+        <p className="text-gray-600 text-sm mb-4 line-clamp-2 leading-relaxed">
+          {description}
+        </p>
+        <div className="space-y-2 mb-4">
+          <div className="flex items-center text-sm text-gray-700">
+            <svg className="w-4 h-4 mr-2 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+            </svg>
+            <span className="truncate">{location}</span>
+          </div>
+          <div className="flex items-center text-sm text-gray-700">
+            <svg className="w-4 h-4 mr-2 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+            </svg>
+            <span>วันที่หาย: {new Date(lostDate).toLocaleDateString("th-TH")}</span>
           </div>
         </div>
-      )}
-      <div className="absolute top-3 right-3 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
-        หาย
+        {typeof reward === 'number' && (
+          <div className="bg-[#7CBBEB] text-white px-4 py-2 rounded-lg text-center font-semibold shadow-md">
+            รางวัล: {reward.toLocaleString()} บาท
+          </div>
+        )}
       </div>
     </div>
-    <div className="p-6">
-      <h3 className="text-xl font-bold text-gray-800 mb-2 group-hover:text-red-600 transition-colors">
-        {title}
-      </h3>
-      <p className="text-gray-600 text-sm mb-4 line-clamp-2 leading-relaxed">
-        {description}
-      </p>
-      <div className="space-y-2 mb-4">
-        <div className="flex items-center text-sm text-gray-700">
-          <svg className="w-4 h-4 mr-2 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-          </svg>
-          <span className="truncate">{location}</span>
-        </div>
-        <div className="flex items-center text-sm text-gray-700">
-          <svg className="w-4 h-4 mr-2 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-          </svg>
-          <span>วันที่หาย: {new Date(lostDate).toLocaleDateString("th-TH")}</span>
-        </div>
-      </div>
-      {typeof reward === 'number' && (
-        <div className="bg-[#7CBBEB] text-white px-4 py-2 rounded-lg text-center font-semibold shadow-md">
-          รางวัล: {reward.toLocaleString()} บาท
-        </div>
-      )}
-    </div>
-  </div>
+  </Link>
 );
 
 // PetCardj component for FoundPet
@@ -418,7 +421,7 @@ export default function Home() {
   const currentMapPets = showLostPets ? filteredLostPets : filteredFoundPets;
 
   return (
-    <div className="w-full">
+    <div className="w-full font-sans">
       {/* Header Section */}
       <div className="bg-[#E5EEFF] pt-10 px-6 sm:px-14 md:px-20 xl:px-40 2xl:px-32">
         <div className="flex justify-between items-start 2xl:gap-56 xl:gap-28 lg:gap-18 md:gap-10 max-w-screen-2xl mx-auto">
@@ -485,7 +488,7 @@ export default function Home() {
               type="date"
               value={filterDate}
               onChange={(e) => setFilterDate(e.target.value)}
-              className="w-full text-[10px] xl:text-lg md:text-md sm:text-sm mt-1 lg:p-2 sm:p-1 p-1.5 border border-gray-300 rounded-md mb-3 disabled:bg-gray-100"
+              className="w-full text-[10px] xl:text-lg md:text-md sm:text-sm mt-1 lg:p-2 sm:p-1 p-1.5 border border-gray-300 rounded-md mb-3 disabled:bg-gray-100 focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
             />
             <div className="mt-4">
               <p className="sm:text-lg xl:text-xl text-xs mb-3 text-left">แสดงข้อมูล</p>
@@ -527,7 +530,7 @@ export default function Home() {
               type="text"
               value={filterLocation}
               onChange={(e) => setFilterLocation(e.target.value)}
-              className="w-full text-[10px] xl:text-lg md:text-md sm:text-sm mt-1 lg:p-2 sm:p-1 p-1.5 border border-gray-300 rounded-md mb-3 disabled:bg-gray-100"
+              className="w-full text-[10px] xl:text-lg md:text-md sm:text-sm mt-1 lg:p-2 sm:p-1 p-1.5 border border-gray-300 rounded-md mb-3 disabled:bg-gray-100 focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
               placeholder="ค้นหาตามสถานที่..."
             />
           </div>
@@ -539,7 +542,7 @@ export default function Home() {
                 onClick={toggleDropdown}
                 readOnly
                 disabled={!isEditing}
-                className="w-full text-[10px] xl:text-lg md:text-md sm:text-sm mt-1 lg:p-2 sm:p-1 p-1.5 pr-10 border border-gray-300 rounded-md mb-3 disabled:bg-gray-100"
+                className="w-full text-[10px] xl:text-lg md:text-md sm:text-sm mt-1 lg:p-2 sm:p-1 p-1.5 pr-10 border border-gray-300 rounded-md mb-3 disabled:bg-gray-100 focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
               />
               <svg
                 className={`absolute sm:right-3 right-2 top-1/2 transform -translate-y-1/2 w-7 h-7 pb-1 text-gray-500 cursor-pointer ${
@@ -600,36 +603,51 @@ export default function Home() {
         )
       ) : (
         <div className="w-full flex justify-center mt-8">
-          <div className="flex flex-col mb-10 mt-5 2xl:ml-20 xl:mr-20 lg:mr-20 lg:ml-10 md:mr-20 sm:mr-10 mr-auto w-full max-w-6xl">
-            <p className="sm:text-xl xl:text-lg mb-4 font-semibold text-gray-700">
+          <div className="relative flex flex-col mb-10 mt-5 2xl:ml-20 xl:mr-20 lg:mr-20 lg:ml-10 md:mr-20 sm:mr-10 mr-auto w-full max-w-7xl">
+            <p className="sm:text-xl xl:text-lg mb-4 font-semibold text-gray-800">
               สถานที่{showLostPets ? "หาย" : "พบ"}
             </p>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
-              <input
-                type="text"
-                value={filterLocation}
-                onChange={(e) => setFilterLocation(e.target.value)}
-                placeholder="ค้นหาตามสถานที่..."
-                className="w-full text-center mt-1 p-3 border-2 border-gray-300 rounded-lg mb-6 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
-              />
+            <div className="relative flex flex-col sm:flex-row sm:items-center sm:gap-4 z-10 mb-6">
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  value={filterLocation}
+                  onChange={(e) => setFilterLocation(e.target.value)}
+                  placeholder="ค้นหาตามสถานที่..."
+                  className="w-full text-sm sm:text-base py-3 px-4 pr-10 border-2 border-gray-200 rounded-lg shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all bg-white/90 backdrop-blur-sm"
+                />
+                <svg
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-4.35-4.35m0 0a7 7 0 111.414-1.414L21 21z" />
+                </svg>
+              </div>
               <button
                 onClick={handleGoToMyLocation}
-                className="w-full sm:w-auto bg-[#EAD64D] text-black sm:text-sm text-xs py-3 px-6 rounded-lg mb-6 hover:bg-yellow-200 transition duration-300 shadow-md"
+                className="w-full sm:w-auto bg-[#EAD64D] text-black text-sm sm:text-base py-3 px-6 rounded-lg hover:bg-yellow-200 transition duration-300 shadow-md flex items-center justify-center gap-2"
               >
-                ไปยังตำแหน่งของฉัน
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                </svg>
+                ตำแหน่งของฉัน
               </button>
             </div>
-            <div className="h-[700px] w-full rounded-2xl overflow-hidden shadow-2xl border-4 border-gray-200">
+            <div className="relative h-[600px] sm:h-[700px] w-full rounded-2xl overflow-hidden shadow-2xl border-2 border-gray-100">
               <MapContainer
                 center={mapCenter}
                 zoom={12}
                 style={{ height: "100%", width: "100%" }}
                 ref={mapRef}
+                zoomControl={false}
               >
                 <TileLayer
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
                 />
+                <ZoomControl position="topright" />
                 {currentMapPets.map((pet) =>
                   pet.lat && pet.lng ? (
                     <Marker
@@ -644,7 +662,7 @@ export default function Home() {
                         showLostPets
                       )}
                     >
-                      <Popup className="rounded-lg shadow-lg bg-white" maxWidth={300}>
+                      <Popup className="rounded-lg shadow-lg bg-white" maxWidth={320}>
                         <div className="p-4">
                           <div className="flex items-center justify-between mb-3">
                             <h3 className="text-lg font-bold text-gray-800">{pet.title}</h3>
@@ -664,7 +682,7 @@ export default function Home() {
                                     (pet as LostPet).pet.images[0].url
                                   }
                                   alt={pet.title}
-                                  className="w-full h-32 object-cover rounded-lg mb-3"
+                                  className="w-full h-36 object-cover rounded-lg mb-3 shadow-sm"
                                 />
                               )
                             : (pet as FoundPet).images && (pet as FoundPet).images.length > 0 && (
@@ -674,7 +692,7 @@ export default function Home() {
                                     (pet as FoundPet).images[0].url
                                   }
                                   alt={pet.title}
-                                  className="w-full h-32 object-cover rounded-lg mb-3"
+                                  className="w-full h-36 object-cover rounded-lg mb-3 shadow-sm"
                                 />
                               )}
                           <div className="space-y-2">
@@ -790,12 +808,34 @@ export default function Home() {
           background: transparent !important;
           border: none !important;
         }
+        .custom-pet-marker:hover div {
+          transform: translate(-50%, -55%) scale(1.1);
+        }
         .leaflet-popup-content-wrapper {
           border-radius: 12px !important;
           box-shadow: 0 10px 25px rgba(0,0,0,0.15) !important;
         }
         .leaflet-popup-tip {
           background: white !important;
+        }
+        .leaflet-container {
+          background: #f8fafc !important;
+          border-radius: 16px;
+        }
+        .leaflet-control-zoom {
+          border: none !important;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+          border-radius: 8px !important;
+          background: white !important;
+        }
+        .leaflet-control-zoom a {
+          color: #1f2937 !important;
+          font-size: 16px !important;
+          line-height: 28px !important;
+          transition: all 0.2s ease !important;
+        }
+        .leaflet-control-zoom a:hover {
+          background: #f1f5f9 !important;
         }
         .line-clamp-2 {
           display: -webkit-box;

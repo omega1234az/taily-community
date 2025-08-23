@@ -7,14 +7,37 @@ const prisma = new PrismaClient()
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const lostPet = await prisma.lostPet.findUnique({
-      where: { id: Number(params.id) },
+  where: { id: Number(await params.id) },
+  include: {
+    pet: {
       include: {
-        pet: true,
-        user: true,
-        images: true,
-        clues: true,
+        images: true, // รูปสัตว์เลี้ยง
       },
-    })
+    },
+    user: {
+      select: {
+        id: true,
+        name: true,
+        image: true, // เลือกเฉพาะ field ที่ไม่ sensitive
+      },
+    },
+    images: true, // รูปประกาศสัตว์หาย
+    clues: {
+      include: {
+        images: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            image: true, // ป้องกันไม่ให้หลุด email/phone/password
+          },
+        },
+      },
+    },
+  },
+})
+
+
 
     if (!lostPet) {
       return NextResponse.json({ message: 'ไม่พบข้อมูล' }, { status: 404 })

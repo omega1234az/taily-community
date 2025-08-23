@@ -1,6 +1,10 @@
 "use client";
 
 import React, { useState, useRef } from "react";
+import dynamic from "next/dynamic";
+
+// โหลด component แบบ dynamic เพื่อป้องกัน SSR error
+const PetMap = dynamic(() => import("./PetMap"), { ssr: false });
 
 type LostPet = {
   id: string;
@@ -19,6 +23,11 @@ type LostPet = {
   reward?: string;
   mainImage: string;
   images: string[];
+  ownerName?: string;
+  phone?: string;
+  facebook?: string;
+  lat?: number;
+  lng?: number;
 };
 
 type Props = {
@@ -36,18 +45,17 @@ export default function LostPetDetails({ pet }: Props) {
   const [contactDetail, setContactDetail] = useState("");
   const [sightingDetail, setSightingDetail] = useState("");
 
-  const [name, setName] = useState("คาราเมล");
-  const [phone, setPhone] = useState("000000000");
-  const [facebook, setFacebook] = useState("คาราเมล10000");
+  const [name, setName] = useState(pet.ownerName || "ไม่ระบุ");
+  const [phone, setPhone] = useState(pet.phone || "ไม่ระบุ");
+  const [facebook, setFacebook] = useState(pet.facebook || "ไม่ระบุ");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imagePreview, setImagePreview] = useState<string>("/all/image.png");
 
   const [reportType, setReportType] = useState<string>("");
-  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const [showOtherInput, setShowOtherInput] = useState(false);
-  const [otherReason, setOtherReason] = useState("");
   const [reportMessage, setReportMessage] = useState("");
+
   const handleSubmitReport = () => {
     console.log("ข้อความรายงาน:", reportMessage);
     setIsReportOpen(false);
@@ -64,7 +72,7 @@ export default function LostPetDetails({ pet }: Props) {
       setImagePreview(imageURL);
     }
   };
-
+  console.log("LostPetDetails render with pet:", pet);
   const handleSubmit = () => {
     if (!witnessName || !contactDetail || !sightingDetail) {
       alert("กรุณากรอกข้อมูลให้ครบถ้วน");
@@ -83,7 +91,7 @@ export default function LostPetDetails({ pet }: Props) {
   return (
     <div>
       <div className="flex items-center justify-between">
-        <h1 className="lg:text-3xl text-2xl font-semibold mb-5">
+        <h1 className="lg:text-3xl text_SHADER: text-2xl font-semibold mb-5">
           <span className="bg-[#EAD64D] lg:py-6 lg:pl-6 sm:py-5 sm:pl-5 py-3 pl-4 rounded-full">
             {pet.name.slice(0, 2)}
           </span>
@@ -202,7 +210,7 @@ export default function LostPetDetails({ pet }: Props) {
 
       {/* Popup รายงาน */}
       {isReportOpen && (
-        <div className="fixed inset-0 flex justify-center items-center z-50  bg-opacity-50">
+        <div className="fixed inset-0 flex justify-center items-center z-50 bg-opacity-50">
           <div className="bg-white lg:w-[500px] sm:w-[400px] w-full h-full sm:h-auto rounded-md shadow-lg p-4 relative">
             <button
               onClick={() => setIsReportOpen(false)}
@@ -281,11 +289,11 @@ export default function LostPetDetails({ pet }: Props) {
         </div>
       </div>
 
-      <div className="flex flex-col  lg:mt-2  text-lg lg:text-xl space-y-8">
+      <div className="flex flex-col lg:mt-2 text-lg lg:text-xl space-y-8">
         <div className="mt-10 flex flex-col sm:grid grid-cols-3 gap-5 md:gap-10 lg:gap-28 xl:gap-40 2xl:gap-52">
           <div className="mt-2 xl:mt-5 text-lg lg:text-2xl space-y-6">
             <p>
-              <span className=" text-lg lg:text-2xl">อายุ:</span>{" "}
+              <span className="text-lg lg:text-2xl">อายุ:</span>{" "}
               <span className="text-[16px] lg:text-xl">{pet.age}</span>
             </p>
             <p>
@@ -310,18 +318,18 @@ export default function LostPetDetails({ pet }: Props) {
             </p>
           </div>
 
-          <div className=" mt-2 xl:mt-5  space-y-1 ">
-            <h2 className="text-lg lg:text-xl">รอยตำหนิ</h2>
+          <div className="mt-2 xl:mt-5 space-y-1">
+            <h2 className="text-lg lg:text-2xl">รอยตำหนิ</h2>
             <p className="text-[16px] lg:text-lg mb-10">{pet.marks}</p>
 
             <h2 className="text-lg lg:text-2xl">รายละเอียด</h2>
             <p className="text-[16px] lg:text-lg mb-10">{pet.description}</p>
 
             <h2 className="text-lg lg:text-2xl">วันที่หาย</h2>
-            <p className="text-[16px] lg:text-lg ">{pet.lostDate}</p>
+            <p className="text-[16px] lg:text-lg">{pet.lostDate}</p>
           </div>
 
-          <div className=" mt-2 xl:mt-5 text-lg lg:text-xl space-y-1 ">
+          <div className="mt-2 xl:mt-5 text-lg lg:text-xl space-y-1">
             <h2 className="text-lg lg:text-2xl">รายละเอียดการหาย</h2>
             <p className="text-[16px] lg:text-lg mb-10">{pet.lostDetail}</p>
 
@@ -341,7 +349,7 @@ export default function LostPetDetails({ pet }: Props) {
           <img
             src="/home/l.png"
             alt="image"
-            className="lg:w-14 sm:w-12 w-10  h-auto object-cover"
+            className="lg:w-14 sm:w-12 w-10 h-auto object-cover"
           />
           <img
             src="/home/x.png"
@@ -351,61 +359,57 @@ export default function LostPetDetails({ pet }: Props) {
           <img
             src="/home/ch.png"
             alt="image"
-            className="lg:w-14 sm:w-12 w-10  h-auto object-cover"
+            className="lg:w-14 sm:w-12 w-10 h-auto object-cover"
           />
         </div>
 
         <h2 className="text-lg lg:text-2xl lg:mt-8 mt-2">สถานที่หาย</h2>
         <p className="text-[16px] lg:text-xl mb-5">{pet.lostLocation}</p>
 
-        <img
-          src="/home/map2.png"
-          alt="map"
-          className="w-full h-auto object-contain mb-3"
-        />
-      </div>
+        <PetMap lat={pet.lat} lng={pet.lng} zoom={15} />
 
-      <p className="text-lg lg:text-2xl lg:my-8 my-5 sm:my-5">
-        ช่องทางการติดต่อ
-      </p>
-      <div className="inline-flex gap-8 sm:gap-12 xl:p-8 p-5 bg-[#AFDAFB] rounded-xl items-center sm:mb-20 mb-10">
-        <div className="flex justify-center items-start">
-          <img
-            src="/all/owen.png"
-            alt="logo"
-            className="lg:w-32 lg:h-32 xl:w-36 xl:h-36 2xl:w-40 2xl:h-40 w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full object-cover"
-          />
-        </div>
-
-        <div className="space-y-3">
-          <div>
-            <p className="text-[16px] lg:text-lg mb-1">ชื่อ</p>
-            <input
-              type="text"
-              value={name}
-              readOnly
-              className="w-full bg-white border border-gray-300 rounded-xl lg:px-4 px-2 lg:py-2 py-1.5 lg:text-[16px]  sm:text-sm text-xs"
+        <p className="text-lg lg:text-2xl lg:my-8 my-5 sm:my-5">
+          ช่องทางการติดต่อ
+        </p>
+        <div className="inline-flex gap-8 sm:gap-12 xl:p-8 p-5 bg-[#AFDAFB] rounded-xl items-center sm:mb-20 mb-10 w-auto">
+          <div className="flex justify-center items-start">
+            <img
+              src="/all/owen.png"
+              alt="logo"
+              className="lg:w-32 lg:h-32 xl:w-36 xl:h-36 2xl:w-40 2xl:h-40 w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full object-cover"
             />
           </div>
 
-          <div>
-            <p className="ext-[16px] lg:text-lg mb-1">เบอร์ติดต่อ</p>
-            <input
-              type="tel"
-              value={phone}
-              readOnly
-              className="w-full bg-white border border-gray-300 rounded-xl lg:px-4 px-2 lg:py-2 py-1.5 lg:text-[16px]  sm:text-sm text-xs"
-            />
-          </div>
+          <div className="space-y-3">
+            <div>
+              <p className="text-[16px] lg:text-lg mb-1">ชื่อ</p>
+              <input
+                type="text"
+                value={name}
+                readOnly
+                className="w-full bg-white border border-gray-300 rounded-xl lg:px-4 px-2 lg:py-2 py-1.5 lg:text-[16px] sm:text-sm text-xs"
+              />
+            </div>
 
-          <div>
-            <p className="ext-[16px] lg:text-lg mb-1">Facebook</p>
-            <input
-              type="text"
-              value={facebook}
-              readOnly
-              className="w-full bg-white border border-gray-300 rounded-xl lg:px-4 px-2 lg:py-2 py-1.5 lg:text-[16px]  sm:text-sm text-xs"
-            />
+            <div>
+              <p className="text-[16px] lg:text-lg mb-1">เบอร์ติดต่อ</p>
+              <input
+                type="tel"
+                value={phone}
+                readOnly
+                className="w-full bg-white border border-gray-300 rounded-xl lg:px-4 px-2 lg:py-2 py-1.5 lg:text-[16px] sm:text-sm text-xs"
+              />
+            </div>
+
+            <div>
+              <p className="text-[16px] lg:text-lg mb-1">Facebook</p>
+              <input
+                type="text"
+                value={facebook}
+                readOnly
+                className="w-full bg-white border border-gray-300 rounded-xl lg:px-4 px-2 lg:py-2 py-1.5 lg:text-[16px] sm:text-sm text-xs"
+              />
+            </div>
           </div>
         </div>
       </div>

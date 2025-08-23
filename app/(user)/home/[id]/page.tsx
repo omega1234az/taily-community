@@ -1,11 +1,287 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import LostPetDetails from "@/app/component/LostPetDetails";
-import OwnerPetDetails from "@/app/component/OwnerPetDetails";
 
+// Types ตาม API Response ที่ได้รับจริง
 type LostPet = {
+  id: number;
+  description: string;
+  location: string;
+  lat?: number;
+  lng?: number;
+  lostDate: string; // API ส่งมาเป็น string
+  reward?: number;
+  status: "lost" | "found" | "pending" | "closed" | "reunited" | "reported" | "fake";
+  userId: string;
+  petId: number;
+  facebook?: string;
+  ownerName?: string;
+  mainImage: string;
+  phone?: string;
+  createdAt: string; // API ส่งมาเป็น string
+  pet: Pet;
+  user: User;
+  images: LostPetImage[];
+  clues: Clue[];
+};
+
+type Pet = {
+  id: number;
+  name: string;
+  speciesId: number;
+  breed?: string;
+  gender?: string;
+  age?: number;
+  color?: string[]; // จาก API เป็น array ของ string
+  description?: string;
+  markings?: string;
+  isNeutered: number;
+  userId: string;
+  createdAt: string; // API ส่งมาเป็น string
+  images: PetImage[];
+};
+
+type PetSpecies = {
+  id: number;
+  name: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type PetImage = {
+  id: number;
+  url: string;
+  petId: number;
+  mainImage: boolean;
+};
+
+type LostPetImage = {
+  id: number;
+  url: string;
+  lostPetId: number;
+};
+
+type FoundPet = {
+  id: number;
+  title: string;
+  description: string;
+  location: string;
+  lat?: number;
+  lng?: number;
+  foundDate: Date;
+  speciesId: number;
+  species: PetSpecies;
+  breed?: string;
+  gender?: string;
+  color?: any; // JSON type
+  age?: number;
+  distinctive?: string;
+  status: string;
+  images: FoundPetImage[];
+  userId: string;
+  user: User;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type FoundPetImage = {
+  id: number;
+  url: string;
+  foundPetId: number;
+};
+
+type User = {
+  id: string;
+  name?: string;
+  image?: string;
+};
+
+type Clue = {
+  id: number;
+  content: string;
+  location?: string;
+  lat?: number;
+  lng?: number;
+  userId: string;
+  lostPetId: number;
+  images: ClueImage[];
+  createdAt: Date;
+};
+
+type ClueImage = {
+  id: number;
+  url: string;
+  clueId: number;
+};
+
+type PetChronicDisease = {
+  id: number;
+  petId: number;
+  disease: string;
+  description?: string;
+  diagnosedAt?: Date;
+};
+
+type VaccineRecord = {
+  id: number;
+  petId: number;
+  vaccine: string;
+  date: Date;
+  nextDue?: Date;
+  note?: string;
+};
+
+export default function Id() {
+  const params = useParams();
+  const petId = params?.id;
+  
+  const [lostPet, setLostPet] = useState<LostPet | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // แปลง petId เป็น number เพื่อตรงกับ schema
+  const numericPetId = petId ? parseInt(petId as string) : null;
+
+  useEffect(() => {
+    const fetchLostPetData = async () => {
+      if (!numericPetId) {
+        setError("ไม่พบ ID สัตว์");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+
+        const response = await fetch(`/api/lostpet/${numericPetId}`);
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            setError("ไม่พบข้อมูลสัตว์หาย");
+          } else {
+            setError("เกิดข้อผิดพลาดในการดึงข้อมูล");
+          }
+          setLoading(false);
+          return;
+        }
+
+        const data = await response.json();
+        setLostPet(data);
+        
+      } catch (err) {
+        console.error("เกิดข้อผิดพลาดในการดึงข้อมูล:", err);
+        setError("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLostPetData();
+  }, [numericPetId]);
+
+  if (!numericPetId) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-700">ไม่พบ ID สัตว์</h2>
+          <p className="text-gray-500 mt-2">กรุณาตรวจสอบ URL อีกครั้ง</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="text-gray-600 mt-4">กำลังโหลดข้อมูล...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-red-600">{error}</h2>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            ลองใหม่อีกครั้ง
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (lostPet) {
+    const petForComponent = convertLostPetForComponent(lostPet);
+    return <LostPetDetails pet={petForComponent} />;
+  }
+
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <h2 className="text-xl font-semibold text-gray-700">ไม่พบข้อมูล</h2>
+        <p className="text-gray-500 mt-2">ไม่พบข้อมูลสัตว์ที่คุณค้นหา</p>
+      </div>
+    </div>
+  );
+}
+
+// Helper functions สำหรับใช้งาน
+export const formatPetAge = (age?: number): string => {
+  if (!age) return "ไม่ระบุ";
+  return age === 1 ? "1 ปี" : `${age} ปี`;
+};
+
+export const formatNeuteredStatus = (isNeutered: number): string => {
+  return isNeutered === 1 ? "ทำหมันแล้ว" : "ไม่ได้ทำหมัน";
+};
+
+export const formatReward = (reward?: number): string => {
+  if (!reward || reward === 0) return "ไม่มีรางวัล";
+  return `${reward.toLocaleString()} บาท`;
+};
+
+export const formatLostPetStatus = (status: string): string => {
+  const statusMap = {
+    lost: "หาย",
+    found: "พบแล้ว",
+    pending: "รอดำเนินการ",
+    closed: "ปิดคดี",
+    reunited: "กลับมาแล้ว",
+    reported: "รายงานแล้ว",
+    fake: "เป็นข้อมูลเท็จ"
+  };
+  return statusMap[status as keyof typeof statusMap] || status;
+};
+
+export const getMainPetImage = (images: PetImage[]): string | null => {
+  const mainImage = images.find(img => img.mainImage);
+  return mainImage?.url || images[0]?.url || null;
+};
+
+export const formatDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('th-TH', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+};
+
+export const formatColors = (colors?: string[]): string => {
+  if (!colors || colors.length === 0) return "ไม่ระบุ";
+  return colors.join(", ");
+};
+type LostPetForComponent = {
   id: string;
   name: string;
   age: string;
@@ -17,774 +293,41 @@ type LostPet = {
   marks: string;
   description: string;
   lostDate: string;
+  mainImage: string;
+  lat?: number;
+  lng?: number;
   lostDetail: string;
   lostLocation: string;
   images: string[];
   reward?: string;
+  ownerName?: string;
+  phone?: string;
+  facebook?: string;
 };
 
-type OwnerPet = {
-  id: string;
-  name: string;
-  images: string[];
-  gender: string;
-  breed: string;
-  lostDate: string;
-  color: string;
-  type: string;
-  marks?: string;
-  description?: string;
-  lostLocation?: string;
+// Helper function แปลงข้อมูลจาก API เป็น format ที่ LostPetDetails component ต้องการ
+export const convertLostPetForComponent = (lostPet: LostPet): LostPetForComponent => {
+  return {
+    id: lostPet.id.toString(),
+    name: lostPet.pet.name,
+    age: formatPetAge(lostPet.pet.age),
+    gender: lostPet.pet.gender || "ไม่ระบุ",
+    type: "สัตว์เลี้ยง", // หรือจะดึงจาก species ก็ได้
+    breed: lostPet.pet.breed || "ไม่ระบุ",
+    sterilized: formatNeuteredStatus(lostPet.pet.isNeutered),
+    color: formatColors(lostPet.pet.color),
+    marks: lostPet.pet.markings || "ไม่มี",
+    description: lostPet.pet.description || lostPet.description,
+    lostDate: formatDate(lostPet.lostDate),
+    lat: lostPet.lat,
+    lng: lostPet.lng,
+    mainImage: getMainPetImage(lostPet.pet.images) || "/default-image.jpg",
+    lostDetail: lostPet.description,
+    lostLocation: lostPet.location,
+    images: lostPet.pet.images.map(img => img.url),
+    reward: lostPet.reward ? formatReward(lostPet.reward) : undefined,
+    ownerName: lostPet.ownerName,
+    phone: lostPet.phone,
+    facebook: lostPet.facebook
+  };
 };
-
-const petsLost: LostPet[] = [
-  {
-    id: "01",
-    name: "ไข่ตุ๋น",
-    age: "1 ปี",
-    gender: "ตัวผู้",
-    type: "แมว",
-    breed: "บริติช ช็อตแฮร์",
-    sterilized: "ทำหมันแล้ว",
-    color: "สีส้ม",
-    marks: "จุดสีขาวที่อก",
-    description: "แมวเป็นมิตร ขี้อ้อน หายไปจากบ้านตอนเย็น",
-    lostDate: "2025-02-05",
-    lostDetail: "หายจากบริเวณหน้าบ้าน",
-    lostLocation: "บ้านหนองอึ่งพัฒนา อ.เมือง จ.กำแพงเพชร",
-    reward: "5000",
-    images: [
-      "/home/eggtun2.png",
-      "/home/eggtun3.png",
-      "/home/eggtun4.png",
-      "/home/eggtun5.png",
-    ],
-  },
-  {
-    id: "02",
-    name: "ส้มโอ",
-    age: "2 ปี",
-    gender: "ตัวผู้",
-    type: "สุนัข",
-    breed: "เพมโบรก เวลช์คอร์กี้",
-    sterilized: "ไม่ได้ทำหมัน",
-    color: "ส้ม",
-    marks: "แถบสีขาวตรงอก",
-    description: "สุนัขขี้เล่น ไม่กัด",
-    lostDate: "2025-01-05",
-    lostDetail: "น่าจะววิ่งออกไปตอนเปิดรั้ว",
-    lostLocation: "ซอยสุขใจ 4 อ.เมือง จ.เชียงใหม่",
-    reward: "4000",
-    images: [
-      "/home/sumo.png",
-      "/home/somo2.jpg",
-      "/home/somo3.jpg",
-      "/home/somo4.jpg",
-    ],
-  },
-
-  {
-    id: "03",
-    name: "มิลมิล",
-    age: "2 ปี",
-    gender: "ตัวเมีย",
-    type: "งู",
-    breed: "งูขาว",
-    sterilized: "ไม่ได้ทำหมัน",
-    color: "ขาว",
-    marks: "",
-    description: "ขี้เล่น เป็นมิตร ไม่ดุ ไม่กัด",
-    lostDate: "2025-02-20",
-    lostDetail: "หายออกจากบ้านตอนเย็น ขณะเปิดประตูหลังบ้าน",
-    lostLocation: "ซอยสุขุมวิท 101 ถนนสุขุมวิท เขตบางนา",
-    reward: "3000",
-    images: [
-      "/home/milmil.jpg",
-      "/home/milmil1.jpg",
-      "/home/milmil2.jpg",
-      "/home/milmil3.jpg",
-    ],
-  },
-  {
-    id: "04",
-    name: "จาเบล",
-    age: "1 ปี",
-    gender: "ตัวผู้",
-    type: "หนู",
-    breed: "แฮมสเตอร์แคระขาว",
-    sterilized: "ไม่ได้ทำหมัน",
-    color: "ขาวเทา",
-    marks: "ไม่มี",
-    description: "ตัวเล็ก ขี้ตกใจ",
-    lostDate: "2025-02-15",
-    lostDetail: "หายออกจากกรงในเวลากลางคืน",
-    lostLocation: "ซอยสุขใจ 4 อ.เมือง จ.เชียงใหม่",
-    reward: "2000",
-    images: [
-      "/home/ham.jpg",
-      "/home/ham2.jpeg",
-      "/home/ham3.jpg",
-      "/home/ham4.jpg",
-    ],
-  },
-  {
-    id: "05",
-    name: "ไคลี่",
-    age: "3 ปี",
-    gender: "ตัวเมีย",
-    type: "กระรอก",
-    breed: "ชิปมังก์",
-    sterilized: "ทำหมันแล้ว",
-    color: "น้ำตาลลายขาว",
-    marks: "แถบสีเข้มหลังตัว",
-    description: "กระตือรือร้น วิ่งไว",
-    lostDate: "2025-05-05",
-    lostDetail: "อาจหลุดออกไปจากกรง",
-    lostLocation: "บ้านหนองอึ่งพันฒานา อ.เมือง จ.กำแพงเพชร",
-    reward: "1000",
-    images: [
-      "/home/karog.jpg",
-      "/home/karog2.jpeg",
-      "/home/karog3.jpg",
-      "/home/karog4.jpeg",
-    ],
-  },
-  {
-    id: "06",
-    name: "มิลา",
-    age: "2 ปี",
-    gender: "ไม่ได้ทำหมัน",
-    type: "นก",
-    breed: "ค็อกคาเทล",
-    sterilized: "ไม่ทราบ",
-    color: "เหลือง เทา ขาว",
-    marks: "หัวเหลือง แก้มส้ม",
-    description: "ร้องเก่ง ชอบบินเล่น",
-    lostDate: "2025-01-09",
-    lostDetail: "บินหลุดออกจากหน้าต่าง",
-    lostLocation: "ซอยสุขใจ 4 อ.เมือง จ.เชียงใหม่",
-    reward: "1500",
-    images: [
-      "/home/nok.jpg",
-      "/home/nok2.jpeg",
-      "/home/nok3.jpeg",
-      "/home/nok4.jpg",
-    ],
-  },
-  {
-    id: "07",
-    name: "ริรี่",
-    age: "2 ปี",
-    gender: "ตัวเมีย",
-    type: "กระต่าย",
-    breed: "ฮอลแลนด์ลอป",
-    sterilized: "ทำหมันแล้ว",
-    color: "น้ำตาลอ่อน",
-    marks: "หูตก",
-    description: "ขี้อ้อน ชอบนอนเล่น",
-    lostDate: "2025-04-10",
-    lostDetail: "หายระหว่างให้อาหาร",
-    lostLocation: "บ้านหนองอึ่งพันฒานา อ.เมือง จ.กำแพงเพชร",
-    reward: "2500",
-    images: [
-      "/home/katay.jpg",
-      "/home/katay2.jpg",
-      "/home/katay3.jpg",
-      "/home/katay4.jpg",
-    ],
-  },
-  {
-    id: "08",
-    name: "โอเวน",
-    age: "3 ปี",
-    gender: "ตัวผู้",
-    type: "นก",
-    breed: "เลิฟเบิร์ดหน้ากุหลาบ",
-    sterilized: "ไม่ได้ทำหมัน",
-    color: "หลากสี (แดง เขียว)",
-    marks: "หน้าแดงกุหลาบ",
-    description: "ขี้เล่น ชอบร้อง",
-    lostDate: "2025-05-22",
-    lostDetail: "บินหลุดออกจากกรง",
-    lostLocation: "ซอยสุขใจ 4 อ.เมือง จ.เชียงใหม่",
-    reward: "1100",
-    images: [
-      "/home/kok2.jpg",
-      "/home/kok1.jpeg",
-      "/home/kok3.jpg",
-      "/home/kok4.jpg",
-    ],
-  },
-  {
-    id: "09",
-    name: "อัลเดน",
-    age: "3 ปี",
-    gender: "ตัวผู้",
-    type: "เฟอร์ริต",
-    breed: "เฟอร์ริต",
-    sterilized: "ไม่ได้ทำหมัน",
-    color: "น้ำตาลอ่อน",
-    marks: "หางยาว",
-    description: "ขี้เล่น วิ่งเร็ว",
-    lostDate: "2025-04-30",
-    lostDetail: "หลุดออกจากบ้านระหว่างทำความสะอาด",
-    lostLocation: "บ้านหนองอึ่งพันฒานา อ.เมือง จ.กำแพงเพชร",
-    reward: "3500",
-    images: [
-      "/home/ferrit.jpg",
-      "/home/ferrit2.jpg",
-      "/home/ferrit3.jpg",
-      "/home/ferrit4.jpg",
-    ],
-  },
-  {
-    id: "10",
-    name: "จ๊ะโอ๋",
-    age: "2 ปี",
-    gender: "ตัวผู้",
-    type: "สุนัข",
-    breed: "ไทย",
-    sterilized: "ทำหมันแล้ว",
-    color: "ขาวดำ",
-    marks: "จุดดำบริเวณตา",
-    description: "ร่าเริง ชอบวิ่ง",
-    lostDate: "2025-03-02",
-    lostDetail: "เปิดประตูแล้ววิ่งออกไป",
-    lostLocation: "ซอยสุขใจ 4 อ.เมือง จ.เชียงใหม่",
-    reward: "1200",
-    images: [
-      "/home/thai.png",
-      "/home/thai2.jpg",
-      "/home/thai3.jpg",
-      "/home/thai4.jpg",
-    ],
-  },
-  {
-    id: "11",
-    name: "ปุกปุย",
-    age: "2 ปี",
-    gender: "ตัวผู้",
-    type: "เม่นแคระ",
-    breed: "เม่นแคระ",
-    sterilized: "ทำหมันแล้ว",
-    color: "น้ำตาลอ่อน",
-    marks: "ไม่มี",
-    description: "ขี้อาย ชอบม้วนตัว",
-    lostDate: "2025-05-03",
-    lostDetail: "หายระหว่างทำความสะอาดกรง",
-    lostLocation: "ซอยสุขใจ 4 อ.เมือง จ.เชียงใหม่",
-    reward: "500",
-    images: [
-      "/home/men.jpg",
-      "/home/men2.jpg",
-      "/home/men3.jpg",
-      "/home/men4.jpg",
-    ],
-  },
-  {
-    id: "12",
-    name: "มูมู่",
-    age: "3 ปี",
-    gender: "ตัวผู้",
-    type: "ชูก้าไรเดอร์",
-    breed: "ชูก้าไรเดอร์",
-    sterilized: "ทำหมันแล้ว",
-    color: "ขาว",
-    marks: "แถบสีเข้มกลางหลัง",
-    description: "กระโดดเก่ง ชอบเกาะ",
-    lostDate: "2025-03-20",
-    lostDetail: "หายตอนเปิดกรงทำความสะอาด",
-    lostLocation: "ซอยสุขใจ 4 อ.เมือง จ.เชียงใหม่",
-    reward: "600",
-    images: [
-      "/home/chuga.jpg",
-      "/home/chuga2.jpeg",
-      "/home/chuga3.jpg",
-      "/home/chuga4.jpg",
-    ],
-  },
-  {
-    id: "13",
-    name: "ลูมิส",
-    age: "3 ปี",
-    gender: "ตัวผู้",
-    type: "งู",
-    breed: "งู",
-    sterilized: "ทำหมันแล้ว",
-    color: "เหลือง",
-    marks: "มีลายวงกลมสีเหลือง มีจุดเล็กๆสีดำตามตัว",
-    description: "ขี้อ้อน ไม่ดุ ไม่กัด ชินกับคน ไม่เลื้อยหนีเมื่อมีคนอยู่ใกล้",
-    lostDate: "",
-    lostDetail: "หายตอนเปิดกรงทำความสะอาด อาจเลื้อยออกจากบ้าน",
-    lostLocation: "หายแถวหน้าบ้านในซอยสวนผัก 32 เขตตลิ่งชัน",
-    reward: "700",
-    images: [
-      "/home/Lumis.jpg",
-      "/home/Lumis1.jpg",
-      "/home/Lumis2.jpg",
-      "/home/Lumis3.jpg",
-    ],
-  },
-  {
-    id: "14",
-    name: "บันบัน",
-    age: "2 ปี",
-    gender: "ตัวเมีย",
-    type: "กระต่าย",
-    breed: "แองโกล่า ",
-    sterilized: "ทำหมันแล้ว",
-    color: "ขาว เทาอ่อน",
-    marks: "ขนฟู ขนยาว",
-    description: "น่ารัก ซุกซน ขี้งอน ชอบกระโดดและแทะของ ใจดี ไม่กัด",
-    lostDate: "",
-    lostDetail: "หายตอนเปิดกรงให้ออกมาวิ่งเล่น อาจหลุดออกไปทางรั้วหลังบ้าน",
-    lostLocation: "หายแถวหน้าบ้านในซอยสวนผัก 32 เขตตลิ่งชัน",
-    reward: "800",
-    images: [
-      "/home/bunbun.jpg",
-      "/home/bunbun1.jpg",
-      "/home/bunbun2.jpg",
-      "/home/bunbun3.jpg",
-    ],
-  },
-  {
-    id: "15",
-    name: "โนว่า",
-    age: "4 ปี",
-    gender: "ตัวผู้",
-    type: "แมว",
-    breed: "สฟิงซ์",
-    sterilized: "ทำหมันแล้ว",
-    color: "เนื้อ",
-    marks: "มีตาสองสี ",
-    description: "น่ารัก ซุกซน ขี้งอน ขี้เล่นมาก เข้ากับคนง่าย ชอบอ้อน",
-    lostDate: "",
-    lostDetail: "ออกจากบ้านตอนกลางคืนแล้วไม่กลับมา",
-    lostLocation: "หายจากคอนโดแถวรัชดาภิเษก ซอย 14",
-    reward: "900",
-    images: [
-      "/home/Nova.jpg",
-      "/home/Nova1.jpg",
-      "/home/Nova2.jpg",
-      "/home/Nova3.jpg",
-    ],
-  },
-  {
-    id: "16",
-    name: "บิสกิต",
-    age: "4 ปี",
-    gender: "ตัวผู้",
-    type: "เม่น",
-    breed: "เม่นแคระสโนว์",
-    sterilized: "ทำหมันแล้ว",
-    color: "ขาว",
-    marks: "มีตัวสีขาว ตาสีแดง ",
-    description: "ขี้อาย ชอบมุดเข้าที่แคบ ไม่กัด ชอบกลิ่นหอมอ่อนๆ",
-    lostDate: "",
-    lostDetail: "กรงเปิดทิ้งไว้แล้วไม่พบตัว อาจหลบไปในซอกมืด",
-    lostLocation: "หายจากหอพักใกล้มหาวิทยาลัยเชียงใหม่",
-    reward: "1000",
-    images: [
-      "/home/Biscuit.jpg",
-      "/home/Biscuit1.jpg",
-      "/home/Biscuit2.jpg",
-      "/home/Biscuit3.jpg",
-    ],
-  },
-  {
-    id: "17",
-    name: "ดัสตี้",
-    age: "2 ปี",
-    gender: "ตัวผู้",
-    type: "หนู",
-    breed: "ชินชิล่า",
-    sterilized: "ทำหมันแล้ว",
-    color: "เทาอ่อน",
-    marks: " ",
-    description: "ขี้อาย ขนนุ่มมาก ชอบซ่อนตัว ไม่กัด ชอบปีนป่ายและกระโดด",
-    lostDate: "",
-    lostDetail: "หนีออกจากกรงตอนทำความสะอาด ไม่พบในบ้าน",
-    lostLocation: "หายจากบ้านในซอยลาดปลาเค้า 72 เขตบางเขน",
-    reward: "2000",
-    images: [
-      "/home/Dusty.jpg",
-      "/home/Dusty1.jpg",
-      "/home/Dusty2.jpg",
-      "/home/Dusty3.jpg",
-    ],
-  },
-  {
-    id: "18",
-    name: "ไอวี่",
-    age: "2 ปี",
-    gender: "ตัวเมีย",
-    type: "สุนัข",
-    breed: "ซามอย",
-    sterilized: "ทำหมันแล้ว",
-    color: "ขาว",
-    marks: "ขนฟูทั่วตัว",
-    description: "ขี้เล่น เป็นมิตร",
-    lostDate: "2025-02-28",
-    lostDetail: "หายจากหน้าบ้านขณะไม่มีคนดู",
-    lostLocation: "บ้านหนองรี อ.บ่อพลอย จ.กาญจนบุรี",
-    reward: "2000",
-    images: [
-      "/home/samoy.png",
-      "/home/samoy2.jpg",
-      "/home/samoy3.jpg",
-      "/home/samoy4.jpg",
-    ],
-  },
-];
-
-const petsOwner: OwnerPet[] = [
-  {
-    id: "19",
-    name: "ไข่ตุ๋น",
-    images: [
-      "/home/eggtun.png",
-      "/home/eggtun2.png",
-      "/home/eggtun3.png",
-      "/home/eggtun4.png",
-    ],
-    gender: "ตัวผู้",
-    breed: "บริติช ช็อตแฮร์",
-    lostDate: "2025-05-10",
-    type: "แมว",
-    color: "ส้ม",
-    marks: "น้องมีสีขาวตรงคาง",
-    description: "น้องเดินไปเดินมาหน้าบ้านนานแล้ว",
-    lostLocation: "บ้านหนองอึ่งพัฒนา อ.เมือง จ.กำแพงเพชร",
-  },
-
-  {
-    id: "20",
-    name: "ส้มโอ",
-    images: [
-      "/home/sumo.png",
-      "/home/somo2.jpg",
-      "/home/somo3.jpg",
-      "/home/somo4.jpg",
-    ],
-    gender: "ตัวผู้",
-    breed: "เพมโบรก เวลช์คอร์กี้",
-    lostDate: "2025-05-08",
-    type: "สุนัข",
-    color: "ส้มขาว",
-    marks: "หางสั้น ขาสั้น",
-    description: "พบเดินหลงทางใกล้สนามเด็กเล่น ดูสะอาดและเป็นมิตร",
-    lostLocation: "หมู่บ้านสุขสันต์ อ.เมือง จ.เชียงใหม่",
-  },
-  {
-    id: "21",
-    name: "มิลมิล",
-    images: [
-      "/home/milmil.jpg",
-      "/home/milmil1.jpg",
-      "/home/milmil2.jpg",
-      "/home/milmil3.jpg",
-    ],
-    gender: "ตัวเมีย",
-    breed: "งูขาว",
-    lostDate: "2025-06-02",
-    type: "งู",
-    color: "ขาว",
-    marks: "",
-    description:
-      "สัตว์เลี้ยงถูกพบเจอที่บริเวณสวนสาธารณะ รู้สึกปลอดภัยและสุขภาพดี",
-    lostLocation: "สวนสาธารณะใกล้บ้านเลขที่ 123 ถนนสุขุมวิท เขตคลองเตย",
-  },
-  {
-    id: "22",
-    name: "จาเบล",
-    images: [
-      "/home/ham.jpg",
-      "/home/ham2.jpeg",
-      "/home/ham3.jpg",
-      "/home/ham4.jpg",
-    ],
-    gender: "ตัวผู้",
-    breed: "แฮมสเตอร์แคระขาว",
-    lostDate: "2025-02-13",
-    type: "หนู",
-    color: "ขาวเทา",
-    marks: "มีจุดดำที่หลัง",
-    description: "มีคนเก็บได้ที่ใต้โต๊ะในร้านอาหาร",
-    lostLocation: "หอพัก A12 ม.ธรรมศาสตร์ รังสิต",
-  },
-  {
-    id: "23",
-    name: "ไคลี่",
-    images: [
-      "/home/karog.jpg",
-      "/home/karog2.jpeg",
-      "/home/karog3.jpg",
-      "/home/karog4.jpeg",
-    ],
-    gender: "ตัวเมีย",
-    breed: "ชิปมังก์",
-    lostDate: "2025-05-06",
-    type: "กระรอก",
-    color: "น้ำตาลดำ",
-    marks: "มีแถบดำกลางหลัง",
-    description: "พบปีนเล่นอยู่บนต้นไม้ในสวนสาธารณะ",
-    lostLocation: "หมู่บ้านเบญจพร จ.นครปฐม",
-  },
-  {
-    id: "24",
-    name: "มิลา",
-    images: [
-      "/home/nok.jpg",
-      "/home/nok2.jpeg",
-      "/home/nok3.jpeg",
-      "/home/nok4.jpg",
-    ],
-    gender: "ตัวเมีย",
-    breed: "ค็อกคาเทล",
-    lostDate: "2025-01-12",
-    type: "นก",
-    color: "เหลืองแก้มส้ม",
-    marks: "หางยาว มีเสียงร้องเป็นเอกลักษณ์",
-    description: "บินมาเกาะที่หน้าต่างบ้านพัก",
-    lostLocation: "หมู่บ้านสันติสุข อ.เมือง จ.ระยอง",
-  },
-  {
-    id: "25",
-    name: "ริรี่",
-    images: [
-      "/home/katay.jpg",
-      "/home/katay2.jpg",
-      "/home/katay3.jpg",
-      "/home/katay4.jpg",
-    ],
-    gender: "ตัวเมีย",
-    breed: "ฮอลแลนด์ลอป",
-    lostDate: "2025-04-15",
-    type: "กระต่าย",
-    color: "น้ำตาลอ่อน",
-    marks: "หูตก ขนนุ่ม",
-    description: "พบเดินหลงทางอยู่ริมถนน",
-    lostLocation: "อพาร์ตเมนต์พหลโยธิน 24 กรุงเทพฯ",
-  },
-  {
-    id: "26",
-    name: "โอเวน",
-    images: [
-      "/home/kok2.jpg",
-      "/home/kok1.jpeg",
-      "/home/kok3.jpg",
-      "/home/kok4.jpg",
-    ],
-    gender: "ตัวผู้",
-    breed: "เลิฟเบิร์ดหน้ากุหลาบ",
-    lostDate: "2025-05-23",
-    type: "นก",
-    color: "เหลืองเขียว",
-    marks: "แก้มแดง หัวเหลือง",
-    description: "มีคนพบเกาะอยู่บนสายไฟข้างถนน",
-    lostLocation: "บ้านคลองสาน กรุงเทพฯ",
-  },
-  {
-    id: "27",
-    name: "อัลเดน",
-    images: [
-      "/home/ferrit.jpg",
-      "/home/ferrit2.jpg",
-      "/home/ferrit3.jpg",
-      "/home/ferrit4.jpg",
-    ],
-    gender: "ตัวผู้",
-    breed: "เฟอร์ริต",
-    lostDate: "2025-05-02",
-    type: "เฟอร์ริต",
-    color: "น้ำตาลอ่อน",
-    marks: "ลำตัวยาว หางพอง",
-    description: "หลงมาอยู่หน้าร้านสะดวกซื้อ",
-    lostLocation: "สวนจตุจักร กรุงเทพฯ",
-  },
-  {
-    id: "28",
-    name: "จ๊ะโอ๋",
-    images: [
-      "/home/thai.png",
-      "/home/thai2.jpg",
-      "/home/thai3.jpg",
-      "/home/thai4.jpg",
-    ],
-    gender: "ตัวผู้",
-    breed: "ไทย",
-    lostDate: "2025-03-04",
-    type: "สุนัข",
-    color: "ขาวดำ",
-    marks: "จุดดำบริเวณตา",
-    description: "พบเดินอยู่บริเวณวัด ไม่มีปลอกคอ",
-    lostLocation: "ชานเมืองนครราชสีมา",
-  },
-  {
-    id: "29",
-    name: "ปุกปุย",
-    images: [
-      "/home/men.jpg",
-      "/home/men2.jpg",
-      "/home/men3.jpg",
-      "/home/men4.jpg",
-    ],
-    gender: "ตัวผู้",
-    breed: "เม่นแคระ",
-    lostDate: "2025-05-05",
-    type: "เม่นแคระ",
-    color: "ขาวน้ำตาล",
-    marks: "ไม่มี",
-    description: "มีคนพบในพุ่มไม้หน้าอพาร์ตเมนต์",
-    lostLocation: "คอนโดแถวจรัญสนิทวงศ์",
-  },
-  {
-    id: "30",
-    name: "มูมู่",
-    images: [
-      "/home/chuga.jpg",
-      "/home/chuga2.jpeg",
-      "/home/chuga3.jpg",
-      "/home/chuga4.jpg",
-    ],
-    gender: "ตัวผู้",
-    breed: "ชูก้าไรเดอร์",
-    lostDate: "2025-03-22",
-    type: "ชูก้าไรเดอร์",
-    color: "เทาอ่อน",
-    marks: "แถบสีเข้มกลางหลัง",
-    description: "ปีนมาเกาะอยู่บนรั้วหน้าบ้าน",
-    lostLocation: "บ้านสวนพัฒนา บางบัวทอง นนทบุรี",
-  },
-  {
-    id: "31",
-    name: "ลูมิส",
-    images: [
-      "/home/Lumis.jpg",
-      "/home/Lumis1.jpg",
-      "/home/Lumis2.jpg",
-      "/home/Lumis3.jpg",
-    ],
-    gender: "ตัวผู้",
-    breed: "งูขาว",
-    lostDate: "2025-02-15",
-    type: "งู",
-    color: "เหลือง",
-    marks: "มีลายวงกลมสีเหลือง มีจุดเล็กๆสีดำตามตัว",
-    description: "ขี้อ้อน ไม่ดุ ไม่กัด เลื้อยช้า",
-    lostLocation: "เจอบริเวณสวนหย่อมหน้าคอนโดลุมพินี วิภาวดี",
-  },
-  {
-    id: "32",
-    name: "บันบัน",
-    images: [
-      "/home/bunbun.jpg",
-      "/home/bunbun1.jpg",
-      "/home/bunbun2.jpg",
-      "/home/bunbun3.jpg",
-    ],
-    gender: "ตัวเมีย",
-    breed: "แองโกล่า",
-    lostDate: "2025-05-05",
-    type: "กระต่าย",
-    color: "ขาว เทาอ่อน",
-    marks: " ",
-    description: "น่ารัก ซุกซน ขี้งอน ขนยาวฟูคล้ายปุยเมฆ",
-    lostLocation: "พบที่สนามเด็กเล่นในหมู่บ้านชัยพฤกษ์ รังสิต",
-  },
-  {
-    id: "33",
-    name: "โนว่า",
-    images: [
-      "/home/Nova.jpg",
-      "/home/Nova1.jpg",
-      "/home/Nova2.jpg",
-      "/home/Nova3.jpg",
-    ],
-    gender: "ตัวผู้",
-    breed: "สฟิงซ์",
-    lostDate: "2025-04-20",
-    type: "แมว",
-    color: "เนื้อ",
-    marks: "มีตาสองสี",
-    description: "ไม่มีขน ผิวเรียบ ตาสองสี ดูขี้สงสาร",
-    lostLocation: "พบในโรงรถของบ้านแถวถนนรัชดาภิเษก",
-  },
-  {
-    id: "34",
-    name: "บิสกิต",
-    images: [
-      "/home/Biscuit.jpg",
-      "/home/Biscuit1.jpg",
-      "/home/Biscuit2.jpg",
-      "/home/Biscuit3.jpg",
-    ],
-    gender: "ตัวผู้",
-    breed: "เม่นแคระสโนว์",
-    lostDate: "2025-06-15",
-    type: "เม่น",
-    color: "ขาว",
-    marks: "มีตัวสีขาว ตาสีแดง",
-    description: "ขี้ตกใจ ชอบซ่อนตัวในที่แคบ ไม่กัด",
-    lostLocation: "พบในกระถางต้นไม้หลังบ้านย่านบางบัวทอง",
-  },
-  {
-    id: "35",
-    name: "ดัสตี้",
-    images: [
-      "/home/Dusty.jpg",
-      "/home/Dusty1.jpg",
-      "/home/Dusty2.jpg",
-      "/home/Dusty3.jpg",
-    ],
-    gender: "ตัวผู้",
-    breed: "ชินชิล่า",
-    lostDate: "2025-06-01",
-    type: "หนู",
-    color: "เทาอ่อน",
-    marks: "",
-    description: "ขี้เล่น วิ่งเร็ว ชอบเคี้ยวของ",
-    lostLocation: "เจอหลบอยู่ใต้เบาะรถในลานจอดรถฟิวเจอร์พาร์ครังสิต",
-  },
-  {
-    id: "36",
-    name: "ไอวี่",
-    images: [
-      "/home/samoy.png",
-      "/home/samoy2.jpg",
-      "/home/samoy3.jpg",
-      "/home/samoy4.jpg",
-    ],
-    gender: "ตัวเมีย",
-    breed: "ซามอย",
-    lostDate: "2025-06-02",
-    type: "สุนัข",
-    color: "ขาว",
-    marks: "มีปลอกคอสีฟ้า",
-    description: "พบอยู่แถวตลาดนัด ดูเป็นมิตรและเชื่อง",
-    lostLocation: "สวนสัตว์ลพบุรี อ.เมือง จ.ลพบุรี",
-  },
-];
-
-export default function Id() {
-  const params = useParams();
-  const petId = params?.id;
-
-  // แก้ชื่อ array เป็น petsLost
-  const lostPet = petsLost.find((p) => p.id === petId);
-  const ownerPet = petsOwner.find((p) => p.id === petId);
-
-  if (!lostPet && !ownerPet) {
-    return <div>ไม่พบข้อมูลสัตว์หายหรือหาเจ้าของ</div>;
-  }
-
-  if (lostPet) {
-    return <LostPetDetails pet={lostPet} />;
-  }
-
-  if (ownerPet) {
-    return <OwnerPetDetails pet={ownerPet} />;
-  }
-
-  return null;
-}
