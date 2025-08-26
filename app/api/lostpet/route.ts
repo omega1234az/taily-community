@@ -136,12 +136,7 @@ export async function POST(req: NextRequest) {
 // GET - ปลอดภัยแล้ว ไม่เปิดเผยข้อมูลส่วนตัว
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(options);
-
-    if (!session || !session.user || !session.user.id) {
-      return NextResponse.json({ message: 'ไม่ได้รับอนุญาต' }, { status: 401 });
-    }
-
+    
     const { searchParams } = new URL(req.url);
     // จัดการกรณีที่ไม่มี page หรือ limit โดยกำหนดค่า default
     const page = parseInt(searchParams.get('page') || '1', 10) || 1;
