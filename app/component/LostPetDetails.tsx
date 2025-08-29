@@ -41,16 +41,26 @@ export default function LostPetDetails({ pet }: Props) {
   const [isClueOpen, setIsClueOpen] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
 
+  // Clue form states
   const [witnessName, setWitnessName] = useState("");
   const [contactDetail, setContactDetail] = useState("");
   const [sightingDetail, setSightingDetail] = useState("");
+  const [location, setLocation] = useState("");
+  const [lat, setLat] = useState("");
+  const [lng, setLng] = useState("");
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+
+  // Loading and error states
+  const [isSubmittingClue, setIsSubmittingClue] = useState(false);
+  const [clueError, setClueError] = useState("");
+  const [clueSuccess, setClueSuccess] = useState("");
 
   const [name, setName] = useState(pet.ownerName || "ไม่ระบุ");
   const [phone, setPhone] = useState(pet.phone || "ไม่ระบุ");
   const [facebook, setFacebook] = useState(pet.facebook || "ไม่ระบุ");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [imagePreview, setImagePreview] = useState<string>("/all/image.png");
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
   const [reportType, setReportType] = useState<string>("");
   const [showOtherInput, setShowOtherInput] = useState(false);
@@ -66,26 +76,103 @@ export default function LostPetDetails({ pet }: Props) {
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const imageURL = URL.createObjectURL(file);
-      setImagePreview(imageURL);
-    }
-  };
-  console.log("LostPetDetails render with pet:", pet);
-  const handleSubmit = () => {
-    if (!witnessName || !contactDetail || !sightingDetail) {
-      alert("กรุณากรอกข้อมูลให้ครบถ้วน");
+    const files = Array.from(e.target.files || []);
+    
+    if (files.length > 4) {
+      setClueError("สามารถอัปโหลดรูปได้ไม่เกิน 4 รูป");
       return;
     }
 
-    const data = {
-      witnessName,
-      contactDetail,
-      sightingDetail,
-    };
-    console.log("ส่งข้อมูล:", data);
-    setIsClueOpen(false);
+    setSelectedImages(files);
+    
+    // สร้าง preview images
+    const previews = files.map(file => URL.createObjectURL(file));
+    setImagePreviews(previews);
+    setClueError(""); // ล้าง error
+  };
+
+  const removeImage = (index: number) => {
+    const newImages = selectedImages.filter((_, i) => i !== index);
+    const newPreviews = imagePreviews.filter((_, i) => i !== index);
+    
+    setSelectedImages(newImages);
+    setImagePreviews(newPreviews);
+  };
+
+  // Reset form function
+  const resetClueForm = () => {
+    setWitnessName("");
+    setContactDetail("");
+    setSightingDetail("");
+    setLocation("");
+    setLat("");
+    setLng("");
+    setSelectedImages([]);
+    setImagePreviews([]);
+    setClueError("");
+    setClueSuccess("");
+  };
+
+  console.log("LostPetDetails render with pet:", pet);
+
+  const handleSubmit = async () => {
+    // Validate form
+    if (!witnessName.trim() || !contactDetail.trim() || !sightingDetail.trim()) {
+      setClueError("กรุณากรอกข้อมูลให้ครบถ้วน");
+      return;
+    }
+
+    setIsSubmittingClue(true);
+    setClueError("");
+    setClueSuccess("");
+
+    try {
+      // สร้าง FormData
+      const formData = new FormData();
+      formData.append("witnessName", witnessName.trim());
+      formData.append("contactDetails", contactDetail.trim());
+      formData.append("sightingDetails", sightingDetail.trim());
+      
+      if (location.trim()) {
+        formData.append("location", location.trim());
+      }
+      
+      if (lat.trim()) {
+        formData.append("lat", lat.trim());
+      }
+      
+      if (lng.trim()) {
+        formData.append("lng", lng.trim());
+      }
+
+      // เพิ่มรูปภาพ
+      selectedImages.forEach((image) => {
+        formData.append("images", image);
+      });
+
+      // ส่งข้อมูลไปยัง API
+      const response = await fetch(`/api/lostpet/${pet.id}/clues`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setClueSuccess("เพิ่มเบาะแสสำเร็จ!");
+        setTimeout(() => {
+          setIsClueOpen(false);
+          resetClueForm();
+        }, 2000);
+      } else {
+        setClueError(result.message || "เกิดข้อผิดพลาดในการส่งข้อมูล");
+      }
+    } catch (error) {
+      console.error("Error submitting clue:", error);
+      setClueError("เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง");
+    } finally {
+      setIsSubmittingClue(false);
+    }
   };
 
   return (
@@ -130,8 +217,8 @@ export default function LostPetDetails({ pet }: Props) {
 
       {/* Popup แจ้งเบาะแส */}
       {isClueOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="bg-white p-8 xl:mt-10 sm:mt-20 rounded-2xl shadow-lg xl:w-[600px] xl:h-[600px] lg:w-[550px] lg:h-[550px] md:w-[500px] md:h-[550px] sm:w-[450px] sm:h-[550px] w-full h-full relative overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center  bg-opacity-50">
+          <div className="bg-white p-6 xl:mt-10 sm:mt-20 rounded-2xl shadow-lg xl:w-[600px] xl:max-h-[90vh] lg:w-[550px] lg:max-h-[85vh] md:w-[500px] md:max-h-[85vh] sm:w-[450px] sm:max-h-[85vh] w-full h-full max-h-full relative overflow-y-auto">
             <span className="absolute top-[-36px] left-1 w-52 h-28 bg-[#7CBBEB] rounded-b-full z-0"></span>
             <span className="absolute top-4 left-64 w-10 h-10 bg-[#EAD64D] rounded-full z-0 -translate-x-1/2"></span>
             <span className="absolute top-5 left-120 w-18 h-18 bg-[#7CBBEB] rounded-full z-0"></span>
@@ -142,66 +229,125 @@ export default function LostPetDetails({ pet }: Props) {
               </h2>
             </div>
 
-            <p className="mb-1 z-10 text-sm lg:text-md">ชื่อผู้พบเห็น</p>
-            <input
-              type="text"
-              value={witnessName}
-              onChange={(e) => setWitnessName(e.target.value)}
-              className="mb-4 w-full border rounded-md p-2 text-sm relative z-10"
-            />
+            {/* แสดงข้อความ Error/Success */}
+            {clueError && (
+              <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-md text-sm relative z-10">
+                {clueError}
+              </div>
+            )}
+            
+            {clueSuccess && (
+              <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded-md text-sm relative z-10">
+                {clueSuccess}
+              </div>
+            )}
 
-            <p className="mb-1 text-sm lg:text-md">รายละเอียดการติดต่อ</p>
-            <input
-              type="text"
-              value={contactDetail}
-              onChange={(e) => setContactDetail(e.target.value)}
-              className="mb-4 w-full border rounded-md p-2 text-sm"
-            />
+            <div className="relative z-10 space-y-4">
+              <div>
+                <p className="mb-1 text-sm lg:text-md">ชื่อผู้พบเห็น *</p>
+                <input
+                  type="text"
+                  value={witnessName}
+                  onChange={(e) => setWitnessName(e.target.value)}
+                  className="w-full border rounded-md p-2 text-sm"
+                  disabled={isSubmittingClue}
+                />
+              </div>
 
-            <p className="mb-1 text-sm lg:text-md">รายละเอียดการพบเห็น</p>
-            <textarea
-              value={sightingDetail}
-              onChange={(e) => setSightingDetail(e.target.value)}
-              className="mb-4 w-full border rounded-md p-2 text-sm"
-            />
+              <div>
+                <p className="mb-1 text-sm lg:text-md">รายละเอียดการติดต่อ *</p>
+                <input
+                  type="text"
+                  value={contactDetail}
+                  onChange={(e) => setContactDetail(e.target.value)}
+                  placeholder="เบอร์โทร, อีเมล, หรือ Facebook"
+                  className="w-full border rounded-md p-2 text-sm"
+                  disabled={isSubmittingClue}
+                />
+              </div>
 
-            <p className="sm:mb-2 z-10 mb-4">รูป</p>
-            <div className="relative mb-2">
-              <span className="absolute top-14 left-8 w-24 h-24 bg-[#EAD64D] rounded-full z-0 -translate-x-1/2"></span>
-              <span className="absolute top-[-30] right-[-50] w-36 h-56 bg-[#EAD64D] rounded-l-full z-0 "></span>
+              <div>
+                <p className="mb-1 text-sm lg:text-md">รายละเอียดการพบเห็น *</p>
+                <textarea
+                  value={sightingDetail}
+                  onChange={(e) => setSightingDetail(e.target.value)}
+                  placeholder="อธิบายรายละเอียดการพบเห็นสัตว์เลี้ยง..."
+                  className="w-full border rounded-md p-2 text-sm h-20 resize-none"
+                  disabled={isSubmittingClue}
+                />
+              </div>
 
-              <img
-                src={imagePreview}
-                alt="preview"
-                className="lg:w-40 lg:h-24 sm:w-36 sm:h-20 w-48 h-28 object-cover relative mb-2"
-              />
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                className="hidden"
-                accept="image/*"
-              />
-              <button
-                onClick={handleButtonClick}
-                className="relative z-10 text-sm lg:text-md px-5 py-1 rounded-lg bg-[#AFDAFB] hover:bg-[#b7ccf5] cursor-pointer"
-              >
-                อัปโหลด
-              </button>
+              
+
+              <div>
+                <p className="mb-2 text-sm lg:text-md">รูปภาพ (ไม่เกิน 4 รูป)</p>
+                
+                {/* แสดง Preview รูปภาพ */}
+                {imagePreviews.length > 0 && (
+                  <div className="mb-2 flex flex-wrap gap-2">
+                    {imagePreviews.map((preview, index) => (
+                      <div key={index} className="relative">
+                        <img
+                          src={preview}
+                          alt={`preview-${index}`}
+                          className="w-20 h-20 object-cover rounded border"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(index)}
+                          className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                          disabled={isSubmittingClue}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  className="hidden"
+                  accept="image/jpeg,image/png,image/webp"
+                  multiple
+                  disabled={isSubmittingClue}
+                />
+                <button
+                  type="button"
+                  onClick={handleButtonClick}
+                  className="px-4 py-2 rounded-lg bg-[#AFDAFB] hover:bg-[#b7ccf5] text-sm lg:text-md disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isSubmittingClue || selectedImages.length >= 4}
+                >
+                  {selectedImages.length >= 4 ? "ครบ 4 รูปแล้ว" : "เลือกรูปภาพ"}
+                </button>
+                <p className="text-xs text-gray-500 mt-1">
+                  รองรับไฟล์ JPEG, PNG, WebP ขนาดไม่เกิน 5MB ต่อรูป
+                </p>
+              </div>
             </div>
 
-            <div className="absolute bottom-6 right-6 flex gap-3">
+            <div className="relative z-10 flex justify-end gap-3 mt-6 pt-4 border-t">
               <button
-                onClick={() => setIsClueOpen(false)}
-                className="px-6 py-1 text-sm lg:text-md rounded-md bg-[#D9D9D9] hover:bg-gray-100 cursor-pointer"
+                onClick={() => {
+                  setIsClueOpen(false);
+                  resetClueForm();
+                }}
+                className="px-6 py-2 text-sm lg:text-md rounded-md bg-[#D9D9D9] hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isSubmittingClue}
               >
                 ยกเลิก
               </button>
               <button
                 onClick={handleSubmit}
-                className="px-8 py-1 text-sm lg:text-md rounded-md bg-[#AFDAFB] hover:bg-[#b7ccf5] cursor-pointer"
+                className="px-8 py-2 text-sm lg:text-md rounded-md bg-[#AFDAFB] hover:bg-[#b7ccf5] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                disabled={isSubmittingClue}
               >
-                ส่ง
+                {isSubmittingClue && (
+                  <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                )}
+                {isSubmittingClue ? "กำลังส่ง..." : "ส่ง"}
               </button>
             </div>
           </div>
@@ -210,7 +356,7 @@ export default function LostPetDetails({ pet }: Props) {
 
       {/* Popup รายงาน */}
       {isReportOpen && (
-        <div className="fixed inset-0 flex justify-center items-center z-50 bg-opacity-50">
+        <div className="fixed inset-0 flex justify-center items-center z-50  bg-opacity-50">
           <div className="bg-white lg:w-[500px] sm:w-[400px] w-full h-full sm:h-auto rounded-md shadow-lg p-4 relative">
             <button
               onClick={() => setIsReportOpen(false)}
@@ -229,10 +375,10 @@ export default function LostPetDetails({ pet }: Props) {
               ].map((text) => (
                 <label
                   key={text}
-                  className={`flex items-center text-sm px-3 py-2 rounded-md transition ${
+                  className={`flex items-center text-sm px-3 py-2 rounded-md transition cursor-pointer ${
                     reportType === text
                       ? "bg-red-200 text-red-800 font-semibold"
-                      : "bg-transparent"
+                      : "bg-transparent hover:bg-gray-100"
                   }`}
                   onClick={() => {
                     setReportType(text);
@@ -265,7 +411,8 @@ export default function LostPetDetails({ pet }: Props) {
 
             <button
               onClick={handleSubmitReport}
-              className="mt-4 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm cursor-pointer"
+              className="mt-4 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={!reportType || (showOtherInput && !reportMessage.trim())}
             >
               ส่งรายงาน
             </button>

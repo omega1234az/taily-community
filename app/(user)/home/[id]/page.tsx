@@ -22,6 +22,7 @@ type LostPet = {
   phone?: string;
   createdAt: string; // API ส่งมาเป็น string
   pet: Pet;
+  
   user: User;
   images: LostPetImage[];
   clues: Clue[];
@@ -324,6 +325,7 @@ export const convertLostPetForComponent = (lostPet: LostPet): LostPetForComponen
     mainImage: getMainPetImage(lostPet.pet.images) || "/default-image.jpg",
     lostDetail: lostPet.description,
     lostLocation: lostPet.location,
+    
     images: lostPet.pet.images.map(img => img.url),
     reward: lostPet.reward ? formatReward(lostPet.reward) : undefined,
     ownerName: lostPet.ownerName,

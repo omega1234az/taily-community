@@ -83,6 +83,13 @@ interface ApiResponse {
   };
 }
 
+interface Species {
+  id: number;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Custom marker icon function
 const createCustomIcon = (imageUrl?: string, isLostPet: boolean = true) => {
   const markerHtml = `
@@ -288,12 +295,35 @@ export default function Home() {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [speciesList, setSpeciesList] = useState<Species[]>([]);
   const mapRef = useRef<Map | null>(null);
   const friendSectionRef = useRef<HTMLDivElement>(null);
   const petsPerPage = 10;
 
   // Mock data for FoundPet
   const foundPets: FoundPet[] = [];
+
+  // Fetch species data
+  useEffect(() => {
+    const fetchSpecies = async () => {
+      try {
+        const response = await fetch("http://localhost:3000/api/pets/species", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        if (!response.ok) {
+          throw new Error("ไม่สามารถดึงข้อมูลประเภทสัตว์ได้");
+        }
+        const data: Species[] = await response.json();
+        setSpeciesList(data);
+      } catch (err) {
+        setError((err as Error).message || "เกิดข้อผิดพลาดในการดึงข้อมูลประเภทสัตว์");
+      }
+    };
+    fetchSpecies();
+  }, []);
 
   // Fetch lost pets
   useEffect(() => {
@@ -557,13 +587,19 @@ export default function Home() {
               {isDropdownVisible && (
                 <div className="absolute sm:right-3 right-0 sm:top-12 top-8 sm:w-32 w-24 mt-2 bg-white shadow-lg rounded-md border border-gray-300 z-10">
                   <ul>
-                    {["ทั้งหมด", "แมว", "สุนัข", "นก", "อื่นๆ"].map((type) => (
+                    <li
+                      className="px-4 py-2 sm:text-sm text-[10px] cursor-pointer hover:bg-gray-200 border-b border-gray-300 last:border-b-0"
+                      onClick={() => handleSelectType("ทั้งหมด")}
+                    >
+                      ทั้งหมด
+                    </li>
+                    {speciesList.map((species) => (
                       <li
-                        key={type}
+                        key={species.id}
                         className="px-4 py-2 sm:text-sm text-[10px] cursor-pointer hover:bg-gray-200 border-b border-gray-300 last:border-b-0"
-                        onClick={() => handleSelectType(type)}
+                        onClick={() => handleSelectType(species.name)}
                       >
-                        {type}
+                        {species.name}
                       </li>
                     ))}
                   </ul>
@@ -635,7 +671,7 @@ export default function Home() {
                 ตำแหน่งของฉัน
               </button>
             </div>
-            <div className="relative h-[600px] sm:h-[700px] w-full rounded-2xl overflow-hidden shadow-2xl border-2 border-gray-100">
+            <div className="relative h-[500px] sm:h-[600px] md:h-[700px] w-full rounded-3xl overflow-hidden shadow-xl border-2 border-gradient-to-r from-blue-200 to-amber-200 bg-white/80 backdrop-blur-sm">
               <MapContainer
                 center={mapCenter}
                 zoom={12}
@@ -662,14 +698,14 @@ export default function Home() {
                         showLostPets
                       )}
                     >
-                      <Popup className="rounded-lg shadow-lg bg-white" maxWidth={320}>
-                        <div className="p-4">
-                          <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-lg font-bold text-gray-800">{pet.title}</h3>
+                      <Popup className="rounded-xl shadow-2xl bg-white/95 backdrop-blur-md max-w-[340px]">
+                        <div className="p-5">
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-xl font-semibold text-gray-900">{pet.title}</h3>
                             <span
-                              className={`px-3 py-1 rounded-full text-xs font-semibold text-white ${
+                              className={`px-4 py-1.5 rounded-full text-sm font-medium text-white ${
                                 showLostPets ? "bg-red-500" : "bg-blue-500"
-                              }`}
+                              } transition-colors duration-300`}
                             >
                               {showLostPets ? "หาย" : "พบแล้ว"}
                             </span>
@@ -679,26 +715,28 @@ export default function Home() {
                                 <img
                                   src={
                                     (pet as LostPet).pet.images.find((image) => image.mainImage)?.url ||
-                                    (pet as LostPet).pet.images[0].url
+                                    (pet as LostPet).pet.images[0]?.url ||
+                                    "/fallback-image.jpg"
                                   }
                                   alt={pet.title}
-                                  className="w-full h-36 object-cover rounded-lg mb-3 shadow-sm"
+                                  className="w-full h-40 object-cover rounded-lg mb-4 shadow-md transition-transform duration-300 hover:scale-105"
                                 />
                               )
                             : (pet as FoundPet).images && (pet as FoundPet).images.length > 0 && (
                                 <img
                                   src={
                                     (pet as FoundPet).images.find((image) => image.mainImage)?.url ||
-                                    (pet as FoundPet).images[0].url
+                                    (pet as FoundPet).images[0]?.url ||
+                                    "/fallback-image.jpg"
                                   }
                                   alt={pet.title}
-                                  className="w-full h-36 object-cover rounded-lg mb-3 shadow-sm"
+                                  className="w-full h-40 object-cover rounded-lg mb-4 shadow-md transition-transform duration-300 hover:scale-105"
                                 />
                               )}
-                          <div className="space-y-2">
-                            <div className="flex items-center text-sm text-gray-600">
+                          <div className="space-y-3">
+                            <div className="flex items-center text-sm text-gray-700">
                               <svg
-                                className="w-4 h-4 mr-2 text-gray-500"
+                                className="w-5 h-5 mr-2.5 text-blue-600"
                                 fill="currentColor"
                                 viewBox="0 0 20 20"
                               >
@@ -710,9 +748,9 @@ export default function Home() {
                               </svg>
                               <span>{pet.location}</span>
                             </div>
-                            <div className="flex items-center text-sm text-gray-600">
+                            <div className="flex items-center text-sm text-gray-700">
                               <svg
-                                className="w-4 h-4 mr-2 text-gray-500"
+                                className="w-5 h-5 mr-2.5 text-blue-600"
                                 fill="currentColor"
                                 viewBox="0 0 20 20"
                               >
@@ -733,14 +771,14 @@ export default function Home() {
                               </span>
                             </div>
                             {showLostPets && (pet as LostPet).reward && (
-                              <div className="bg-amber-500 text-white px-3 py-2 rounded-lg text-center text-sm font-semibold mt-3">
+                              <div className="bg-amber-400 text-white px-4 py-2 rounded-lg text-center text-sm font-semibold mt-4 shadow-sm">
                                 💰 รางวัล: {(pet as LostPet).reward?.toLocaleString()} บาท
                               </div>
                             )}
                             {!showLostPets && (
-                              <div className="flex items-center text-sm text-gray-600">
+                              <div className="flex items-center text-sm text-gray-700">
                                 <svg
-                                  className="w-4 h-4 mr-2 text-gray-500"
+                                  className="w-5 h-5 mr-2.5 text-blue-600"
                                   fill="currentColor"
                                   viewBox="0 0 20 20"
                                 >
@@ -750,8 +788,8 @@ export default function Home() {
                               </div>
                             )}
                             <Link
-                              href={showLostPets ? `/lostpet/${pet.id}` : `/foundpet/${pet.id}`}
-                              className="block bg-blue-600 text-white px-3 py-2 rounded-lg text-center text-sm font-semibold mt-3 hover:bg-blue-700 transition duration-300"
+                              href={showLostPets ? `/home/${pet.id}` : `/foundpet/${pet.id}`}
+                              className="block  text-white px-4 py-2.5 rounded-lg text-center text-sm font-semibold mt-4  transition-all duration-300 shadow-md hover:shadow-lg"
                             >
                               ดูรายละเอียด
                             </Link>

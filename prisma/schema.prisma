@@ -56,8 +56,10 @@ model User {
   foundPets     FoundPet[]
   notifications Notification[]
   passwordResetTokens PasswordResetToken[]
+  reports       Report[]
   status  Boolean @default(true)
 }
+
 
 model Account {
   id                       String  @id @default(cuid())
@@ -177,17 +179,19 @@ model LostPetImage {
 }
 
 model Clue {
-  id         Int        @id @default(autoincrement())
-  content    String     // ข้อความที่ให้เบาะแส
-  location   String?    // สถานที่ที่พบเบาะแส
-  lat        Float?     // ละติจูด
-  lng        Float?     // ลองจิจูด
-  userId     String     // userId ของผู้ให้เบาะแส
-  lostPetId  Int        // lostPetId
-  user       User       @relation(fields: [userId], references: [id])
-  lostPet    LostPet    @relation(fields: [lostPetId], references: [id])
-  images     ClueImage[]
-  createdAt  DateTime   @default(now())
+  id             Int        @id @default(autoincrement())
+  content        String     // รายละเอียดการพบเห็น
+  location       String?    // สถานที่ที่พบเบาะแส
+  lat            Float?     // ละติจูด
+  lng            Float?     // ลองจิจูด
+  witnessName    String?    // ชื่อผู้พบเห็น
+  contactDetails String?    // รายละเอียดการติดต่อ
+  userId         String?    // userId ของผู้ให้เบาะแส (nullable for unauthenticated users)
+  lostPetId      Int        // lostPetId
+  user           User?      @relation(fields: [userId], references: [id])
+  lostPet        LostPet    @relation(fields: [lostPetId], references: [id])
+  images         ClueImage[]
+  createdAt      DateTime   @default(now())
 }
 
 model ClueImage {
@@ -221,6 +225,27 @@ model FoundPet {
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 }
+
+// ---------- REPORT TABLE ----------
+model Report {
+  id          Int      @id @default(autoincrement())
+  
+  // ผู้รายงาน
+  reporterId  String
+  reporter    User     @relation(fields: [reporterId], references: [id])
+  
+  // ประเภทโพสต์ที่ถูกรายงาน (lost_pet, found_pet)
+  referenceType String
+  referenceId   Int
+  
+  reason      String   // เหตุผลการรายงาน เช่น "สแปม", "ข้อมูลไม่เหมาะสม"
+  details     String?  // รายละเอียดเพิ่มเติม
+  status      String   @default("pending") // pending, reviewed, rejected, accepted
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 
 model FoundPetImage {
   id         Int       @id @default(autoincrement())

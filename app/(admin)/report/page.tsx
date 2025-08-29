@@ -1,97 +1,104 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 type Report = {
+  id: number;
   name: string;
   email: string;
   report: string;
 };
 
-const initialReportData: Report[] = [
-  {
-    name: "สมชาย ใจดี",
-    email: "somchai@example.com",
-    report: "รายงานการใช้งานไม่เหมาะสม",
-  },
-  {
-    name: "มานี สุขใจ",
-    email: "manee@example.com",
-    report: "รายงานเนื้อหาสแปม",
-  },
-  {
-    name: "เจนจิรา พิพัฒน์",
-    email: "jane@example.com",
-    report: "รายงานพฤติกรรมก้าวร้าว",
-  },
-  {
-    name: "วีระชัย สายสมร",
-    email: "weerachai@example.com",
-    report: "รายงานภาพไม่เหมาะสม",
-  },
-  {
-    name: "สมหญิง บัวบาน",
-    email: "somying@example.com",
-    report: "แจ้งพฤติกรรมผู้ใช้ไม่เหมาะสมในคอมเมนต์",
-  },
-  {
-    name: "เจนจิรา พิพัฒน์",
-    email: "jane@example.com",
-    report: "แจ้งว่าพบเจ้าของแล้วแต่ยังไม่ลบโพสต์",
-  },
-  {
-    name: "ประยุทธ จริงใจ",
-    email: "prayut@example.com",
-    report: "รายงานแสดงความคิดเห็นหยาบคาย",
-  },
-  {
-    name: "วีระชัย สายสมร",
-    email: "weerachai@example.com",
-    report: "รายงานภาพสัตว์ไม่เหมาะสม",
-  },
-  {
-    name: "อนงค์ แสนดี",
-    email: "anang@example.com",
-    report: "รายงานพฤติกรรมรุนแรง",
-  },
-  {
-    name: "วีณา คำโต",
-    email: "weena@example.com",
-    report: "รายงานการโพสต์ซ้ำซาก",
-  },
-  {
-    name: "บุญช่วย สุขสม",
-    email: "boon@example.com",
-    report: "รายงานใช้ถ้อยคำไม่เหมาะสม",
-  },
-  {
-    name: "นวลจันทร์ งามดี",
-    email: "nuan@example.com",
-    report: "รายงานคุกคามผู้อื่น",
-  },
-];
 export default function Report() {
-  const [users, setUsers] = useState<Report[]>(initialReportData);
+  const [users, setUsers] = useState<Report[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const usersPerPage = 8;
 
+  // Calculate pagination indices
   const indexOfLastUser = currentPage * usersPerPage;
   const indexOfFirstUser = indexOfLastUser - usersPerPage;
   const currentUsers = users.slice(indexOfFirstUser, indexOfLastUser);
   const totalPages = Math.ceil(users.length / usersPerPage);
 
+  // Fetch reports from the API
+  useEffect(() => {
+    const fetchReports = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch("/api/reports");
+        if (!response.ok) {
+          throw new Error("Failed to fetch reports");
+        }
+        // Map API response to match Report type
+        const data = await response.json();
+        const formattedReports: Report[] = data.map((report: any) => ({
+          id: report.id,
+          name: report.reporter.name || "Unknown",
+          email: report.reporter.email || "Unknown",
+          report: report.reason,
+        }));
+        setUsers(formattedReports);
+        setError(null);
+      } catch (err: any) {
+        setError(err.message || "An error occurred");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReports();
+  }, []);
+
+  // Handle hiding a report (PUT request to update status to 'rejected')
+  const handleHide = async (reportId: number) => {
+    try {
+      const response = await fetch(`/api/reports/${reportId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status: 0 }), // Maps to 'rejected' in backend
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to hide report");
+      }
+
+      // Update local state to reflect the hidden report
+      setUsers(users.filter((user) => user.id !== reportId));
+    } catch (err: any) {
+      setError(err.message || "Failed to hide report");
+    }
+  };
+
+  // Handle deleting a report (DELETE request)
+  const handleDelete = async (reportId: number) => {
+    try {
+      const response = await fetch(`/api/reports/${reportId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete report");
+      }
+
+      // Update local state to remove the deleted report
+      setUsers(users.filter((user) => user.id !== reportId));
+    } catch (err: any) {
+      setError(err.message || "Failed to delete report");
+    }
+  };
+
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
 
-  const handleHide = (index: number) => {
-    const newUsers = [...users];
-    newUsers.splice(indexOfFirstUser + index, 1);
-    setUsers(newUsers);
-  };
+  if (loading) {
+    return <div className="text-center p-5">Loading...</div>;
+  }
 
-  const handleDelete = (index: number) => {
-    const newUsers = [...users];
-    newUsers.splice(indexOfFirstUser + index, 1);
-    setUsers(newUsers);
-  };
+  if (error) {
+    return <div className="text-center p-5 text-red-500">{error}</div>;
+  }
 
   return (
     <div className="w-full">
@@ -99,13 +106,14 @@ export default function Report() {
         <div>ชื่อ</div>
         <div>อีเมล</div>
         <div className="lg:pl-3 sm:pl-7 pl-6">การรายงาน</div>
+        <div></div>
       </div>
 
-      {currentUsers.map((user, index) => (
+      {currentUsers.map((user) => (
         <div
-          key={index}
+          key={user.id}
           className={`grid grid-cols-4 items-center xl:text-xl lg:text-lg md:text-sm sm:text-xs text-[8px] p-3 ${
-            index % 2 === 0 ? "bg-white" : "bg-[#d3edfe]"
+            currentUsers.indexOf(user) % 2 === 0 ? "bg-white" : "bg-[#d3edfe]"
           }`}
         >
           <div>{user.name}</div>
@@ -113,13 +121,13 @@ export default function Report() {
           <div className="lg:pl-3 sm:pl-7 pl-7">{user.report}</div>
           <div className="text-right space-x-2">
             <button
-              onClick={() => handleHide(index)}
+              onClick={() => handleHide(user.id)}
               className="bg-[#EAD64D] hover:bg-yellow-300 text-black sm:px-5 sm:py-1.5 px-3 py-1 rounded cursor-pointer"
             >
               ซ่อน
             </button>
             <button
-              onClick={() => handleDelete(index)}
+              onClick={() => handleDelete(user.id)}
               className="bg-[#EA3434] hover:bg-red-700 text-black sm:px-5 sm:py-1.5 px-3 py-1 rounded cursor-pointer"
             >
               ลบ
