@@ -56,6 +56,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         { status: 400 }
       );
     }
+    
 
     // Validate LostPet exists
     const lostPetId = Number(params.id);
@@ -157,7 +158,17 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         images: true,
       },
     });
-
+    await prisma.notification.create({
+  data: {
+    userId: lostPet.userId, // เจ้าของสัตว์เลี้ยง
+    title: "มีเบาะแสใหม่เกี่ยวกับสัตว์เลี้ยงของคุณ",
+    message: `${witnessName || "มีผู้พบเห็น"} รายงานเบาะแสใหม่: ${sightingDetails.substring(0, 50)}...`,
+    type: "new_clue",
+    linkUrl: `/eggtunmissing/${lostPetId}`, // ลิงก์ไปหน้ารายละเอียดสัตว์เลี้ยงหาย
+    referenceId: clue.id,
+    referenceType: "clue",
+  },
+});
     return NextResponse.json(
       {
         message: "เพิ่มเบาะแสสำเร็จ",

@@ -204,13 +204,11 @@ model ClueImage {
 // ---------- FOUND PET (หาเจ้าของ) ----------
 model FoundPet {
   id          Int            @id @default(autoincrement())
-  title       String
   description String
   location    String
   lat         Float?
   lng         Float?
   foundDate   DateTime
-
   speciesId   Int
   species     PetSpecies     @relation(fields: [speciesId], references: [id])
   breed       String?

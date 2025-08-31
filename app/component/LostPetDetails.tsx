@@ -66,10 +66,43 @@ export default function LostPetDetails({ pet }: Props) {
   const [showOtherInput, setShowOtherInput] = useState(false);
   const [reportMessage, setReportMessage] = useState("");
 
-  const handleSubmitReport = () => {
-    console.log("ข้อความรายงาน:", reportMessage);
-    setIsReportOpen(false);
+  const handleSubmitReport = async () => {
+  if (!reportType) {
+    alert("กรุณาเลือกเหตุผลในการรายงาน");
+    return;
+  }
+
+  const reportData = {
+    referenceType: "lost_pet",
+    referenceId: parseInt(pet.id),
+    reason: reportType === "อื่นๆ" ? reportMessage : reportType,
   };
+
+  try {
+    const response = await fetch("/api/reports", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(reportData),
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      alert("ส่งรายงานสำเร็จ!");
+      setIsReportOpen(false);
+      setReportType("");
+      setReportMessage("");
+      setShowOtherInput(false);
+    } else {
+      alert(result.error || "เกิดข้อผิดพลาดในการส่งรายงาน");
+    }
+  } catch (error) {
+    console.error("Error submitting report:", error);
+    alert("เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่");
+  }
+};
 
   const handleButtonClick = () => {
     fileInputRef.current?.click();

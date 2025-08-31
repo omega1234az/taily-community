@@ -9,7 +9,7 @@ import { signIn } from 'next-auth/react';
 import { z } from 'zod';
 
 const signUpSchema = z.object({
-  name: z.string().min(3, { message: "ชื่อต้องมีอย่างน้อย 3 ตัวอักษร" }),
+  
   email: z.string().email({ message: "รูปแบบอีเมลไม่ถูกต้อง" }),
   password: z.string().min(8, { message: "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร" })
     .regex(/[A-Z]/, { message: "รหัสผ่านต้องมีตัวพิมพ์ใหญ่อย่างน้อย 1 ตัว" })
@@ -25,7 +25,7 @@ type SignUpFormData = z.infer<typeof signUpSchema>;
 export default function SignUpForm() {
   const router = useRouter();
   const [formData, setFormData] = useState<SignUpFormData>({
-    name: '',
+    
     email: '',
     password: '',
     confirmPassword: ''
@@ -105,7 +105,7 @@ export default function SignUpForm() {
 
     try {
       const submitData = {
-        name: formData.name,
+        
         email: formData.email,
         password: formData.password
       };
@@ -205,23 +205,6 @@ export default function SignUpForm() {
           </div>
           
           <form className="space-y-6" onSubmit={handleSubmit}>
-            <div>
-              <label htmlFor="name" className="block text-lg font-medium text-gray-700">
-                ชื่อ
-              </label>
-              <div className="mt-1">
-                <input
-                  id="name"
-                  name="name"
-                  type="text"
-                  value={formData.name}
-                  onChange={handleChange}
-                  className={`appearance-none block w-full px-3 py-2 border ${errors.name ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-lg`}
-                />
-                {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
-              </div>
-            </div>
-            
             <div>
               <label htmlFor="email" className="block text-lg font-medium text-gray-700">
                 อีเมล

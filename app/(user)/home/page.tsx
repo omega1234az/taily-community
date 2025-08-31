@@ -53,28 +53,27 @@ interface LostPet {
 
 interface FoundPet {
   id: number;
-  title: string;
   description: string;
   location: string;
   lat?: number;
   lng?: number;
   foundDate: string;
-  speciesId: number;
-  species: string;
   breed?: string;
   gender?: string;
-  color?: string;
+  color?: string[];
   age?: number;
   distinctive?: string;
   status: string;
   userId: string;
   createdAt: string;
   updatedAt: string;
-  images: { id: number; url: string; foundPetId: number; mainImage?: boolean }[];
+  images: { url: string; mainImage?: boolean }[];
+  species: { id: number; name: string };
+  user: { id: string; firstName: string; province: string };
 }
 
 interface ApiResponse {
-  data: LostPet[];
+  data: (LostPet | FoundPet)[];
   pagination: {
     page: number;
     limit: number;
@@ -160,7 +159,7 @@ const createCustomIcon = (imageUrl?: string, isLostPet: boolean = true) => {
 
 // PetCardh component for LostPet
 const PetCardh = ({ id, title, description, location, lostDate, reward, pet }: LostPet) => (
-  <Link href={`/home/${id}`}>
+  <Link href={`/lostpet/${id}`}>
     <div className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden border border-gray-100 cursor-pointer">
       <div className="relative overflow-hidden">
         {pet.images && pet.images.length > 0 ? (
@@ -221,64 +220,66 @@ const PetCardh = ({ id, title, description, location, lostDate, reward, pet }: L
 );
 
 // PetCardj component for FoundPet
-const PetCardj = ({ id, title, description, location, foundDate, species, images }: FoundPet) => (
-  <div className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden border border-gray-100">
-    <div className="relative overflow-hidden">
-      {images && images.length > 0 ? (
-        <img
-          src={
-            images.find((image) => image.mainImage)?.url ||
-            images[0].url ||
-            "/images/default_pet.png"
-          }
-          alt={title}
-          className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
-        />
-      ) : (
-        <div className="w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-          <div className="text-center">
-            <div className="w-16 h-16 mx-auto mb-2 bg-gray-300 rounded-full flex items-center justify-center">
-              <svg className="w-8 h-8 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-              </svg>
+const PetCardj = ({ id, description, location, foundDate, species, images, user }: FoundPet) => (
+  <Link href={`/foundpet/${id}`}>
+    <div className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden border border-gray-100">
+      <div className="relative overflow-hidden">
+        {images && images.length > 0 ? (
+          <img
+            src={
+              images.find((image) => image.mainImage)?.url ||
+              images[0].url ||
+              "/images/default_pet.png"
+            }
+            alt={description}
+            className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
+          />
+        ) : (
+          <div className="w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-2 bg-gray-300 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <span className="text-sm text-gray-500">ไม่มีรูปภาพ</span>
             </div>
-            <span className="text-sm text-gray-500">ไม่มีรูปภาพ</span>
+          </div>
+        )}
+        <div className="absolute top-3 right-3 bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
+          พบแล้ว
+        </div>
+      </div>
+      <div className="p-6">
+        <h3 className="text-xl font-bold text-gray-800 mb-2 group-hover:text-blue-600 transition-colors">
+          {species.name}
+        </h3>
+        <p className="text-gray-600 text-sm mb-4 line-clamp-2 leading-relaxed">
+          {description}
+        </p>
+        <div className="space-y-2 mb-4">
+          <div className="flex items-center text-sm text-gray-700">
+            <svg className="w-4 h-4 mr-2 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+            </svg>
+            <span className="truncate">{location}</span>
+          </div>
+          <div className="flex items-center text-sm text-gray-700">
+            <svg className="w-4 h-4 mr-2 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+            </svg>
+            <span>วันที่พบ: {new Date(foundDate).toLocaleDateString("th-TH")}</span>
+          </div>
+          <div className="flex items-center text-sm text-gray-700">
+            <svg className="w-4 h-4 mr-2 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
+            </svg>
+            <span>ประเภท: {species.name}</span>
           </div>
         </div>
-      )}
-      <div className="absolute top-3 right-3 bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
-        พบแล้ว
       </div>
     </div>
-    <div className="p-6">
-      <h3 className="text-xl font-bold text-gray-800 mb-2 group-hover:text-blue-600 transition-colors">
-        {title}
-      </h3>
-      <p className="text-gray-600 text-sm mb-4 line-clamp-2 leading-relaxed">
-        {description}
-      </p>
-      <div className="space-y-2 mb-4">
-        <div className="flex items-center text-sm text-gray-700">
-          <svg className="w-4 h-4 mr-2 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-          </svg>
-          <span className="truncate">{location}</span>
-        </div>
-        <div className="flex items-center text-sm text-gray-700">
-          <svg className="w-4 h-4 mr-2 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-          </svg>
-          <span>วันที่พบ: {new Date(foundDate).toLocaleDateString("th-TH")}</span>
-        </div>
-        <div className="flex items-center text-sm text-gray-700">
-          <svg className="w-4 h-4 mr-2 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
-          </svg>
-          <span>ประเภท: {species}</span>
-        </div>
-      </div>
-    </div>
-  </div>
+  </Link>
 );
 
 export default function Home() {
@@ -292,6 +293,7 @@ export default function Home() {
   const [currentPage, setCurrentPage] = useState(1);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [lostPets, setLostPets] = useState<LostPet[]>([]);
+  const [foundPets, setFoundPets] = useState<FoundPet[]>([]);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -299,9 +301,6 @@ export default function Home() {
   const mapRef = useRef<Map | null>(null);
   const friendSectionRef = useRef<HTMLDivElement>(null);
   const petsPerPage = 10;
-
-  // Mock data for FoundPet
-  const foundPets: FoundPet[] = [];
 
   // Fetch species data
   useEffect(() => {
@@ -336,6 +335,7 @@ export default function Home() {
           limit: petsPerPage.toString(),
           ...(selectedType && selectedType !== "ทั้งหมด" ? { species: selectedType } : {}),
           ...(filterLocation ? { location: filterLocation } : {}),
+          ...(filterDate ? { lostDate: filterDate } : {}),
           status: "lost",
         });
 
@@ -351,7 +351,7 @@ export default function Home() {
         }
 
         const data: ApiResponse = await response.json();
-        const mappedPets = data.data.map((pet) => ({
+        const mappedPets = data.data.map((pet: any) => ({
           ...pet,
           title: pet.pet.name,
           userId: pet.user.id,
@@ -370,12 +370,53 @@ export default function Home() {
     if (showLostPets) {
       fetchLostPets();
     }
-  }, [currentPage, selectedType, filterLocation, showLostPets]);
+  }, [currentPage, selectedType, filterLocation, filterDate, showLostPets]);
+
+  // Fetch found pets
+  useEffect(() => {
+    const fetchFoundPets = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const queryParams = new URLSearchParams({
+          page: currentPage.toString(),
+          limit: petsPerPage.toString(),
+          ...(selectedType && selectedType !== "ทั้งหมด" ? { species: selectedType } : {}),
+          ...(filterLocation ? { location: filterLocation } : {}),
+          ...(filterDate ? { foundDate: filterDate } : {}),
+          status: "finding",
+        });
+
+        const response = await fetch(`http://localhost:3000/api/foundpet?${queryParams}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("ไม่สามารถดึงข้อมูลสัตว์เลี้ยงที่พบได้");
+        }
+
+        const data: ApiResponse = await response.json();
+        setFoundPets(data.data as FoundPet[]);
+        setTotalPages(data.pagination.totalPages);
+      } catch (err) {
+        setError((err as Error).message || "เกิดข้อผิดพลาดในการดึงข้อมูลสัตว์เลี้ยงที่พบ");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (!showLostPets) {
+      fetchFoundPets();
+    }
+  }, [currentPage, selectedType, filterLocation, filterDate, showLostPets]);
 
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterLocation, selectedType, showLostPets]);
+  }, [filterLocation, selectedType, filterDate, showLostPets]);
 
   // Get user location
   useEffect(() => {
@@ -426,16 +467,18 @@ export default function Home() {
     const matchLocation =
       !filterLocation ||
       pet.location.toLowerCase().includes(filterLocation.toLowerCase());
-    return matchDate && matchLocation;
+    const matchType =
+      !selectedType || selectedType === "ทั้งหมด" || pet.pet.species.name === selectedType;
+    return matchDate && matchLocation && matchType;
   });
 
   const filteredFoundPets = foundPets.filter((pet) => {
-    const matchType =
-      !selectedType || selectedType === "ทั้งหมด" || pet.species === selectedType;
-    const matchDate = !filterDate || pet.foundDate === filterDate;
+    const matchDate = !filterDate || pet.foundDate.includes(filterDate);
     const matchLocation =
       !filterLocation ||
       pet.location.toLowerCase().includes(filterLocation.toLowerCase());
+    const matchType =
+      !selectedType || selectedType === "ทั้งหมด" || pet.species.name === selectedType;
     return matchType && matchLocation && matchDate;
   });
 
@@ -701,7 +744,9 @@ export default function Home() {
                       <Popup className="rounded-xl shadow-2xl bg-white/95 backdrop-blur-md max-w-[340px]">
                         <div className="p-5">
                           <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-xl font-semibold text-gray-900">{pet.title}</h3>
+                            <h3 className="text-xl font-semibold text-gray-900">
+                              {showLostPets ? (pet as LostPet).title : (pet as FoundPet).species.name}
+                            </h3>
                             <span
                               className={`px-4 py-1.5 rounded-full text-sm font-medium text-white ${
                                 showLostPets ? "bg-red-500" : "bg-blue-500"
@@ -718,7 +763,7 @@ export default function Home() {
                                     (pet as LostPet).pet.images[0]?.url ||
                                     "/fallback-image.jpg"
                                   }
-                                  alt={pet.title}
+                                  alt={(pet as LostPet).title}
                                   className="w-full h-40 object-cover rounded-lg mb-4 shadow-md transition-transform duration-300 hover:scale-105"
                                 />
                               )
@@ -729,7 +774,7 @@ export default function Home() {
                                     (pet as FoundPet).images[0]?.url ||
                                     "/fallback-image.jpg"
                                   }
-                                  alt={pet.title}
+                                  alt={(pet as FoundPet).species.name}
                                   className="w-full h-40 object-cover rounded-lg mb-4 shadow-md transition-transform duration-300 hover:scale-105"
                                 />
                               )}
@@ -784,12 +829,12 @@ export default function Home() {
                                 >
                                   <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
                                 </svg>
-                                <span>ประเภท: {(pet as FoundPet).species}</span>
+                                <span>ประเภท: {(pet as FoundPet).species.name}</span>
                               </div>
                             )}
                             <Link
-                              href={showLostPets ? `/home/${pet.id}` : `/foundpet/${pet.id}`}
-                              className="block  text-white px-4 py-2.5 rounded-lg text-center text-sm font-semibold mt-4  transition-all duration-300 shadow-md hover:shadow-lg"
+                              href={showLostPets ? `/lostpet/${pet.id}` : `/foundpet/${pet.id}`}
+                              className="block bg-blue-500 text-white px-4 py-2.5 rounded-lg text-center text-sm font-semibold mt-4 transition-all duration-300 shadow-md hover:shadow-lg"
                             >
                               ดูรายละเอียด
                             </Link>

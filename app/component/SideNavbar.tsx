@@ -23,6 +23,7 @@ export default function SideNavbar() {
 
     fetchData();
   }, []);
+
   return (
     <div className="relative h-screen">
       <div className="fixed top-0 left-0 h-full w-64 z-40">
@@ -33,11 +34,13 @@ export default function SideNavbar() {
           {/* โปรไฟล์ในวงกลม */}
           <div className="absolute top-7 left-1/5 sm:top-10 sm:left-1/2 transform -translate-x-1/2 z-10 flex flex-col items-center mt-16 sm:mt-20">
             <Link href="/profile" className="flex flex-col items-center">
-              <img
-                src={userData?.image || "/all/owen.png"}
-                alt="Profile"
-                className="sm:w-24 w-14 xl:w-36 h-auto rounded-full object-cover sm:border-4 border-2 border-white mb-2 cursor-pointer"
-              />
+              <div className="relative sm:w-24 w-14 xl:w-36 sm:h-24 h-14 xl:h-36 rounded-full overflow-hidden sm:border-4 border-2 border-white mb-2 cursor-pointer">
+                <img
+                  src={userData?.image || "/all/owen.png"}
+                  alt="Profile"
+                  className="w-full h-full object-cover object-center"
+                />
+              </div>
               <h1 className="text-md sm:text-xl text-white font-bold xl:mb-10">
                 {userData?.name || "ไม่ทราบชื่อ"}
               </h1>

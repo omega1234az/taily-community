@@ -3,10 +3,13 @@
 import { signOut, signIn, useSession } from "next-auth/react";
 import Link from "next/link";
 import React, { useState, useEffect, useRef } from "react";
-import { getUserProfile } from "@/app/utils/Profiles"; // สมมติว่าคุณมีฟังก์ชันนี้
+import { getUserProfile } from "@/app/utils/Profiles";
+import { useRouter } from "next/navigation";
 
 export default function TopNavbar() {
   const { data: session, status } = useSession();
+  const router = useRouter();
+
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -16,22 +19,18 @@ export default function TopNavbar() {
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
 
+  const [notifications, setNotifications] = useState<any[]>([]);
+
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const profileRef = useRef<HTMLDivElement | null>(null);
 
   // ปิด dropdown เมื่อคลิกข้างนอก
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setDropdownOpen(false);
       }
-      if (
-        profileRef.current &&
-        !profileRef.current.contains(event.target as Node)
-      ) {
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
         setProfileOpen(false);
       }
     }
@@ -56,9 +55,15 @@ export default function TopNavbar() {
         .finally(() => {
           setLoadingProfile(false);
         });
+
+      // ดึง notifications
+      fetch("/api/notifications")
+        .then((res) => res.json())
+        .then((data) => setNotifications(data.data || []))
+        .catch((err) => console.error("Failed to fetch notifications", err));
     } else {
       setUserProfile(null);
-      setProfileError(null);
+      setNotifications([]);
     }
   }, [status]);
 
@@ -76,7 +81,28 @@ export default function TopNavbar() {
     setNotificationOpen(!notificationOpen);
   };
 
-  // กรณียังโหลดข้อมูล หรือมี error สามารถแสดงได้ตรงนี้
+  const handleClickNotification = async (notif: any) => {
+    try {
+      // mark as read
+      await fetch(`/api/notifications/${notif.id}`, { method: "PATCH" });
+
+      // update state
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notif.id ? { ...n, isRead: true } : n))
+      );
+
+      // redirect
+      if (notif.linkUrl) {
+        router.push(notif.linkUrl);
+        setNotificationOpen(false);
+      }
+    } catch (err) {
+      console.error("Error marking notification as read:", err);
+    }
+  };
+
+  // 🔴 noti ที่ยังไม่ได้อ่าน
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   return (
     <div className="sticky mt-5 left-0 right-0 z-50 bg-white px-4 py-2 mx-6 flex justify-between items-center shadow-md rounded-lg">
@@ -110,13 +136,13 @@ export default function TopNavbar() {
             ▼
           </span>
           {dropdownOpen && (
-            <div className="absolute top-6 left-0 lg:w-40 sm:w-30 w-24 2xl:mt-7 xl:mt-6 sm:mt-5 mt-4 bg-white border border-gray-300 rounded shadow-md z-50">
+            <div className="absolute top-6 left-0 lg:w-40 sm:w-30 w-24 bg-white border border-gray-300 rounded shadow-md z-50">
               <ul className="text-sm text-gray-700">
-                <li className="px-4 py-2 hover:bg-gray-300 cursor-pointer border-b border-gray-300 text-[10px] sm:text-sm lg:text-md">
-                  <Link href="/registermissing">สัตว์เลี้ยงหาย</Link>
+                <li className="px-4 py-2 hover:bg-gray-300 cursor-pointer border-b border-gray-300 text-xs sm:text-sm lg:text-md">
+                  <Link href="/announcement">สัตว์เลี้ยงหาย</Link>
                 </li>
-                <li className="px-4 py-2 hover:bg-gray-300 cursor-pointer border-b border-gray-300 text-[10px] sm:text-sm lg:text-md">
-                  <Link href="/registerowner">หาเจ้าของ</Link>
+                <li className="px-4 py-2 hover:bg-gray-300 cursor-pointer text-xs sm:text-sm lg:text-md">
+                  <Link href="/announcement">หาเจ้าของ</Link>
                 </li>
               </ul>
             </div>
@@ -133,6 +159,11 @@ export default function TopNavbar() {
             alt="bell"
             className="lg:w-12 lg:h-12 xl:w-14 xl:h-14 w-8 h-8 sm:w-11 sm:h-11 md:w-12 md:h-12 p-2 md:p-3 rounded-full object-cover cursor-pointer text-gray-600 hover:text-white bg-[#7CBBEB] hover:bg-[#b7ccf5]"
           />
+          {unreadCount > 0 && (
+            <span className="absolute top-1 right-1 bg-red-500 text-white text-xs font-bold rounded-full px-2">
+              {unreadCount}
+            </span>
+          )}
 
           {notificationOpen && (
             <div
@@ -151,32 +182,37 @@ export default function TopNavbar() {
               <div className="border-b-2 border-gray-300 pb-2 xl:text-lg sm:text-md text-lg">
                 การแจ้งเตือน
               </div>
-              <Link href="/chat">
-                <div className="grid grid-cols-4 bg-[#F6F6F6] hover:bg-gray-200 p-2 cursor-pointer">
-                  <div className="col-span-1">
-                    <img
-                      src="/all/comment.png"
-                      alt="profilecomment"
-                      className="lg:w-12 lg:h-12 xl:w-14 xl:h-14 w-12 h-12 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full object-cover"
-                    />
-                  </div>
-                  <div className="col-span-2 flex flex-col justify-center">
-                    <span className="sm:text-xs lg:text-md xl:text-[16px] text-sm">
-                      เจอน้องตรงหน้าบ้านไม่รู้ใช่ไหม
-                    </span>
-                    <span className="lg:text-xs sm:text-[10px] text-xs text-gray-500">
-                      1 ชั่วโมง
-                    </span>
-                  </div>
-                  <div className="col-span-1 flex justify-end items-center">
-                    <img
-                      src="/all/catcomment.png"
-                      alt="catcomment"
-                      className="lg:w-12 lg:h-12 xl:w-14 xl:h-14 w-12 h-12 sm:w-10 sm:h-10 md:w-12 md:h-12 object-cover"
-                    />
-                  </div>
-                </div>
-              </Link>
+
+              <div className="overflow-y-auto max-h-64 sm:max-h-80">
+                {notifications.length === 0 ? (
+                  <div className="p-4 text-gray-500 text-sm">ไม่มีการแจ้งเตือน</div>
+                ) : (
+                  notifications.map((n) => (
+                    <div
+                      key={n.id}
+                      onClick={() => handleClickNotification(n)}
+                      className={`grid grid-cols-4 gap-2 p-2 cursor-pointer ${
+                        n.isRead ? "bg-white" : "bg-gray-100"
+                      } hover:bg-gray-200`}
+                    >
+                      <div className="col-span-1">
+                        <img
+                          src="/all/comment.png"
+                          alt="notif"
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                      </div>
+                      <div className="col-span-3 flex flex-col justify-center">
+                        <span className="text-sm font-medium">{n.title}</span>
+                        <span className="text-xs text-gray-600">{n.message}</span>
+                        <span className="text-[10px] text-gray-400">
+                          {new Date(n.createdAt).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -201,6 +237,16 @@ export default function TopNavbar() {
                         โปรไฟล์
                       </li>
                     </Link>
+
+                    {/* ✅ แสดงเมนูสำหรับ admin เท่านั้น */}
+                    {session.user.role === "admin" && (
+                      <Link href="/admin/dashboard">
+                        <li className="px-4 py-2 hover:bg-gray-300 cursor-pointer border-b border-gray-300">
+                          จัดการระบบ
+                        </li>
+                      </Link>
+                    )}
+
                     <li className="px-4 py-2 hover:bg-gray-300">
                       <button
                         className="w-full text-left cursor-pointer"

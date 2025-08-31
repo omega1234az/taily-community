@@ -1,55 +1,61 @@
+
 "use client";
 
 import Link from "next/link";
 import React, { useState } from "react";
 
-interface Pet {
+interface FoundPet {
   id: number;
-  name: string;
-  species: {
-    name: string;
-  };
+  description: string;
+  location: string;
+  foundDate: string;
   breed: string;
-  age: number;
   gender: string;
   color: string[];
-  description: string;
-  markings: string;
+  age: number;
+  distinctive: string;
+  status: string;
+  species: {
+    id: number;
+    name: string;
+  };
+  user: {
+    id: string;
+    firstName: string;
+    province: string;
+  };
   images: Array<{
     url: string;
-    mainImage: boolean; // Updated to include mainImage
   }>;
+  createdAt: string;
+  updatedAt: string;
 }
 
-interface AnCardProps {
+interface FoundPetCardProps {
   id: number;
-  name: string;
+  species: string;
   age: string;
   imageSrc: string;
   gender: string;
   breed: string;
-  lostDate: string;
-  lostLocation: string;
-  reward: string;
-  status?: string;
-  daysSinceLost?: number;
-  ownerName?: string;
-  species?: string;
-  color?: string[] | string;
-  pet: Pet;
+  foundDate: string;
+  foundLocation: string;
+  finderName: string;
+  status: string;
   onDelete?: () => void;
 }
 
-const PetCard: React.FC<AnCardProps> = ({
+const FoundPetCard: React.FC<FoundPetCardProps> = ({
   id,
-  pet,
-  name,
+  species,
   age,
+  imageSrc,
   gender,
   breed,
-  lostDate,
-  lostLocation,
-  reward,
+  foundDate,
+  foundLocation,
+  finderName,
+  status,
   onDelete,
 }) => {
   const [isReportOpen, setIsReportOpen] = useState(false);
@@ -57,25 +63,20 @@ const PetCard: React.FC<AnCardProps> = ({
   const [showOtherInput, setShowOtherInput] = useState(false);
   const [reportMessage, setReportMessage] = useState("");
 
-  // Select the image with mainImage: true, or fall back to the first image if none is marked as main
-  const imageSrc =
-    pet.images.find((image) => image.mainImage)?.url || pet.images[0]?.url || "/default-image.jpg";
-
   const handleSubmitReport = async () => {
     if (!reportType) {
       alert("กรุณาเลือกเหตุผลก่อนลบโพสต์");
       return;
     }
 
-    // Mapping เหตุผล -> status ที่จะส่งไป API
     let statusToUpdate = "closed";
-    if (reportType === "พบสัตว์เลี้ยง,พบเจ้าของแล้ว") statusToUpdate = "closed";
+    if (reportType === "พบเจ้าของแล้ว") statusToUpdate = "closed";
     if (reportType === "โพสต์ซ้ำ,โพสต์ผิด") statusToUpdate = "fake";
     if (reportType === "ไม่ต้องการเผยแพร่แล้ว") statusToUpdate = "closed";
     if (reportType === "อื่นๆ") statusToUpdate = "closed";
 
     try {
-      const res = await fetch(`/api/lostpet/${id}`, {
+      const res = await fetch(`/api/foundpet/${id}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: statusToUpdate }),
@@ -85,7 +86,7 @@ const PetCard: React.FC<AnCardProps> = ({
       alert(data.message);
 
       if (onDelete) onDelete();
-      location.reload(); // Refresh list or remove card
+      location.reload();
     } catch (err) {
       console.error("Error:", err);
       alert("ไม่สามารถลบโพสต์ได้");
@@ -99,16 +100,16 @@ const PetCard: React.FC<AnCardProps> = ({
 
   return (
     <div className="flex flex-col sm:flex-row gap-6 p-6 rounded-2xl shadow-lg bg-[#E5EEFF] 2xl:w-[500px] 2xl:h-[320px] xl:w-[430px] xl:h-[300px] lg:w-[350px] lg:h-[290px] md:w-[450px] md:h-[290px] sm:w-[380px] sm:h-[290px] w-[280px] h-[420px] hover:bg-gray-200 transition-transform duration-200 transform hover:scale-105">
-      {/* รูปภาพ */}
+      {/* Image */}
       <div className="mx-auto 2xl:w-[370px] 2xl:h-[240px] xl:w-[370px] xl:h-[230px] lg:w-[300px] lg:h-[195px] md:w-[300px] md:h-[210px] sm:w-[320px] sm:h-[195px] w-[110px] h-[140px] rounded-xl overflow-hidden">
-        <img src={imageSrc} alt={name} className="w-full h-full object-cover" />
+        <img src={imageSrc} alt={species} className="w-full h-full object-cover" />
       </div>
 
-      {/* เนื้อหา */}
+      {/* Content */}
       <div className="flex flex-col justify-between w-full">
         <div className="sm:space-y-2 space-y-2 text-[13px] sm:text-[14px] lg:text-[14px] xl:text-[15px] 2xl:text-[16px] sm:pl-0 pl-5 xl:pl-3">
           <p>
-            <strong>ชื่อ:</strong> {name}
+            <strong>สัตว์:</strong> {species}
           </p>
           <p>
             <strong>อายุ:</strong> {age}
@@ -120,24 +121,23 @@ const PetCard: React.FC<AnCardProps> = ({
             <strong>สายพันธุ์:</strong> {breed}
           </p>
           <p>
-            <strong>หายวันที่:</strong> {lostDate}
+            <strong>พบวันที่:</strong> {foundDate}
           </p>
           <p>
-            <strong>สถานที่หาย:</strong> {lostLocation}
+            <strong>สถานที่พบ:</strong> {foundLocation}
           </p>
           <p>
-            <strong>เงินรางวัล:</strong> {reward ? `${reward} บาท` : "ไม่มีระบุ"}
+            <strong>ผู้พบ:</strong> {finderName}
           </p>
         </div>
 
-        {/* ปุ่ม */}
+        {/* Buttons */}
         <div className="flex justify-center md:justify-start items-center mt-2 text-center md:text-left gap-2">
-         <Link href={`/eggtunmissing/${id}`}>
+          <Link href={`/foundpet/${id}`}>
             <button className="rounded-xl shadow-md bg-[#EAD64D] text-black text-[13px] sm:text-[14px] lg:text-[12px] xl:text-[15px] 2xl:text-[16px] sm:px-2 md:px-4 lg:px-1.5 xl:px-2.5 sm:py-2 px-4 py-1.5 hover:bg-yellow-200 transition duration-300 cursor-pointer">
               รายละเอียด
             </button>
           </Link>
-          {/* ปุ่มลบ */}
           <button
             className="rounded-xl shadow-md bg-red-500 text-white text-[13px] sm:text-[14px] lg:text-[12px] xl:text-[15px] 2xl:text-[16px] sm:px-2 md:px-6 lg:px-2.5 xl:px-4 2xl:px-4.5 sm:py-2 px-6 py-1.5 hover:bg-red-400 transition duration-300 cursor-pointer"
             onClick={() => setIsReportOpen(true)}
@@ -145,7 +145,7 @@ const PetCard: React.FC<AnCardProps> = ({
             ลบโพสต์
           </button>
 
-          {/* Popup ลบโพสต์ */}
+          {/* Delete Popup */}
           {isReportOpen && (
             <div className="fixed inset-0 flex justify-center items-center z-50 bg-opacity-50">
               <div className="bg-white lg:w-[500px] sm:w-[400px] w-full h-full sm:h-auto rounded-md shadow-lg p-4 relative">
@@ -159,7 +159,7 @@ const PetCard: React.FC<AnCardProps> = ({
 
                 <div className="mt-4 space-y-2">
                   {[
-                    "พบสัตว์เลี้ยง,พบเจ้าของแล้ว",
+                    "พบเจ้าของแล้ว",
                     "โพสต์ซ้ำ,โพสต์ผิด",
                     "ไม่ต้องการเผยแพร่แล้ว",
                     "อื่นๆ",
@@ -215,4 +215,4 @@ const PetCard: React.FC<AnCardProps> = ({
   );
 };
 
-export default PetCard;
+export default FoundPetCard;

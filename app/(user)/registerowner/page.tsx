@@ -452,15 +452,7 @@ export default function Registerowner() {
 
       <div className="flex flex-col my-10 2xl:mr-40 xl:mr-32 lg:mr-28 lg:ml-10 md:mr-20 sm:mr-18 mr-10">
         {/* สถานที่หาย */}
-        <div className="mt-2">
-          <p className="sm:text-lg xl:text-xl">สถานที่หาย</p>
-          <input
-            value={missingLocation}
-            onChange={(e) => setMissingLocation(e.target.value)}
-            disabled={!isEditing}
-            className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 disabled:bg-gray-100"
-          />
-        </div>
+       
 
         <div>
           <img
