@@ -197,36 +197,62 @@ export default function RegisterMissing() {
   };
 
   // Initialize Leaflet map
-  useEffect(() => {
-    if (mapContainerRef.current && !mapRef.current) {
-      mapRef.current = L.map(mapContainerRef.current).setView(
-        [13.736717, 100.523186],
-        13
-      );
+useEffect(() => {
+  if (mapContainerRef.current && !mapRef.current) {
+    // เรียก GPS ของผู้ใช้
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const userLat = position.coords.latitude;
+        const userLng = position.coords.longitude;
+        if (!mapContainerRef.current) return;
+        // สร้าง map และตั้งค่า view ตาม GPS
+        mapRef.current = L.map(mapContainerRef.current, {
+          zoomControl: true,
+          dragging: true,
+          scrollWheelZoom: true,
+        }).setView([userLat, userLng], 17);
 
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19,
-      }).addTo(mapRef.current);
+        // Tile layer
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 19,
+        }).addTo(mapRef.current);
 
-      const updateCenterCoords = () => {
-        const center = mapRef.current?.getCenter();
-        if (center) {
-          setCoords({
-            lat: center.lat,
-            lng: center.lng,
-          });
-        }
-      };
+        // Marker
+        
 
-      mapRef.current.on("move", updateCenterCoords);
-      updateCenterCoords();
+        // วงกลม 200 เมตร
+        const circle = L.circle([userLat, userLng], {
+          radius: 200,
+          color: "red",
+          fillColor: "red",
+          fillOpacity: 0.2,
+        }).addTo(mapRef.current);
 
-      return () => {
-        mapRef.current?.remove();
-        mapRef.current = null;
-      };
-    }
-  }, []);
+        // อัปเดต coords ถ้า map ถูกลาก
+        const updateCenterCoords = () => {
+          const center = mapRef.current?.getCenter();
+          if (center) {
+            setCoords({ lat: center.lat, lng: center.lng });
+            
+            circle.setLatLng(center);
+          }
+        };
+
+        mapRef.current.on("move", updateCenterCoords);
+      },
+      (err) => {
+        console.error("ไม่สามารถเข้าถึง GPS:", err);
+        // fallback ถ้า GPS ไม่ได้ ให้ใช้ default
+        if (!mapContainerRef.current) return;
+        mapRef.current = L.map(mapContainerRef.current).setView(
+          [13.736717, 100.523186],
+          13
+        );
+      }
+    );
+  }
+}, []);
+
 
   return (
     <div>

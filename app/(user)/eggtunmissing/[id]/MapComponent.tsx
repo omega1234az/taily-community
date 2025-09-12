@@ -8,52 +8,49 @@ interface MapComponentProps {
 
 const MapComponent: React.FC<MapComponentProps> = ({ coords }) => {
   const mapRef = useRef<L.Map | null>(null);
+  const markerRef = useRef<L.Marker | null>(null);
+  const circleRef = useRef<L.Circle | null>(null);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (mapContainerRef.current && !mapRef.current) {
       mapRef.current = L.map(mapContainerRef.current, {
-        zoomControl: false,
-        dragging: false,
-        scrollWheelZoom: false,
-        doubleClickZoom: false,
-        boxZoom: false,
-        touchZoom: false,
-      }).setView([coords.lat, coords.lng], 13);
+        zoomControl: true,
+        dragging: true,
+        scrollWheelZoom: true,
+      }).setView([coords.lat, coords.lng], 17);
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
       }).addTo(mapRef.current);
+
+      // สร้าง Marker
+      
+
+      // สร้าง Circle
+      circleRef.current = L.circle([coords.lat, coords.lng], {
+        radius: 200,
+        color: "red",
+        fillColor: "red",
+        fillOpacity: 0.2,
+      }).addTo(mapRef.current);
     }
 
-    // Update map view when coords change
+    // อัปเดตตำแหน่ง Marker และ Circle ถ้า coords เปลี่ยน
+    if (markerRef.current) {
+      markerRef.current.setLatLng([coords.lat, coords.lng]);
+    }
+    if (circleRef.current) {
+      circleRef.current.setLatLng([coords.lat, coords.lng]);
+    }
+
+    // อัปเดต view ของ map
     if (mapRef.current) {
-      mapRef.current.setView([coords.lat, coords.lng], 13);
+      mapRef.current.setView([coords.lat, coords.lng], mapRef.current.getZoom());
     }
-
-    return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
-    };
   }, [coords.lat, coords.lng]);
 
-  return (
-    <div className="relative">
-      <div
-        ref={mapContainerRef}
-        id="map"
-        className="w-full h-[500px] relative"
-      ></div>
-      <img
-        id="pin"
-        src="https://cdn-icons-png.flaticon.com/512/684/684908.png"
-        width="40"
-        className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-full z-[999] pointer-events-none"
-      />
-    </div>
-  );
+  return <div ref={mapContainerRef} className="w-full h-[500px]" />;
 };
 
 export default MapComponent;

@@ -6,6 +6,49 @@ import { del } from '@vercel/blob';
 
 const prisma = new PrismaClient();
 
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    // ตรวจสอบ ID
+    const foundPetId = parseInt(params.id);
+    if (isNaN(foundPetId)) {
+      return NextResponse.json({ message: "ID ไม่ถูกต้อง" }, { status: 400 });
+    }
+
+    // ดึงข้อมูล FoundPet
+    const foundPet = await prisma.foundPet.findUnique({
+      where: { id: foundPetId },
+      include: {
+        images: true,
+        user: {
+          select: { id: true, name: true, image: true }
+        },
+        species: true
+      },
+    });
+
+    if (!foundPet) {
+      return NextResponse.json({ message: "ไม่พบข้อมูลสัตว์ที่ระบุ" }, { status: 404 });
+    }
+
+    // อัปเดต view count เพิ่ม 1
+    await prisma.foundPet.update({
+      where: { id: foundPetId },
+      data: { views: foundPet.views + 1 },
+    });
+
+    return NextResponse.json({ data: foundPet }, { status: 200 });
+  } catch (error) {
+    console.error("Error fetching found pet:", error);
+    return NextResponse.json({ message: "เกิดข้อผิดพลาดในการดึงข้อมูลสัตว์" }, { status: 500 });
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     // ตรวจสอบ session

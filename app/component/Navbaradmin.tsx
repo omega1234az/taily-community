@@ -64,7 +64,7 @@ export default function TopNavbar() {
         <Link className="hover:text-sky-600 cursor-pointer" href="/home">
           หน้าหลัก
         </Link>
-        <Link className="hover:text-sky-600 cursor-pointer" href="/manageanns">
+        <Link className="hover:text-sky-600 cursor-pointer" href="/admin/manageanns">
           จัดการประกาศ
         </Link>
         <Link className="hover:text-sky-600 cursor-pointer" href="/admin/users">

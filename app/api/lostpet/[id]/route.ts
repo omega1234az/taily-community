@@ -7,44 +7,49 @@ const prisma = new PrismaClient()
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const lostPet = await prisma.lostPet.findUnique({
-  where: { id: Number(await params.id) },
-  include: {
-    pet: {
+      where: { id: Number(params.id) },
       include: {
-        images: true, // รูปสัตว์เลี้ยง
-      },
-    },
-    user: {
-      select: {
-        id: true,
-        name: true,
-        image: true, // เลือกเฉพาะ field ที่ไม่ sensitive
-      },
-    },
-    images: true, // รูปประกาศสัตว์หาย
-    clues: {
-      include: {
-        images: true,
+        pet: {
+          include: {
+            images: true, // รูปสัตว์เลี้ยง
+          },
+        },
         user: {
           select: {
             id: true,
             name: true,
-            image: true, // ป้องกันไม่ให้หลุด email/phone/password
+            image: true, // เลือกเฉพาะ field ที่ไม่ sensitive
+          },
+        },
+        images: true, // รูปประกาศสัตว์หาย
+        clues: {
+          include: {
+            images: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                image: true, // ป้องกันไม่ให้หลุด email/phone/password
+              },
+            },
           },
         },
       },
-    },
-  },
-})
-
-
+    })
 
     if (!lostPet) {
       return NextResponse.json({ message: 'ไม่พบข้อมูล' }, { status: 404 })
     }
 
+    // เพิ่ม views +1
+    await prisma.lostPet.update({
+      where: { id: Number(params.id) },
+      data: { views: { increment: 1 } },
+    });
+
     return NextResponse.json(lostPet)
   } catch (error) {
+    console.error(error);
     return NextResponse.json({ message: 'เกิดข้อผิดพลาด', error }, { status: 500 })
   }
 }
@@ -60,18 +65,48 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
     return NextResponse.json(updated)
   } catch (error) {
+    console.error(error);
     return NextResponse.json({ message: 'ไม่สามารถอัปเดตข้อมูลได้', error }, { status: 500 })
   }
 }
 
+// 🔹 ต่ออายุ LostPet
+export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const data = await req.json()
+    const { createdAt } = data
+
+    if (!createdAt) {
+      return NextResponse.json({ message: 'กรุณาระบุ createdAt สำหรับการต่ออายุ' }, { status: 400 })
+    }
+
+    const lostPet = await prisma.lostPet.findUnique({
+      where: { id: Number(params.id) },
+    })
+
+    if (!lostPet) {
+      return NextResponse.json({ message: 'ไม่พบโพสต์' }, { status: 404 })
+    }
+
+    const updated = await prisma.lostPet.update({
+      where: { id: Number(params.id) },
+      data: { createdAt: new Date(createdAt) },
+    })
+
+    return NextResponse.json({ 
+      message: 'ต่ออายุโพสต์สำเร็จ',
+      updated
+    })
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ message: 'ไม่สามารถต่ออายุโพสต์ได้', error }, { status: 500 })
+  }
+}
+
 // 🔹 ลบ LostPet
-
-
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const { id } = params;
-
-    // อ่าน status จาก body ของ request
     const body = await req.json();
     const { status } = body;
 

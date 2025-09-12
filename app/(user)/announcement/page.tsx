@@ -138,9 +138,7 @@ export default function Announcement() {
   };
 
   // Handle click for found pet details
-  const handleFoundPetClick = (petId: number) => {
-    router.push(`/foundpet/${petId}`);
-  };
+
 
   // Loading Card component
   const LoadingCard = () => (
@@ -203,6 +201,7 @@ export default function Announcement() {
                 status={lostPet.status}
                 ownerName={lostPet.ownerName}
                 species={lostPet.pet.species.name}
+                createdAt={(lostPet.createdAt)}
                 color={lostPet.pet.color}
                 pet={lostPet.pet}
               />
@@ -272,7 +271,7 @@ export default function Announcement() {
           foundPets.map((foundPet) => (
             <div
               key={foundPet.id}
-              onClick={() => handleFoundPetClick(foundPet.id)}
+              
             >
               <FoundPetCard
                 id={foundPet.id}

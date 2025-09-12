@@ -5,10 +5,10 @@ export async function middleware(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 
   if (!token) {
-    return NextResponse.redirect(new URL("/login", req.url)); // redirect ถ้าไม่มี session
+    return NextResponse.redirect(new URL("/login", req.url)); 
   }
 
-  // กันไม่ให้ user ปกติเข้า /admin/*
+  
   if (req.nextUrl.pathname.startsWith("/admin") && token.role !== "admin") {
     return NextResponse.redirect(new URL("/", req.url));
   }

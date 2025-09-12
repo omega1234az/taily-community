@@ -1,113 +1,170 @@
 "use client";
 
-import React, { useState, useRef, ChangeEvent } from "react";
+import React, { useState, useRef, ChangeEvent, useEffect } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 
-export default function Registerowner() {
-  const [mainImage, setMainImage] = useState<string | null>(null);
-  const [galleryImages, setGalleryImages] = useState<(string | null)[]>([
-    null,
-    null,
-    null,
-  ]);
+interface Species {
+  id: number;
+  name: string;
+}
+
+export default function FoundPetRegistration() {
+  const [species, setSpecies] = useState<Species[]>([]);
+  const [mainImage, setMainImage] = useState<File | null>(null);
+  const [mainImagePreview, setMainImagePreview] = useState<string | null>(null);
+  const [galleryImages, setGalleryImages] = useState<(File | null)[]>([null, null, null]);
+  const [galleryPreviews, setGalleryPreviews] = useState<(string | null)[]>([null, null, null]);
 
   const mainInputRef = useRef<HTMLInputElement | null>(null);
   const galleryInputRefs = [
     useRef<HTMLInputElement | null>(null),
-    useRef(null),
-    useRef(null),
+    useRef<HTMLInputElement | null>(null),
+    useRef<HTMLInputElement | null>(null),
   ];
-  const handleGalleryImageClick = (index: number) => {
-    if (isEditing) {
-      // กดตอนแก้ไข ให้เปิด input รูปย่อยอันนั้น
-      galleryInputRefs[index]?.current?.click();
-    } else {
-      // ตอนไม่แก้ไข ให้สลับรูปหลักกับรูปย่อย
-      setGalleryImages((prev) => {
-        const newGallery = [...prev];
-        const temp = newGallery[index];
-        newGallery[index] = mainImage;
-        setMainImage(temp);
-        return newGallery;
-      });
+
+  const mapRef = useRef<L.Map | null>(null);
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const [loading, setLoading] = useState(false);
+  const [coords, setCoords] = useState<{ lat: number; lng: number }>({
+    lat: 13.736717,
+    lng: 100.523186,
+  });
+
+  // Dropdowns visibility
+  const [isSpeciesDropdownVisible, setSpeciesDropdownVisible] = useState(false);
+  const [isGenderDropdownVisible, setGenderDropdownVisible] = useState(false);
+  const [isStatusDropdownVisible, setStatusDropdownVisible] = useState(false);
+
+  const [formData, setFormData] = useState({
+    description: "",
+    speciesId: "",
+    breed: "",
+    gender: "",
+    color: [] as string[],
+    phone: "",
+    facebook: "",
+    finderName: "",
+    distinctive: "",
+    status: "finding",
+    foundDate: "",
+  });
+
+  // Fetch species data
+  useEffect(() => {
+    fetchSpecies();
+    initializeMap();
+  }, []);
+
+  const fetchSpecies = async () => {
+    try {
+      const response = await fetch('/api/pets/species');
+      if (response.ok) {
+        const data = await response.json();
+        setSpecies(data);
+      }
+    } catch (error) {
+      console.error('Error fetching species:', error);
     }
+  };
+
+  // Initialize Leaflet map
+  const initializeMap = () => {
+    if (!mapContainerRef.current || mapRef.current) return;
+
+    // ใช้ GPS ถ้าอนุญาต
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const userLat = position.coords.latitude;
+        const userLng = position.coords.longitude;
+
+        mapRef.current = L.map(mapContainerRef.current!).setView(
+          [userLat, userLng],
+          17
+        );
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 19,
+        }).addTo(mapRef.current);
+
+        // อัปเดต coords เวลากดลาก
+        const updateCenterCoords = () => {
+          const center = mapRef.current?.getCenter();
+          if (center) {
+            setCoords({ lat: center.lat, lng: center.lng });
+          }
+        };
+
+        mapRef.current.on("move", updateCenterCoords);
+        updateCenterCoords();
+      },
+      (err) => {
+        console.error("ไม่สามารถเข้าถึง GPS:", err);
+
+        // fallback เป็นค่า default
+        mapRef.current = L.map(mapContainerRef.current!).setView(
+          [13.736717, 100.523186],
+          13
+        );
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 19,
+        }).addTo(mapRef.current);
+
+        const updateCenterCoords = () => {
+          const center = mapRef.current?.getCenter();
+          if (center) {
+            setCoords({ lat: center.lat, lng: center.lng });
+          }
+        };
+
+        mapRef.current.on("move", updateCenterCoords);
+        updateCenterCoords();
+      }
+    );
+  };
+
+  const handleGalleryImageClick = (index: number) => {
+    galleryInputRefs[index]?.current?.click();
   };
 
   const handleMainImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) setMainImage(URL.createObjectURL(file));
+    if (file) {
+      setMainImage(file);
+      setMainImagePreview(URL.createObjectURL(file));
+    }
   };
 
-  const handleGalleryImageChange = (
-    e: ChangeEvent<HTMLInputElement>,
-    index: number
-  ) => {
+  const handleGalleryImageChange = (e: ChangeEvent<HTMLInputElement>, index: number) => {
     const file = e.target.files?.[0];
     if (file) {
       const newImages = [...galleryImages];
-      newImages[index] = URL.createObjectURL(file);
+      const newPreviews = [...galleryPreviews];
+      newImages[index] = file;
+      newPreviews[index] = URL.createObjectURL(file);
       setGalleryImages(newImages);
+      setGalleryPreviews(newPreviews);
     }
   };
 
-  const [isDropdownVisible, setDropdownVisible] = useState(false);
-  const [selectedType, setSelectedType] = useState("");
-  const [isEditing, setIsEditing] = useState(true);
-  const [formData, setFormData] = useState({
-    name: "",
-    age: "",
-    gender: "",
-    type: "",
-    breed: "",
-    neutered: "",
-    color: "",
-    mark: "",
-    details: "",
-  });
-
-  // เพิ่ม state สำหรับข้อมูลเพิ่มเติม
-  const [missingLocation, setMissingLocation] = useState("");
-  const [ownerName, setOwnerName] = useState("");
-  const [contactNumber, setContactNumber] = useState("");
-  const [facebook, setFacebook] = useState("");
-
-  const toggleDropdown = () => {
-    if (!isEditing) return; // ป้องกันเปิด dropdown ตอนไม่แก้ไข
-    setDropdownVisible(!isDropdownVisible);
+  const handleSelectSpecies = (speciesItem: Species) => {
+    setFormData(prev => ({ ...prev, speciesId: speciesItem.id.toString() }));
+    setSpeciesDropdownVisible(false);
   };
 
-  const handleSelectType = (type: string) => {
-    setSelectedType(type);
-    setFormData((prevData) => ({ ...prevData, type }));
-    setDropdownVisible(false);
-  };
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
 
-    if (name === "age" && !/^\d*$/.test(value)) {
-      return;
+    if (name === "phone" && !/^\+?\d*$/.test(value)) {
+      return; // อนุญาตเฉพาะตัวเลขและเครื่องหมาย +
     }
 
-    setFormData((prevData) => ({ ...prevData, [name]: value }));
+    setFormData(prevData => ({ ...prevData, [name]: value }));
   };
 
-  const [isNeuteredDropdownVisible, setNeuteredDropdownVisible] =
-    useState(false);
-  const handleSelectNeutered = (neutered: string) => {
-    setFormData((prevData) => ({
-      ...prevData,
-      neutered: neutered === "ทำหมันแล้ว" ? "1" : "0",
-    }));
-    setNeuteredDropdownVisible(false);
-  };
-
-  const [gender, setGender] = useState<string>("");
-  const [isGenderDropdownVisible, setGenderDropdownVisible] = useState(false);
-
-  const [selectedColors, setSelectedColors] = useState<string[]>([]);
-  // ตัวแปรสีทั้งหมด
+  // Color options
   const colors = [
     { name: "ขาว", code: "bg-white" },
     { name: "เหลือง", code: "bg-yellow-300" },
@@ -123,35 +180,116 @@ export default function Registerowner() {
     { name: "ม่วง", code: "bg-fuchsia-500" },
     { name: "ดำ", code: "bg-black" },
   ];
-  const handleSave = () => {
-    setIsEditing(false);
-    console.log("ข้อมูลที่บันทึก:", {
-      formData,
-      missingLocation,
-      ownerName,
-      contactNumber,
-      facebook,
-    });
+
+  const handleColorToggle = (colorName: string) => {
+    setFormData(prev => ({
+      ...prev,
+      color: prev.color.includes(colorName)
+        ? prev.color.filter(c => c !== colorName)
+        : [...prev.color, colorName]
+    }));
   };
 
-  const handleCancel = () => {
-    setIsEditing(false);
-    setFormData({
-      name: "",
-      age: "",
-      gender: "",
-      type: "",
-      breed: "",
-      neutered: "",
-      color: "",
-      mark: "",
-      details: "",
-    });
-    setMissingLocation("");
-    setOwnerName("");
-    setContactNumber("");
-    setFacebook("");
+  const handleSubmit = async () => {
+    try {
+      setLoading(true);
+
+      // Validation
+      if (!formData.description || !formData.speciesId || !formData.phone) {
+        alert("กรุณากรอกข้อมูลให้ครบถ้วน (รายละเอียด, ประเภท, เบอร์ติดต่อ)");
+        return;
+      }
+
+      if (!mainImage) {
+        alert("กรุณาเลือกรูปภาพอย่างน้อย 1 รูป");
+        return;
+      }
+
+      if (formData.foundDate && new Date(formData.foundDate) > new Date()) {
+        alert("วันที่พบต้องไม่เป็นวันในอนาคต");
+        return;
+      }
+
+      if (formData.facebook && !/^https?:\/\/(www\.)?facebook\.com\/.+$/.test(formData.facebook)) {
+        alert("กรุณากรอก URL Facebook ที่ถูกต้อง");
+        return;
+      }
+
+      const formDataToSend = new FormData();
+
+      // Add form data
+      formDataToSend.append('description', formData.description);
+      formDataToSend.append('speciesId', formData.speciesId);
+      formDataToSend.append('breed', formData.breed);
+      formDataToSend.append('gender', formData.gender);
+      formDataToSend.append('color', JSON.stringify(formData.color));
+      formDataToSend.append('phone', formData.phone);
+      formDataToSend.append('facebook', formData.facebook);
+      formDataToSend.append('finderName', formData.finderName);
+      formDataToSend.append('distinctive', formData.distinctive);
+      formDataToSend.append('status', formData.status);
+
+      // Add location data
+      formDataToSend.append('lat', coords.lat.toString());
+      formDataToSend.append('lng', coords.lng.toString());
+
+      // Add found date if provided
+      if (formData.foundDate) {
+        formDataToSend.append('foundDate', new Date(formData.foundDate).toISOString());
+      }
+
+      // Add images
+      if (mainImage) {
+        formDataToSend.append('images', mainImage);
+      }
+
+      galleryImages.forEach((image) => {
+        if (image) {
+          formDataToSend.append('images', image);
+        }
+      });
+
+      const response = await fetch('/api/foundpet', {
+        method: 'POST',
+        body: formDataToSend,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        alert("ลงทะเบียนสัตว์พบเจอสำเร็จ!");
+
+        // Reset form
+        setFormData({
+          description: "",
+          speciesId: "",
+          breed: "",
+          gender: "",
+          color: [],
+          phone: "",
+          facebook: "",
+          finderName: "",
+          distinctive: "",
+          status: "finding",
+          foundDate: "",
+        });
+
+        setMainImage(null);
+        setMainImagePreview(null);
+        setGalleryImages([null, null, null]);
+        setGalleryPreviews([null, null, null]);
+      } else {
+        const error = await response.json();
+        alert(`เกิดข้อผิดพลาด: ${error.message}`);
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      alert("เกิดข้อผิดพลาดในการส่งข้อมูล");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const selectedSpecies = species.find(s => s.id.toString() === formData.speciesId);
 
   return (
     <div>
@@ -163,17 +301,13 @@ export default function Registerowner() {
       </h1>
 
       <div className="flex flex-col lg:flex-row 2xl:gap-56 xl:gap-44 lg:gap-24 md:gap-5 sm:gap-8 lg:pl-12 md:pl-28 sm:pl-20 pl-7 pt-18">
-        {/* รูปภาพ */}
+        {/* Image Section */}
         <div className="lg:pl-0 md:pl-28 sm:pl-24 pl-20 pb-5">
-          {/* รูปหลัก */}
           <div className="your-container">
-            {/* ปุ่มกดรูปหลัก */}
             <img
-              src={mainImage || "/all/image.png"}
+              src={mainImagePreview || "/all/image.png"}
               alt="main"
-              onClick={() => {
-                if (isEditing) mainInputRef.current?.click();
-              }}
+              onClick={() => mainInputRef.current?.click()}
               className="2xl:w-72 2xl:h-80 xl:w-64 xl:h-72 lg:w-60 lg:h-64 md:w-56 md:h-60 sm:w-48 sm:h-56 w-36 h-48 object-cover rounded-2xl cursor-pointer overflow-hidden"
             />
             <input
@@ -184,12 +318,11 @@ export default function Registerowner() {
               onChange={handleMainImageChange}
             />
 
-            {/* ปุ่มเลือกรูป gallery 3 ช่อง */}
             <div className="flex gap-2 pt-3">
               {[0, 1, 2].map((index) => (
                 <div key={index}>
                   <img
-                    src={galleryImages[index] || "/all/image.png"}
+                    src={galleryPreviews[index] || "/all/image.png"}
                     alt={`gallery-${index}`}
                     onClick={() => handleGalleryImageClick(index)}
                     className="2xl:w-22 2xl:h-22 xl:w-20 xl:h-20 lg:w-18 lg:h-18 md:w-17 md:h-17 sm:w-14 sm:h-14 w-11 h-11 object-cover cursor-pointer rounded-md"
@@ -207,25 +340,22 @@ export default function Registerowner() {
           </div>
         </div>
 
-        {/* ฟอร์มการลงทะเบียนสัตว์ */}
-        <div className="flex flex-col w-full md:max-w-md sm:max-w-sm max-w-xs mb-2">
+        {/* Form Section */}
+        <div className="flex flex-col w-full 2xl:max-w-xl xl:max-w-lg md:max-w-md sm:max-w-sm max-w-xs mb-2">
+          {/* Species and Breed */}
           <div className="grid grid-cols-2 gap-4 mb-2">
-            {/* ช่องกรอกประเภท */}
             <div className="flex flex-col">
               <p className="sm:text-lg xl:text-xl">ประเภท</p>
               <div className="relative w-full">
                 <input
-                  value={selectedType}
-                  onClick={toggleDropdown}
+                  value={selectedSpecies?.name || ""}
+                  onClick={() => setSpeciesDropdownVisible(!isSpeciesDropdownVisible)}
                   readOnly
-                  disabled={!isEditing}
-                  className="w-full mt-1 p-2 pr-10 border border-gray-300 rounded-md mb-3 disabled:bg-gray-100"
+                  className="w-full mt-1 p-2 pr-10 border border-gray-300 rounded-md mb-3 cursor-pointer"
                 />
                 <svg
-                  className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-7 h-7 pb-1 text-gray-500 cursor-pointer ${
-                    !isEditing ? "pointer-events-none" : ""
-                  }`}
-                  onClick={toggleDropdown}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 w-7 h-7 pb-1 text-gray-500 cursor-pointer"
+                  onClick={() => setSpeciesDropdownVisible(!isSpeciesDropdownVisible)}
                   viewBox="0 0 24 24"
                   fill="none"
                 >
@@ -235,28 +365,16 @@ export default function Registerowner() {
                     strokeWidth="2"
                   />
                 </svg>
-                {isDropdownVisible && (
-                  <div className="absolute  top-12 w-full mt-2 bg-white shadow-lg rounded-md border border-gray-300 z-10">
+                {isSpeciesDropdownVisible && (
+                  <div className="absolute top-12 w-full mt-2 bg-white shadow-lg rounded-md border border-gray-300 z-10">
                     <ul>
-                      {[
-                        "แมว",
-                        "สุนัข",
-                        "นก",
-                        "หนู",
-                        "ชูก้าไรเดอร์",
-                        "เฟอร์ริต",
-                        "เม่นแคระ",
-                        "กระรอก",
-                        "กระต่าย",
-                        "งู",
-                        "อื่นๆ",
-                      ].map((type) => (
+                      {species.map((speciesItem) => (
                         <li
-                          key={type}
+                          key={speciesItem.id}
                           className="px-4 py-2 text-sm cursor-pointer hover:bg-gray-200 border-b border-gray-300 last:border-b-0"
-                          onClick={() => handleSelectType(type)}
+                          onClick={() => handleSelectSpecies(speciesItem)}
                         >
-                          {type}
+                          {speciesItem.name}
                         </li>
                       ))}
                     </ul>
@@ -265,107 +383,37 @@ export default function Registerowner() {
               </div>
             </div>
 
-            {/* ช่องกรอกสายพันธุ์ */}
             <div className="flex flex-col">
               <p className="sm:text-lg xl:text-xl">สายพันธุ์</p>
               <input
                 name="breed"
                 value={formData.breed}
                 onChange={handleChange}
-                className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 disabled:bg-gray-100"
-                disabled={!isEditing}
+                className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3"
               />
             </div>
           </div>
 
-          {/* ช่องกรอกเพศ */}
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            {/* ช่องทำหมัน */}
+          {/* Gender */}
+          <div className="grid grid-cols-2 gap-4 mb-2">
             <div className="flex flex-col">
-              <p className="sm:text-lg xl:text-xl">ทำหมัน</p>
-              <div className="relative w-full">
-                <input
-                  name="neutered"
-                  value={
-                    formData.neutered === "1"
-                      ? "ทำหมันแล้ว"
-                      : formData.neutered === "0"
-                      ? "ยังไม่ได้ทำหมัน"
-                      : ""
-                  }
-                  readOnly
-                  disabled={!isEditing}
-                  onClick={() => {
-                    if (isEditing)
-                      setNeuteredDropdownVisible(!isNeuteredDropdownVisible);
-                  }}
-                  className="w-full mt-1 p-2 pr-10 border border-gray-300 rounded-md disabled:bg-gray-100 cursor-pointer"
-                />
-                <svg
-                  className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-500 cursor-pointer ${
-                    !isEditing ? "pointer-events-none" : ""
-                  }`}
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  onClick={() =>
-                    setNeuteredDropdownVisible(!isNeuteredDropdownVisible)
-                  }
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 
-        1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-
-                {isNeuteredDropdownVisible && (
-                  <div className="absolute top-full left-0 mt-1 w-full bg-white shadow-md rounded-md border border-gray-300 z-10">
-                    <ul>
-                      {["ทำหมันแล้ว", "ยังไม่ได้ทำหมัน"].map((neutered) => (
-                        <li
-                          key={neutered}
-                          className="px-4 py-2 text-sm cursor-pointer hover:bg-gray-200 border-b border-gray-300 last:border-b-0"
-                          onClick={() => handleSelectNeutered(neutered)}
-                        >
-                          {neutered}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* ช่องเพศ */}
-            <div className="flex flex-col ">
               <p className="sm:text-lg xl:text-xl">เพศ</p>
               <div className="relative w-full">
                 <input
-                  name="gender"
-                  value={gender}
+                  value={formData.gender}
                   readOnly
-                  disabled={!isEditing}
-                  onClick={() => {
-                    if (isEditing)
-                      setGenderDropdownVisible(!isGenderDropdownVisible);
-                  }}
-                  className="w-full mt-1 p-2 pr-10 border border-gray-300 rounded-md disabled:bg-gray-100 cursor-pointer"
+                  onClick={() => setGenderDropdownVisible(!isGenderDropdownVisible)}
+                  className="w-full mt-1 p-2 pr-10 border border-gray-300 rounded-md cursor-pointer"
                 />
                 <svg
-                  className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-500 cursor-pointer ${
-                    !isEditing ? "pointer-events-none" : ""
-                  }`}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-500 cursor-pointer"
                   viewBox="0 0 20 20"
                   fill="currentColor"
-                  onClick={() =>
-                    setGenderDropdownVisible(!isGenderDropdownVisible)
-                  }
+                  onClick={() => setGenderDropdownVisible(!isGenderDropdownVisible)}
                 >
                   <path
                     fillRule="evenodd"
-                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 
-        1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
                     clipRule="evenodd"
                   />
                 </svg>
@@ -373,12 +421,12 @@ export default function Registerowner() {
                 {isGenderDropdownVisible && (
                   <div className="absolute top-full left-0 mt-1 w-full bg-white shadow-md rounded-md border border-gray-300 z-10">
                     <ul>
-                      {["เพศผู้", "เพศเมีย"].map((option) => (
+                      {["เพศผู้", "เพศเมีย", "ไม่ทราบ"].map((option) => (
                         <li
                           key={option}
                           className="px-4 py-2 text-sm cursor-pointer hover:bg-gray-200 border-b border-gray-300 last:border-b-0"
                           onClick={() => {
-                            setGender(option);
+                            setFormData(prev => ({ ...prev, gender: option }));
                             setGenderDropdownVisible(false);
                           }}
                         >
@@ -392,135 +440,135 @@ export default function Registerowner() {
             </div>
           </div>
 
-          {/* ช่องกรอกสี */}
-          <div className="flex flex-wrap gap-3  mb-6">
-            {colors.map((color, idx) => {
-              const isSelected = selectedColors.includes(color.name);
-              return (
-                <div
-                  key={idx}
-                  onClick={() => {
-                    if (!isEditing) return;
-                    setSelectedColors((prev) =>
-                      prev.includes(color.name)
-                        ? prev.filter((c) => c !== color.name)
-                        : [...prev, color.name]
-                    );
-                    setFormData((prevData) => ({
-                      ...prevData,
-                      color: isSelected
-                        ? selectedColors
-                            .filter((c) => c !== color.name)
-                            .join(",")
-                        : [...selectedColors, color.name].join(","),
-                    }));
-                  }}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer ${
-                    isSelected ? "bg-gray-400" : "bg-gray-300"
-                  }`}
-                >
-                  <div className={`w-6 h-6 rounded-full  ${color.code}`}></div>
-                  <span className="text-sm">{color.name}</span>
-                </div>
-              );
-            })}
+          {/* Colors */}
+          <div className="mb-4">
+            <p className="sm:text-lg xl:text-xl mb-2">สี</p>
+            <div className="flex flex-wrap gap-2">
+              {colors.map((color, idx) => {
+                const isSelected = formData.color.includes(color.name);
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => handleColorToggle(color.name)}
+                    className={`flex items-center gap-2 px-3 py-1 rounded-full cursor-pointer text-sm ${
+                      isSelected ? "bg-blue-200 border-2 border-blue-400" : "bg-gray-200"
+                    }`}
+                  >
+                    <div className={`w-4 h-4 rounded-full ${color.code} border border-gray-400`}></div>
+                    <span>{color.name}</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
-          {/* ช่องกรอกรอยตำหนิ */}
+          {/* Distinctive marks */}
           <div className="flex flex-col mb-2">
-            <p className="sm:text-lg xl:text-xl">รอยตำหนิ</p>
+            <p className="sm:text-lg xl:text-xl">รอยตำหนิ/ลักษณะเด่น</p>
             <input
-              name="mark"
-              value={formData.mark}
+              name="distinctive"
+              value={formData.distinctive}
               onChange={handleChange}
-              className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 disabled:bg-gray-100"
-              disabled={!isEditing}
+              className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3"
             />
           </div>
 
-          {/* ช่องกรอกรายละเอียด */}
-          <p className="sm:text-lg xl:text-xl">รายละเอียด</p>
-          <textarea
-            name="details"
-            value={formData.details}
-            onChange={handleChange}
-            className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 disabled:bg-gray-100"
-            disabled={!isEditing}
-          ></textarea>
+          {/* Description */}
+          <div className="flex flex-col mb-2">
+            <p className="sm:text-lg xl:text-xl">รายละเอียด</p>
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3"
+              rows={3}
+            />
+          </div>
+
+          {/* Found Date */}
+          <div className="grid grid-cols-2 gap-4 mb-2">
+            <div className="flex flex-col">
+              <p className="sm:text-lg xl:text-xl">วันที่พบ</p>
+              <input
+                type="date"
+                name="foundDate"
+                value={formData.foundDate}
+                onChange={handleChange}
+                className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3"
+              />
+            </div>
+          </div>
+
+          {/* Status */}
+          <div className="flex flex-col mb-20">
+            {/* สามารถเพิ่ม UI สำหรับเลือก status ได้ถ้าต้องการ */}
+          </div>
         </div>
       </div>
 
-      <div className="flex flex-col my-10 2xl:mr-40 xl:mr-32 lg:mr-28 lg:ml-10 md:mr-20 sm:mr-18 mr-10">
-        {/* สถานที่หาย */}
-       
-
-        <div>
-          <img
-            src="/all/map.png"
-            alt="image"
-            className="w-full  h-auto object-cover"
+      {/* Map Section */}
+      <div className="flex flex-col mb-10 2xl:mr-40 xl:mr-32 lg:mr-28 lg:ml-10 md:mr-20 sm:mr-18 mr-10">
+        <div className="relative">
+          <div
+            ref={mapContainerRef}
+            id="map"
+            className="w-full h-[500px] relative"
           />
+          <img
+            src="https://cdn-icons-png.flaticon.com/512/684/684908.png"
+            width="40"
+            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-full z-[999] pointer-events-none"
+            alt="location pin"
+          />
+          <div className="mt-3 text-sm">
+            Lat: {coords.lat.toFixed(6)}, Lng: {coords.lng.toFixed(6)}
+          </div>
         </div>
 
+        {/* Contact Information */}
         <div className="mt-10 mb-5">
           <p className="sm:text-lg xl:text-xl">การติดต่อ</p>
         </div>
 
         <div className="flex flex-col w-full xl:max-w-xl md:max-w-md sm:max-w-sm max-w-xs mb-2">
-          <p className="sm:text-lg xl:text-xl">ชื่อเจ้าของ</p>
+          <p className="sm:text-lg xl:text-xl">ชื่อผู้พบ</p>
           <input
-            value={ownerName}
-            onChange={(e) => setOwnerName(e.target.value)}
-            disabled={!isEditing}
-            className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 disabled:bg-gray-100"
+            name="finderName"
+            value={formData.finderName}
+            onChange={handleChange}
+            className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3"
           />
 
           <div className="flex flex-col my-3">
             <p className="sm:text-lg xl:text-xl">เบอร์ติดต่อ</p>
             <input
-              value={contactNumber}
-              onChange={(e) => setContactNumber(e.target.value)}
-              disabled={!isEditing}
-              className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 disabled:bg-gray-100"
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3"
             />
           </div>
 
           <div className="flex flex-col mb-2">
-            <p className="sm:text-lg xl:text-xl">facebook</p>
+            <p className="sm:text-lg xl:text-xl">Facebook</p>
             <input
-              value={facebook}
-              onChange={(e) => setFacebook(e.target.value)}
-              disabled={!isEditing}
-              className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 disabled:bg-gray-100"
+              name="facebook"
+              value={formData.facebook}
+              onChange={handleChange}
+              className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3"
             />
           </div>
         </div>
 
-        {/* ปุ่ม */}
+        {/* Submit Button */}
         <div className="flex justify-end ml-20 mt-5 lg:mb-8 mb-5">
-          {!isEditing ? (
-            <button
-              onClick={() => setIsEditing(true)}
-              className="bg-[#7CBBEB] text-white hover:bg-sky-600 shadow-md rounded-xl px-6 py-1 sm:text-lg xl:text-xl cursor-pointer"
-            >
-              แก้ไข
-            </button>
-          ) : (
-            <div className="flex gap-4">
-              <button
-                onClick={handleCancel}
-                className="bg-gray-400 text-white hover:bg-gray-600 shadow-md rounded-xl px-6 py-1 sm:text-lg xl:text-xl cursor-pointer"
-              >
-                ยกเลิก
-              </button>
-              <button
-                onClick={handleSave}
-                className="bg-[#7CBBEB] text-white hover:bg-sky-600 shadow-md rounded-xl px-6 py-1 sm:text-lg xl:text-xl cursor-pointer"
-              >
-                บันทึก
-              </button>
-            </div>
-          )}
+          <button
+            onClick={handleSubmit}
+            disabled={loading}
+            className="bg-[#7CBBEB] text-white hover:bg-sky-600 shadow-md rounded-xl px-6 py-1 sm:text-lg xl:text-xl cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? "กำลังบันทึก..." : "ตกลง"}
+          </button>
         </div>
       </div>
     </div>

@@ -5,7 +5,6 @@ import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
-// GET - ปลอดภัยแล้ว ไม่เปิดเผยข้อมูลส่วนตัว
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(options);
@@ -22,17 +21,15 @@ export async function GET(req: NextRequest) {
     const status = searchParams.get('status') || 'lost';
     const userId = session.user.id;
 
-    // Validate pagination
     if (page < 1 || limit < 1 || limit > 50) {
       return NextResponse.json({ message: "ค่า pagination ไม่ถูกต้อง" }, { status: 400 });
     }
 
     const skip = (page - 1) * limit;
 
-    // Build where clause
     const whereClause: any = {
       status: 'lost',
-      userId: userId // เพิ่มเงื่อนไขเพื่อกรองตาม userId
+      userId: userId
     };
 
     if (species) {
@@ -49,6 +46,18 @@ export async function GET(req: NextRequest) {
       };
     }
 
+    // ✅ อัพเดตโพสต์ที่เกิน 14 วันเป็น expired
+    const expiredDate = new Date();
+    expiredDate.setDate(expiredDate.getDate() - 14);
+
+    await prisma.lostPet.updateMany({
+      where: {
+        status: 'lost',
+        createdAt: { lt: expiredDate }
+      },
+      data: { status: 'closed' }
+    });
+
     const [lostPets, total] = await Promise.all([
       prisma.lostPet.findMany({
         where: whereClause,
@@ -64,7 +73,7 @@ export async function GET(req: NextRequest) {
               color: true,
               description: true,
               markings: true,
-              images: { select: { url: true, mainImage: true } } // เพิ่ม mainImage ใน select
+              images: { select: { url: true, mainImage: true } }
             }
           },
           user: {
@@ -101,7 +110,6 @@ export async function GET(req: NextRequest) {
       prisma.lostPet.count({ where: whereClause })
     ]);
 
-    // เพิ่มความปลอดภัยโดยการซ่อนข้อมูลเพิ่มเติม
     const safeLostPets = lostPets.map(lostPet => ({
       id: lostPet.id,
       description: lostPet.description,

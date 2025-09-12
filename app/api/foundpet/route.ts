@@ -20,7 +20,6 @@ export async function POST(req: NextRequest) {
     const location = formData.get('location')?.toString();
     const lat = formData.get('lat') ? parseFloat(formData.get('lat') as string) : undefined;
     const lng = formData.get('lng') ? parseFloat(formData.get('lng') as string) : undefined;
-
     const speciesId = formData.get('speciesId') ? parseInt(formData.get('speciesId') as string) : undefined;
     const breed = formData.get('breed')?.toString();
     const gender = formData.get('gender')?.toString();
@@ -28,6 +27,8 @@ export async function POST(req: NextRequest) {
     const age = formData.get('age') ? parseInt(formData.get('age') as string) : undefined;
     const distinctive = formData.get('distinctive')?.toString();
     const status = formData.get('status')?.toString();
+    const phone = formData.get('phone')?.toString(); // Add phone field
+    const facebook = formData.get('facebook')?.toString(); // Add facebook field
     const images = formData.getAll('images') as File[];
 
     // Validate input data
@@ -44,6 +45,16 @@ export async function POST(req: NextRequest) {
 
     if (age && (age < 0 || age > 30)) {
       return NextResponse.json({ message: "อายุต้องอยู่ระหว่าง 0-30 ปี" }, { status: 400 });
+    }
+
+    // Validate phone (optional, if provided)
+    if (phone && !/^\+?\d{8,15}$/.test(phone)) {
+      return NextResponse.json({ message: "หมายเลขโทรศัพท์ไม่ถูกต้อง" }, { status: 400 });
+    }
+
+    // Validate facebook (optional, if provided)
+    if (facebook && !/^https?:\/\/(www\.)?facebook\.com\/.+$/.test(facebook)) {
+      return NextResponse.json({ message: "URL Facebook ไม่ถูกต้อง" }, { status: 400 });
     }
 
     // ตรวจสอบ color (ต้องเป็น array หรือ undefined)
@@ -80,10 +91,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ใช้ for...of loop เพื่อให้ await ทำงานอย่างถูกต้อง
     for (const image of images) {
       if (image && image.size > 0) {
-        // ตรวจสอบประเภทไฟล์
         if (!allowedImageTypes.includes(image.type)) {
           return NextResponse.json(
             { message: 'รองรับเฉพาะไฟล์ JPEG, PNG และ WebP เท่านั้น' },
@@ -91,7 +100,6 @@ export async function POST(req: NextRequest) {
           );
         }
 
-        // ตรวจสอบขนาดไฟล์
         if (image.size > 5 * 1024 * 1024) {
           return NextResponse.json(
             { message: 'ขนาดรูปภาพต้องไม่เกิน 5MB' },
@@ -100,10 +108,7 @@ export async function POST(req: NextRequest) {
         }
 
         try {
-          // อ่านไฟล์เป็น Buffer
           const imgBuffer = Buffer.from(await image.arrayBuffer());
-
-          // บีบอัดและปรับขนาดด้วย Sharp
           const compressedImgBuffer = await sharp(imgBuffer)
             .resize(500, 500, {
               fit: 'inside',
@@ -115,10 +120,7 @@ export async function POST(req: NextRequest) {
             })
             .toBuffer();
 
-          // สร้าง Blob จาก Buffer ที่บีบอัด
           const compressedBlob = new Blob([new Uint8Array(compressedImgBuffer)], { type: 'image/jpeg' });
-
-          // อัปโหลดไป Vercel Blob
           const fileName = `foundpet-${session.user.id}-${Date.now()}-${Math.random().toString(36).substring(2, 15)}.jpg`;
           const { url } = await put(`found-pets/${session.user.id}/${fileName}`, compressedBlob, {
             access: 'public',
@@ -135,9 +137,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // -------------------
     // เรียก Longdo API แปลง lat/lng -> location (ถ้าไม่มี location มาด้วย)
-    // -------------------
     let finalLocation = location || "ไม่ระบุ";
 
     if (lat && lng && !location) {
@@ -164,7 +164,7 @@ export async function POST(req: NextRequest) {
         location: finalLocation,
         lat: lat ? lat : null,
         lng: lng ? lng : null,
-        foundDate: new Date(), // ใช้วันที่ปัจจุบัน
+        foundDate: new Date(),
         speciesId: speciesId,
         breed: breed || null,
         gender: gender || null,
@@ -172,6 +172,8 @@ export async function POST(req: NextRequest) {
         age: age || null,
         distinctive: distinctive || null,
         status: status || "finding",
+        phone: phone || null, // Add phone field
+        facebook: facebook || null, // Add facebook field
         userId: session.user.id,
         images: {
           create: imageUrls.map((url) => ({
@@ -205,6 +207,8 @@ export async function POST(req: NextRequest) {
       age: foundPet.age,
       distinctive: foundPet.distinctive,
       status: foundPet.status,
+      phone: foundPet.phone, // Add phone field
+      facebook: foundPet.facebook, // Add facebook field
       species: foundPet.species,
       images: foundPet.images,
       createdAt: foundPet.createdAt,
@@ -217,30 +221,25 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET - ปลอดภัยแล้ว ไม่เปิดเผยข้อมูลส่วนตัว
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    // จัดการกรณีที่ไม่มี page หรือ limit โดยกำหนดค่า default
     const page = parseInt(searchParams.get('page') || '1', 10) || 1;
     const limit = parseInt(searchParams.get('limit') || '10', 10) || 10;
     const species = searchParams.get('species') || undefined;
     const province = searchParams.get('province') || undefined;
     const status = searchParams.get('status') || 'finding';
 
-    // Validate pagination
     if (page < 1 || limit < 1 || limit > 50) {
       return NextResponse.json({ message: "ค่า pagination ไม่ถูกต้อง" }, { status: 400 });
     }
 
     const skip = (page - 1) * limit;
 
-    // Build where clause
     const whereClause: any = {
       status: status,
     };
 
-    // เพิ่มเงื่อนไขสำหรับ species และ province พร้อมกัน
     if (species && province) {
       whereClause.AND = [
         {
@@ -255,12 +254,10 @@ export async function GET(req: NextRequest) {
         },
       ];
     } else if (species) {
-      // เพิ่มเงื่อนไขเฉพาะเมื่อมีค่า species
       whereClause.species = {
         name: species,
       };
     } else if (province) {
-      // เพิ่มเงื่อนไขเฉพาะเมื่อมีค่า province
       whereClause.user = {
         province,
       };
@@ -294,7 +291,6 @@ export async function GET(req: NextRequest) {
       prisma.foundPet.count({ where: whereClause }),
     ]);
 
-    // แปลงข้อมูลให้ปลอดภัย
     const safeFoundPets = foundPets.map(foundPet => ({
       id: foundPet.id,
       description: foundPet.description,
@@ -308,6 +304,8 @@ export async function GET(req: NextRequest) {
       age: foundPet.age,
       distinctive: foundPet.distinctive,
       status: foundPet.status,
+      phone: foundPet.phone, // Add phone field
+      facebook: foundPet.facebook, // Add facebook field
       species: foundPet.species,
       user: foundPet.user,
       images: foundPet.images,

@@ -3,6 +3,7 @@ datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
+
 enum LostPetStatus {
   lost
   found
@@ -11,9 +12,8 @@ enum LostPetStatus {
   reunited
   reported
   fake
+  expired
 }
-
-
 
 generator client {
   provider = "prisma-client-js"
@@ -59,7 +59,6 @@ model User {
   reports       Report[]
   status  Boolean @default(true)
 }
-
 
 model Account {
   id                       String  @id @default(cuid())
@@ -118,9 +117,10 @@ model LostPet {
   phone      String?
   images      LostPetImage[]
   clues       Clue[]
+  // เพิ่ม field views ที่นี่
+  views       Int          @default(0)
   createdAt   DateTime     @default(now())
 }
-
 
 model PetChronicDisease {
   id          Int      @id @default(autoincrement())
@@ -140,6 +140,7 @@ model VaccineRecord {
   note       String?
   pet        Pet      @relation(fields: [petId], references: [id])
 }
+
 model Pet {
   id              Int               @id @default(autoincrement())
   name            String
@@ -168,8 +169,6 @@ model PetImage {
   mainImage    Boolean  @default(false)
   pet     Pet    @relation(fields: [petId], references: [id])
 }
-
-
 
 model LostPetImage {
   id        Int      @id @default(autoincrement())
@@ -220,6 +219,10 @@ model FoundPet {
   images      FoundPetImage[]
   userId      String
   user        User           @relation(fields: [userId], references: [id])
+  // เพิ่ม field views ที่นี่
+  views       Int            @default(0)
+  phone       String?    
+  facebook    String?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 }
@@ -244,13 +247,13 @@ model Report {
   updatedAt   DateTime @updatedAt
 }
 
-
 model FoundPetImage {
   id         Int       @id @default(autoincrement())
   url        String    // URL ของภาพ
   foundPetId Int
   foundPet   FoundPet  @relation(fields: [foundPetId], references: [id])
 }
+
 model Notification {
   id          Int      @id @default(autoincrement())
   userId      String   // ผู้รับการแจ้งเตือน
