@@ -85,7 +85,7 @@ export default function RegisterMissing() {
   const fetchPetData = async () => {
     if (!params.id) return;
     try {
-      const response = await fetch(`http://localhost:3000/api/pets/${params.id}`);
+      const response = await fetch(`/api/pets/${params.id}`);
       const data = await response.json();
 
       setPet({
@@ -154,7 +154,7 @@ export default function RegisterMissing() {
     };
 
     try {
-      const response = await fetch("http://localhost:3000/api/lostpet", {
+      const response = await fetch("/api/lostpet", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
