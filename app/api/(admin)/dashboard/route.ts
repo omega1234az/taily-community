@@ -5,20 +5,25 @@ const prisma = new PrismaClient();
 
 type YearData = {
   year: string;
-  lostPets: number;
-  ownerSearch: number;
+  lostPets: number;      // จำนวนโพส LostPet
+  ownerSearch: number;   // จำนวนโพส FoundPet
+  newUsers: number;
+  cluesReported: number;
+  lostPetViews: number;  // ยอดวิว LostPet (แบบเก่า)
+  ownerSearchViews: number; // ยอดวิว FoundPet (แบบเก่า)
 };
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const selectedType = searchParams.get('type') || 'all'; // all, lost, found
-  const selectedCategoryId = searchParams.get('category') || 'all'; // ส่ง speciesId มา
+  const selectedCategoryId = searchParams.get('category') || 'all'; // speciesId
   const range = searchParams.get('range') || '1y'; // 1w, 1m, 6m, 1y
+  const metric = searchParams.get('metric') || 'posts'; // posts (ใหม่) หรือ views (เก่า)
 
   const now = new Date();
   const startDate = new Date(now);
 
-  // คำนวณ startDate ตาม range
+  // คำนวณช่วงเวลา
   switch (range) {
     case '1w':
       startDate.setDate(now.getDate() - 7);
@@ -34,86 +39,162 @@ export async function GET(request: NextRequest) {
       break;
   }
 
-  // ---------- LostPets ----------
+  // ---------- ดึงข้อมูลจากฐานข้อมูล ----------
+
   const lostPets = await prisma.lostPet.findMany({
     where: {
       lostDate: { gte: startDate },
       ...(selectedCategoryId !== 'all' && {
-        pet: { speciesId: Number(selectedCategoryId) }
+        pet: { speciesId: Number(selectedCategoryId) },
       }),
     },
     select: {
       lostDate: true,
       views: true,
+      id: true,
       pet: { select: { speciesId: true } },
     },
   });
 
-  // ---------- FoundPets ----------
   const foundPets = await prisma.foundPet.findMany({
     where: {
       foundDate: { gte: startDate },
       ...(selectedCategoryId !== 'all' && {
-        speciesId: Number(selectedCategoryId)
+        speciesId: Number(selectedCategoryId),
       }),
     },
     select: {
       foundDate: true,
       views: true,
+      id: true,
       speciesId: true,
     },
   });
 
-  // ---------- Filter ----------
-  const filteredLost =
-    selectedType === 'all' || selectedType === 'lost' ? lostPets : [];
-  const filteredFound =
-    selectedType === 'all' || selectedType === 'found' ? foundPets : [];
+  const users = await prisma.user.findMany({
+    where: {
+      createdAt: { gte: startDate },
+    },
+    select: {
+      createdAt: true,
+    },
+  });
 
-  // ---------- Aggregate ----------
+  const clues = await prisma.clue.findMany({
+    where: {
+      createdAt: { gte: startDate },
+    },
+    select: {
+      createdAt: true,
+    },
+  });
+
+  // ---------- รวมข้อมูลตามปี ----------
   const result: Record<string, YearData> = {};
 
-  // LostPets
-  for (const item of filteredLost) {
+  // lostPets
+  for (const item of lostPets) {
     if (
       selectedCategoryId !== 'all' &&
       item.pet.speciesId !== Number(selectedCategoryId)
-    )
-      continue;
+    ) continue;
 
     const year = item.lostDate.getFullYear().toString();
     if (!result[year]) {
-      result[year] = { year, lostPets: 0, ownerSearch: 0 };
+      result[year] = {
+        year,
+        lostPets: 0,
+        ownerSearch: 0,
+        newUsers: 0,
+        cluesReported: 0,
+        lostPetViews: 0,
+        ownerSearchViews: 0,
+      };
     }
-    result[year].lostPets += item.views || 0;
+
+    // นับจำนวนโพส (ใหม่)
+    result[year].lostPets += 1;
+    
+    // นับยอดวิว (แบบเก่า)
+    result[year].lostPetViews += item.views || 0;
   }
 
-  // FoundPets
-  for (const item of filteredFound) {
+  // foundPets
+  for (const item of foundPets) {
     if (
       selectedCategoryId !== 'all' &&
       item.speciesId !== Number(selectedCategoryId)
-    )
-      continue;
+    ) continue;
 
     const year = item.foundDate.getFullYear().toString();
     if (!result[year]) {
-      result[year] = { year, lostPets: 0, ownerSearch: 0 };
+      result[year] = {
+        year,
+        lostPets: 0,
+        ownerSearch: 0,
+        newUsers: 0,
+        cluesReported: 0,
+        lostPetViews: 0,
+        ownerSearchViews: 0,
+      };
     }
-    result[year].ownerSearch += item.views || 0;
+
+    // นับจำนวนโพส (ใหม่)
+    result[year].ownerSearch += 1;
+    
+    // นับยอดวิว (แบบเก่า)
+    result[year].ownerSearchViews += item.views || 0;
+  }
+
+  // users
+  for (const user of users) {
+    const year = user.createdAt.getFullYear().toString();
+    if (!result[year]) {
+      result[year] = {
+        year,
+        lostPets: 0,
+        ownerSearch: 0,
+        newUsers: 0,
+        cluesReported: 0,
+        lostPetViews: 0,
+        ownerSearchViews: 0,
+      };
+    }
+    result[year].newUsers += 1;
+  }
+
+  // clues
+  for (const clue of clues) {
+    const year = clue.createdAt.getFullYear().toString();
+    if (!result[year]) {
+      result[year] = {
+        year,
+        lostPets: 0,
+        ownerSearch: 0,
+        newUsers: 0,
+        cluesReported: 0,
+        lostPetViews: 0,
+        ownerSearchViews: 0,
+      };
+    }
+    result[year].cluesReported += 1;
   }
 
   let chartData = Object.values(result).sort(
     (a, b) => Number(a.year) - Number(b.year)
   );
 
-  // ---------- ส่ง default ปีปัจจุบันถ้าไม่มีข้อมูล ----------
+  // ถ้าไม่มีข้อมูลเลย ให้ส่งปีปัจจุบัน
   if (chartData.length === 0) {
     chartData = [
       {
         year: now.getFullYear().toString(),
         lostPets: 0,
         ownerSearch: 0,
+        newUsers: 0,
+        cluesReported: 0,
+        lostPetViews: 0,
+        ownerSearchViews: 0,
       },
     ];
   }

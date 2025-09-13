@@ -44,3 +44,26 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     );
   }
 }
+
+
+// DELETE เดิมก็ใช้งานได้ตามปกติ
+export async function DELETE(_: Request, { params }: { params: { id: string } }) {
+  try {
+    const reportId = parseInt(params.id);
+
+    await prisma.report.delete({
+      where: { id: reportId },
+    });
+
+    return NextResponse.json(
+      { message: "ลบรายงานสำเร็จ" },
+      { status: 200 }
+    );
+  } catch (error: any) {
+    console.error("Error deleting report:", error);
+    return NextResponse.json(
+      { message: "ไม่สามารถลบรายงานได้", error: error.message },
+      { status: 500 }
+    );
+  }
+}
