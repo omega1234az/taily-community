@@ -4,24 +4,25 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 // 🔹 ดึง LostPet ตาม ID
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await context.params; // ✅ ต้อง await
     const lostPet = await prisma.lostPet.findUnique({
-      where: { id: Number(params.id) },
+      where: { id: Number(id) },
       include: {
         pet: {
           include: {
-            images: true, // รูปสัตว์เลี้ยง
+            images: true,
           },
         },
         user: {
           select: {
             id: true,
             name: true,
-            image: true, // เลือกเฉพาะ field ที่ไม่ sensitive
+            image: true,
           },
         },
-        images: true, // รูปประกาศสัตว์หาย
+        images: true,
         clues: {
           include: {
             images: true,
@@ -29,31 +30,30 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
               select: {
                 id: true,
                 name: true,
-                image: true, // ป้องกันไม่ให้หลุด email/phone/password
+                image: true,
               },
             },
           },
         },
       },
-    })
+    });
 
     if (!lostPet) {
-      return NextResponse.json({ message: 'ไม่พบข้อมูล' }, { status: 404 })
+      return NextResponse.json({ message: "ไม่พบข้อมูล" }, { status: 404 });
     }
 
     // เพิ่ม views +1
     await prisma.lostPet.update({
-      where: { id: Number(params.id) },
+      where: { id: Number(id) },
       data: { views: { increment: 1 } },
     });
 
-    return NextResponse.json(lostPet)
+    return NextResponse.json(lostPet);
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ message: 'เกิดข้อผิดพลาด', error }, { status: 500 })
+    return NextResponse.json({ message: "เกิดข้อผิดพลาด", error }, { status: 500 });
   }
 }
-
 // 🔹 อัปเดต LostPet
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   try {

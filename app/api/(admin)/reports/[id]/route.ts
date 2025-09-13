@@ -4,9 +4,10 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
-    const reportId = parseInt(params.id);
+    const { id } = await context.params; // ✅ ต้อง await
+    const reportId = parseInt(id);
     const body = await request.json();
     const { status } = body; // ตัวอย่าง: "hidden", "reviewed", "pending"
 
@@ -25,12 +26,12 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       if (updatedReport.referenceType === "lost_pet") {
         await prisma.lostPet.update({
           where: { id: updatedReport.referenceId },
-          data: { status: "reported" }, // เปลี่ยนเป็น 0
+          data: { status: "reported" },
         });
       } else if (updatedReport.referenceType === "found_pet") {
         await prisma.foundPet.update({
           where: { id: updatedReport.referenceId },
-          data: { status: "0" }, // เปลี่ยนเป็น 0
+          data: { status: "0" },
         });
       }
     }
@@ -45,20 +46,16 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-
-// DELETE เดิมก็ใช้งานได้ตามปกติ
-export async function DELETE(_: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_: Request, context: { params: Promise<{ id: string }> }) {
   try {
-    const reportId = parseInt(params.id);
+    const { id } = await context.params; // ✅ ต้อง await
+    const reportId = parseInt(id);
 
     await prisma.report.delete({
       where: { id: reportId },
     });
 
-    return NextResponse.json(
-      { message: "ลบรายงานสำเร็จ" },
-      { status: 200 }
-    );
+    return NextResponse.json({ message: "ลบรายงานสำเร็จ" }, { status: 200 });
   } catch (error: any) {
     console.error("Error deleting report:", error);
     return NextResponse.json(

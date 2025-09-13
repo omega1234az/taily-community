@@ -8,24 +8,23 @@ const prisma = new PrismaClient();
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    // ตรวจสอบ ID
-    const foundPetId = parseInt(params.id);
+    // ✅ ต้อง await
+    const { id } = await context.params;
+    const foundPetId = parseInt(id);
+
     if (isNaN(foundPetId)) {
       return NextResponse.json({ message: "ID ไม่ถูกต้อง" }, { status: 400 });
     }
 
-    // ดึงข้อมูล FoundPet
     const foundPet = await prisma.foundPet.findUnique({
       where: { id: foundPetId },
       include: {
         images: true,
-        user: {
-          select: { id: true, name: true, image: true }
-        },
-        species: true
+        user: { select: { id: true, name: true, image: true } },
+        species: true,
       },
     });
 
@@ -33,7 +32,6 @@ export async function GET(
       return NextResponse.json({ message: "ไม่พบข้อมูลสัตว์ที่ระบุ" }, { status: 404 });
     }
 
-    // อัปเดต view count เพิ่ม 1
     await prisma.foundPet.update({
       where: { id: foundPetId },
       data: { views: foundPet.views + 1 },
@@ -48,22 +46,24 @@ export async function GET(
   }
 }
 
-
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
-    // ตรวจสอบ session
     const session = await getServerSession(options);
     if (!session || !session.user?.id) {
       return NextResponse.json({ message: "กรุณาเข้าสู่ระบบก่อน" }, { status: 401 });
     }
 
-    // ตรวจสอบ ID
-    const foundPetId = parseInt(params.id);
+    // ✅ ต้อง await
+    const { id } = await context.params;
+    const foundPetId = parseInt(id);
+
     if (isNaN(foundPetId)) {
       return NextResponse.json({ message: "ID ไม่ถูกต้อง" }, { status: 400 });
     }
 
-    // ตรวจสอบ FoundPet และสิทธิ์
     const existingFoundPet = await prisma.foundPet.findUnique({
       where: { id: foundPetId },
       include: { 
@@ -71,6 +71,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
         user: { select: { id: true } },
       },
     });
+
     if (!existingFoundPet) {
       return NextResponse.json({ message: "ไม่พบข้อมูลสัตว์ที่ระบุ" }, { status: 404 });
     }
@@ -78,43 +79,26 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       return NextResponse.json({ message: "คุณไม่มีสิทธิ์ลบข้อมูลนี้" }, { status: 403 });
     }
 
-    // ลบข้อมูลใน transaction
     await prisma.$transaction(async (tx) => {
-      // ลบรูปภาพจาก Vercel Blob
       for (const image of existingFoundPet.images) {
         try {
           await del(image.url);
         } catch (error) {
           console.error(`Error deleting image ${image.url}:`, error);
-          // ดำเนินการต่อแม้การลบรูปภาพจะล้มเหลวเพื่อให้ลบข้อมูลหลักได้
         }
       }
 
-      // ลบการแจ้งเตือนที่เกี่ยวข้อง (ถ้ามี)
       await tx.notification.deleteMany({
-        where: {
-          referenceType: 'found_pet',
-          referenceId: foundPetId,
-        },
+        where: { referenceType: 'found_pet', referenceId: foundPetId },
       });
 
-      // ลบรายงานที่เกี่ยวข้อง (ถ้ามี)
       await tx.report.deleteMany({
-        where: {
-          referenceType: 'found_pet',
-          referenceId: foundPetId,
-        },
+        where: { referenceType: 'found_pet', referenceId: foundPetId },
       });
 
-      // ลบ FoundPetImage
-      await tx.foundPetImage.deleteMany({
-        where: { foundPetId },
-      });
+      await tx.foundPetImage.deleteMany({ where: { foundPetId } });
 
-      // ลบ FoundPet
-      await tx.foundPet.delete({
-        where: { id: foundPetId },
-      });
+      await tx.foundPet.delete({ where: { id: foundPetId } });
     });
 
     return NextResponse.json({ message: "ลบข้อมูลสัตว์สำเร็จ" }, { status: 200 });
