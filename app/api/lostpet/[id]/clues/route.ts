@@ -1,4 +1,3 @@
-
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { put } from "@vercel/blob";
@@ -6,31 +5,24 @@ import sharp from "sharp";
 
 const prisma = new PrismaClient();
 
-// 🔹 POST: Create a new clue for a LostPet (unauthenticated)
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> } // ✅ รับเป็น Promise
+) {
   try {
+    const { id } = await context.params; // ✅ ต้อง await
+    const lostPetId = Number(id);
+
     // Check Content-Type header
     const contentType = req.headers.get("content-type") || "";
     if (!contentType.includes("multipart/form-data")) {
-      console.error("[POST_CLUE_ERROR] Invalid Content-Type:", contentType);
       return NextResponse.json(
         { message: "ต้องส่งข้อมูลในรูปแบบ multipart/form-data" },
         { status: 400 }
       );
     }
 
-    // Parse form data
-    let formData;
-    try {
-      formData = await req.formData();
-    } catch (error) {
-      console.error("[POST_CLUE_ERROR] Failed to parse formData:", error);
-      return NextResponse.json(
-        { message: "ไม่สามารถ解析ข้อมูลฟอร์มได้ กรุณาตรวจสอบรูปแบบข้อมูล" },
-        { status: 400 }
-      );
-    }
-
+    const formData = await req.formData();
     const witnessName = formData.get("witnessName")?.toString();
     const contactDetails = formData.get("contactDetails")?.toString();
     const sightingDetails = formData.get("sightingDetails")?.toString();
@@ -39,30 +31,17 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const lng = formData.get("lng")?.toString();
     const images = formData.getAll("images") as File[];
 
-    // Log form data for debugging
-    console.log("[POST_CLUE_DEBUG] FormData:", {
-      witnessName,
-      contactDetails,
-      sightingDetails,
-      lat,
-      lng,
-      imageCount: images.length,
-    });
-
-    // Validate required fields
     if (!witnessName || !contactDetails || !sightingDetails) {
       return NextResponse.json(
         { message: "กรุณาระบุชื่อผู้พบเห็น รายละเอียดการติดต่อ และรายละเอียดการพบเห็น" },
         { status: 400 }
       );
     }
-    
 
-    // Validate LostPet exists
-    const lostPetId = Number(params.id);
     if (isNaN(lostPetId)) {
       return NextResponse.json({ message: "รหัสสัตว์เลี้ยงไม่ถูกต้อง" }, { status: 400 });
     }
+
     const lostPet = await prisma.lostPet.findUnique({
       where: { id: lostPetId },
     });
@@ -70,29 +49,27 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       return NextResponse.json({ message: "ไม่พบข้อมูลสัตว์เลี้ยงหาย" }, { status: 404 });
     }
 
-    // Parse and validate lat and lng if provided
     const parsedLat = lat ? parseFloat(lat) : null;
     const parsedLng = lng ? parseFloat(lng) : null;
-   
 
-    // Validate and upload images
     const allowedImageTypes = ["image/jpeg", "image/png", "image/webp"];
     const imageUrls: string[] = [];
+
     if (images.length > 4) {
-      return NextResponse.json({ message: "สามารถอัปโหลดรูปได้ไม่เกิน 4 รูป" }, { status: 400 });
+      return NextResponse.json(
+        { message: "สามารถอัปโหลดรูปได้ไม่เกิน 4 รูป" },
+        { status: 400 }
+      );
     }
 
     for (const image of images) {
       if (image && image.size > 0) {
-        // Check image type
         if (!allowedImageTypes.includes(image.type)) {
           return NextResponse.json(
             { message: "รองรับเฉพาะไฟล์ JPEG, PNG และ WebP เท่านั้น" },
             { status: 400 }
           );
         }
-
-        // Check image size
         if (image.size > 5 * 1024 * 1024) {
           return NextResponse.json(
             { message: "ขนาดรูปภาพต้องไม่เกิน 5MB" },
@@ -100,44 +77,31 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
           );
         }
 
-        try {
-          // Read file as Buffer
-          const imgBuffer = Buffer.from(await image.arrayBuffer());
+        const imgBuffer = Buffer.from(await image.arrayBuffer());
+        const compressedImgBuffer = await sharp(imgBuffer)
+          .resize(500, 500, { fit: "inside", withoutEnlargement: true })
+          .jpeg({ quality: 65, progressive: true })
+          .toBuffer();
 
-          // Compress and resize with Sharp
-          const compressedImgBuffer = await sharp(imgBuffer)
-            .resize(500, 500, {
-              fit: "inside",
-              withoutEnlargement: true,
-            })
-            .jpeg({
-              quality: 65,
-              progressive: true,
-            })
-            .toBuffer();
+        const compressedBlob = new Blob([new Uint8Array(compressedImgBuffer)], { type: "image/jpeg" });
 
-          // Create Blob from compressed Buffer
-          const compressedBlob = new Blob([new Uint8Array(compressedImgBuffer)], { type: "image/jpeg" });
+        const fileName = `clue-anonymous-${lostPetId}-${Date.now()}-${Math.random()
+          .toString(36)
+          .substring(2, 15)}.jpg`;
 
-          // Upload to Vercel Blob
-          const fileName = `clue-anonymous-${lostPetId}-${Date.now()}-${Math.random().toString(36).substring(2, 15)}.jpg`;
-          const { url } = await put(`clues/anonymous/${lostPetId}/${fileName}`, compressedBlob, {
+        const { url } = await put(
+          `clues/anonymous/${lostPetId}/${fileName}`,
+          compressedBlob,
+          {
             access: "public",
             token: process.env.BLOB_READ_WRITE_TOKEN,
-          });
+          }
+        );
 
-          imageUrls.push(url);
-        } catch (uploadError) {
-          console.error("[POST_CLUE_ERROR] Image upload error:", uploadError);
-          return NextResponse.json(
-            { message: "เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ" },
-            { status: 500 }
-          );
-        }
+        imageUrls.push(url);
       }
     }
 
-    // Create Clue with associated images
     const clue = await prisma.clue.create({
       data: {
         content: sightingDetails,
@@ -146,34 +110,29 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         lng: parsedLng,
         witnessName,
         contactDetails,
-       
-        lostPet: {
-          connect: { id: lostPetId },
-        },
-        images: {
-          create: imageUrls.map((url) => ({ url })),
-        },
+        lostPet: { connect: { id: lostPetId } },
+        images: { create: imageUrls.map((url) => ({ url })) },
       },
-      include: {
-        images: true,
+      include: { images: true },
+    });
+
+    await prisma.notification.create({
+      data: {
+        userId: lostPet.userId,
+        title: "มีเบาะแสใหม่เกี่ยวกับสัตว์เลี้ยงของคุณ",
+        message: `${witnessName || "มีผู้พบเห็น"} รายงานเบาะแสใหม่: ${sightingDetails.substring(
+          0,
+          50
+        )}...`,
+        type: "new_clue",
+        linkUrl: `/eggtunmissing/${lostPetId}`,
+        referenceId: clue.id,
+        referenceType: "clue",
       },
     });
-    await prisma.notification.create({
-  data: {
-    userId: lostPet.userId, // เจ้าของสัตว์เลี้ยง
-    title: "มีเบาะแสใหม่เกี่ยวกับสัตว์เลี้ยงของคุณ",
-    message: `${witnessName || "มีผู้พบเห็น"} รายงานเบาะแสใหม่: ${sightingDetails.substring(0, 50)}...`,
-    type: "new_clue",
-    linkUrl: `/eggtunmissing/${lostPetId}`, // ลิงก์ไปหน้ารายละเอียดสัตว์เลี้ยงหาย
-    referenceId: clue.id,
-    referenceType: "clue",
-  },
-});
+
     return NextResponse.json(
-      {
-        message: "เพิ่มเบาะแสสำเร็จ",
-        data: clue,
-      },
+      { message: "เพิ่มเบาะแสสำเร็จ", data: clue },
       { status: 201 }
     );
   } catch (error) {
