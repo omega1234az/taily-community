@@ -3,54 +3,17 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import LostPetDetails from "@/app/component/LostPetDetails";
+import {
+  formatPetAge,
+  formatNeuteredStatus,
+  formatReward,
+  formatLostPetStatus,
+  getMainPetImage,
+  formatDate,
+  formatColors,
+} from "../../../utils/petFormatter";
 
-// Types ตาม API Response ที่ได้รับจริง
-type LostPet = {
-  id: number;
-  description: string;
-  location: string;
-  lat?: number;
-  lng?: number;
-  lostDate: string; // API ส่งมาเป็น string
-  reward?: number;
-  status: "lost" | "found" | "pending" | "closed" | "reunited" | "reported" | "fake";
-  userId: string;
-  petId: number;
-  facebook?: string;
-  ownerName?: string;
-  mainImage: string;
-  phone?: string;
-  createdAt: string; // API ส่งมาเป็น string
-  pet: Pet;
-  
-  user: User;
-  images: LostPetImage[];
-  clues: Clue[];
-};
-
-type Pet = {
-  id: number;
-  name: string;
-  speciesId: number;
-  breed?: string;
-  gender?: string;
-  age?: number;
-  color?: string[]; // จาก API เป็น array ของ string
-  description?: string;
-  markings?: string;
-  isNeutered: number;
-  userId: string;
-  createdAt: string; // API ส่งมาเป็น string
-  images: PetImage[];
-};
-
-type PetSpecies = {
-  id: number;
-  name: string;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
+// ---------------- Types ----------------
 type PetImage = {
   id: number;
   url: string;
@@ -64,85 +27,64 @@ type LostPetImage = {
   lostPetId: number;
 };
 
-type FoundPet = {
-  id: number;
-  title: string;
-  description: string;
-  location: string;
-  lat?: number;
-  lng?: number;
-  foundDate: Date;
-  speciesId: number;
-  species: PetSpecies;
-  breed?: string;
-  gender?: string;
-  color?: any; // JSON type
-  age?: number;
-  distinctive?: string;
-  status: string;
-  images: FoundPetImage[];
-  userId: string;
-  user: User;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-type FoundPetImage = {
-  id: number;
-  url: string;
-  foundPetId: number;
-};
-
 type User = {
   id: string;
   name?: string;
   image?: string;
 };
 
-type Clue = {
+type Pet = {
   id: number;
-  content: string;
-  location?: string;
+  name: string;
+  speciesId: number;
+  breed?: string;
+  gender?: string;
+  age?: number;
+  color?: string[];
+  description?: string;
+  markings?: string;
+  isNeutered: number;
+  userId: string;
+  createdAt: string;
+  images: PetImage[];
+};
+
+type LostPet = {
+  id: number;
+  description: string;
+  location: string;
   lat?: number;
   lng?: number;
+  lostDate: string;
+  reward?: number;
+  status:
+    | "lost"
+    | "found"
+    | "pending"
+    | "closed"
+    | "reunited"
+    | "reported"
+    | "fake";
   userId: string;
-  lostPetId: number;
-  images: ClueImage[];
-  createdAt: Date;
-};
-
-type ClueImage = {
-  id: number;
-  url: string;
-  clueId: number;
-};
-
-type PetChronicDisease = {
-  id: number;
   petId: number;
-  disease: string;
-  description?: string;
-  diagnosedAt?: Date;
+  facebook?: string;
+  ownerName?: string;
+  mainImage: string;
+  phone?: string;
+  createdAt: string;
+  pet: Pet;
+  user: User;
+  images: LostPetImage[];
 };
 
-type VaccineRecord = {
-  id: number;
-  petId: number;
-  vaccine: string;
-  date: Date;
-  nextDue?: Date;
-  note?: string;
-};
-
+// ---------------- Component ----------------
 export default function Id() {
   const params = useParams();
   const petId = params?.id;
-  
   const [lostPet, setLostPet] = useState<LostPet | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // แปลง petId เป็น number เพื่อตรงกับ schema
   const numericPetId = petId ? parseInt(petId as string) : null;
 
   useEffect(() => {
@@ -158,7 +100,7 @@ export default function Id() {
         setError(null);
 
         const response = await fetch(`/api/lostpet/${numericPetId}`);
-        
+
         if (!response.ok) {
           if (response.status === 404) {
             setError("ไม่พบข้อมูลสัตว์หาย");
@@ -171,7 +113,6 @@ export default function Id() {
 
         const data = await response.json();
         setLostPet(data);
-        
       } catch (err) {
         console.error("เกิดข้อผิดพลาดในการดึงข้อมูล:", err);
         setError("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
@@ -210,8 +151,8 @@ export default function Id() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <h2 className="text-xl font-semibold text-red-600">{error}</h2>
-          <button 
-            onClick={() => window.location.reload()} 
+          <button
+            onClick={() => window.location.reload()}
             className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             ลองใหม่อีกครั้ง
@@ -236,52 +177,7 @@ export default function Id() {
   );
 }
 
-// Helper functions สำหรับใช้งาน
-export const formatPetAge = (age?: number): string => {
-  if (!age) return "ไม่ระบุ";
-  return age === 1 ? "1 ปี" : `${age} ปี`;
-};
-
-export const formatNeuteredStatus = (isNeutered: number): string => {
-  return isNeutered === 1 ? "ทำหมันแล้ว" : "ไม่ได้ทำหมัน";
-};
-
-export const formatReward = (reward?: number): string => {
-  if (!reward || reward === 0) return "ไม่มีรางวัล";
-  return `${reward.toLocaleString()} บาท`;
-};
-
-export const formatLostPetStatus = (status: string): string => {
-  const statusMap = {
-    lost: "หาย",
-    found: "พบแล้ว",
-    pending: "รอดำเนินการ",
-    closed: "ปิดคดี",
-    reunited: "กลับมาแล้ว",
-    reported: "รายงานแล้ว",
-    fake: "เป็นข้อมูลเท็จ"
-  };
-  return statusMap[status as keyof typeof statusMap] || status;
-};
-
-export const getMainPetImage = (images: PetImage[]): string | null => {
-  const mainImage = images.find(img => img.mainImage);
-  return mainImage?.url || images[0]?.url || null;
-};
-
-export const formatDate = (dateString: string): string => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('th-TH', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-};
-
-export const formatColors = (colors?: string[]): string => {
-  if (!colors || colors.length === 0) return "ไม่ระบุ";
-  return colors.join(", ");
-};
+// ---------------- Converter ----------------
 type LostPetForComponent = {
   id: string;
   name: string;
@@ -306,14 +202,13 @@ type LostPetForComponent = {
   facebook?: string;
 };
 
-// Helper function แปลงข้อมูลจาก API เป็น format ที่ LostPetDetails component ต้องการ
-export const convertLostPetForComponent = (lostPet: LostPet): LostPetForComponent => {
+const convertLostPetForComponent = (lostPet: LostPet): LostPetForComponent => {
   return {
     id: lostPet.id.toString(),
     name: lostPet.pet.name,
     age: formatPetAge(lostPet.pet.age),
     gender: lostPet.pet.gender || "ไม่ระบุ",
-    type: "สัตว์เลี้ยง", // หรือจะดึงจาก species ก็ได้
+    type: "สัตว์เลี้ยง",
     breed: lostPet.pet.breed || "ไม่ระบุ",
     sterilized: formatNeuteredStatus(lostPet.pet.isNeutered),
     color: formatColors(lostPet.pet.color),
@@ -325,11 +220,10 @@ export const convertLostPetForComponent = (lostPet: LostPet): LostPetForComponen
     mainImage: getMainPetImage(lostPet.pet.images) || "/default-image.jpg",
     lostDetail: lostPet.description,
     lostLocation: lostPet.location,
-    
-    images: lostPet.pet.images.map(img => img.url),
+    images: lostPet.pet.images.map((img) => img.url),
     reward: lostPet.reward ? formatReward(lostPet.reward) : undefined,
     ownerName: lostPet.ownerName,
     phone: lostPet.phone,
-    facebook: lostPet.facebook
+    facebook: lostPet.facebook,
   };
 };
