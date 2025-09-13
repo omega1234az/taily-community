@@ -6,7 +6,8 @@ const prisma = new PrismaClient()
 // 🔹 ดึง LostPet ตาม ID
 export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await context.params; // ✅ ต้อง await
+    const { id } = await context.params
+
     const lostPet = await prisma.lostPet.findUnique({
       where: { id: Number(id) },
       include: {
@@ -36,43 +37,46 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
           },
         },
       },
-    });
+    })
 
     if (!lostPet) {
-      return NextResponse.json({ message: "ไม่พบข้อมูล" }, { status: 404 });
+      return NextResponse.json({ message: "ไม่พบข้อมูล" }, { status: 404 })
     }
 
     // เพิ่ม views +1
     await prisma.lostPet.update({
       where: { id: Number(id) },
       data: { views: { increment: 1 } },
-    });
+    })
 
-    return NextResponse.json(lostPet);
+    return NextResponse.json(lostPet)
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ message: "เกิดข้อผิดพลาด", error }, { status: 500 });
+    console.error(error)
+    return NextResponse.json({ message: "เกิดข้อผิดพลาด", error }, { status: 500 })
   }
 }
+
 // 🔹 อัปเดต LostPet
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await context.params
     const data = await req.json()
     const updated = await prisma.lostPet.update({
-      where: { id: Number(params.id) },
+      where: { id: Number(id) },
       data,
     })
 
     return NextResponse.json(updated)
   } catch (error) {
-    console.error(error);
+    console.error(error)
     return NextResponse.json({ message: 'ไม่สามารถอัปเดตข้อมูลได้', error }, { status: 500 })
   }
 }
 
 // 🔹 ต่ออายุ LostPet
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await context.params
     const data = await req.json()
     const { createdAt } = data
 
@@ -81,7 +85,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
 
     const lostPet = await prisma.lostPet.findUnique({
-      where: { id: Number(params.id) },
+      where: { id: Number(id) },
     })
 
     if (!lostPet) {
@@ -89,7 +93,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
 
     const updated = await prisma.lostPet.update({
-      where: { id: Number(params.id) },
+      where: { id: Number(id) },
       data: { createdAt: new Date(createdAt) },
     })
 
@@ -98,36 +102,36 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       updated
     })
   } catch (error) {
-    console.error(error);
+    console.error(error)
     return NextResponse.json({ message: 'ไม่สามารถต่ออายุโพสต์ได้', error }, { status: 500 })
   }
 }
 
 // 🔹 ลบ LostPet
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
-    const body = await req.json();
-    const { status } = body;
+    const { id } = await context.params
+    const body = await req.json()
+    const { status } = body
 
     if (!status) {
-      return NextResponse.json({ message: 'กรุณาส่งค่า status ด้วย' }, { status: 400 });
+      return NextResponse.json({ message: 'กรุณาส่งค่า status ด้วย' }, { status: 400 })
     }
 
     const updatedPet = await prisma.lostPet.update({
       where: { id: Number(id) },
       data: { status },
-    });
+    })
 
     return NextResponse.json({ 
       message: `อัพเดทสถานะเป็น ${status} เรียบร้อยแล้ว`,
       status: updatedPet.status
-    });
+    })
   } catch (error) {
-    console.error(error);
+    console.error(error)
     return NextResponse.json(
       { message: 'ไม่สามารถอัพเดทสถานะได้', error },
       { status: 500 }
-    );
+    )
   }
 }
