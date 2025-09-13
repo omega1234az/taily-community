@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState, useRef, ChangeEvent, useEffect } from "react";
-import L from "leaflet";
+import { useParams, useRouter } from 'next/navigation';
 import "leaflet/dist/leaflet.css";
-import { useParams , useRouter} from 'next/navigation';
+// Remove the direct Leaflet imports and CSS import from the top
 
 interface Species {
   id: number;
@@ -24,7 +24,7 @@ export default function FoundPetRegistration() {
     useRef<HTMLInputElement | null>(null),
   ];
   const router = useRouter();
-  const mapRef = useRef<L.Map | null>(null);
+  const mapRef = useRef<any>(null); // Changed from L.Map to any
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
 
   const [loading, setLoading] = useState(false);
@@ -56,6 +56,14 @@ export default function FoundPetRegistration() {
   useEffect(() => {
     fetchSpecies();
     initializeMap();
+
+    // Cleanup function
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
   }, []);
 
   const fetchSpecies = async () => {
@@ -70,64 +78,87 @@ export default function FoundPetRegistration() {
     }
   };
 
-  // Initialize Leaflet map
-  const initializeMap = () => {
-    if (!mapContainerRef.current || mapRef.current) return;
-
-    // ฟังก์ชันสร้าง map เพื่อลดการเขียนโค้ดซ้ำ
-    const createMap = (lat: number, lng: number, zoom: number) => {
-      if (!mapContainerRef.current) return;
+  // Initialize Leaflet map with dynamic import
+  const initializeMap = async () => {
+    // Check if we're in the browser
+    if (typeof window === 'undefined' || !mapContainerRef.current) return;
+    
+    try {
+      // Dynamic import of Leaflet to ensure it only runs on client side
+      const L = (await import('leaflet')).default;
       
-      mapRef.current = L.map(mapContainerRef.current, {
-        zoomControl: true,
-        dragging: true,
-        scrollWheelZoom: true,
-      }).setView([lat, lng], zoom);
+      // Import Leaflet CSS dynamically
 
-      // เพิ่ม tile layer
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19,
-      }).addTo(mapRef.current);
 
-      // วงกลม 200 เมตร
-      const circle = L.circle([lat, lng], {
-        radius: 200,
-        color: "red",
-        fillColor: "red",
-        fillOpacity: 0.2,
-      }).addTo(mapRef.current);
+      // Clean up existing map instance before creating a new one
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
 
-      // ฟังก์ชันอัปเดต coords เมื่อลาก map
-      const updateCenterCoords = () => {
-        const center = mapRef.current?.getCenter();
-        if (center) {
-          setCoords({ lat: center.lat, lng: center.lng });
-          circle.setLatLng(center); // ย้ายวงกลมตามตำแหน่งใหม่
-        }
+      // ฟังก์ชันสร้าง map เพื่อลดการเขียนโค้ดซ้ำ
+      const createMap = (lat: number, lng: number, zoom: number) => {
+        if (!mapContainerRef.current) return;
+        
+        mapRef.current = L.map(mapContainerRef.current, {
+          zoomControl: true,
+          dragging: true,
+          scrollWheelZoom: true,
+        }).setView([lat, lng], zoom);
+
+        // เพิ่ม tile layer
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 19,
+        }).addTo(mapRef.current);
+
+        // วงกลม 200 เมตร
+        const circle = L.circle([lat, lng], {
+          radius: 200,
+          color: "red",
+          fillColor: "red",
+          fillOpacity: 0.2,
+        }).addTo(mapRef.current);
+
+        // ฟังก์ชันอัปเดต coords เมื่อลาก map
+        const updateCenterCoords = () => {
+          const center = mapRef.current?.getCenter();
+          if (center) {
+            setCoords({ lat: center.lat, lng: center.lng });
+            circle.setLatLng(center); // ย้ายวงกลมตามตำแหน่งใหม่
+          }
+        };
+
+        // เพิ่ม event listener
+        mapRef.current.on("move", updateCenterCoords);
+        
+        // อัปเดต coords เริ่มต้น
+        setCoords({ lat, lng });
       };
 
-      // เพิ่ม event listener
-      mapRef.current.on("move", updateCenterCoords);
-      
-      // อัปเดต coords เริ่มต้น
-      setCoords({ lat, lng });
-    };
-
-    // ใช้ GPS ถ้าอนุญาต
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const userLat = position.coords.latitude;
-        const userLng = position.coords.longitude;
-        createMap(userLat, userLng, 17);
-      },
-      (err) => {
-        console.error("ไม่สามารถเข้าถึง GPS:", err);
-        // fallback เป็นค่า default (กรุงเทพฯ)
+      // ใช้ GPS ถ้าอนุญาต
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const userLat = position.coords.latitude;
+            const userLng = position.coords.longitude;
+            createMap(userLat, userLng, 17);
+          },
+          (err) => {
+            console.error("ไม่สามารถเข้าถึง GPS:", err);
+            // fallback เป็นค่า default (กรุงเทพฯ)
+            createMap(13.736717, 100.523186, 13);
+          }
+        );
+      } else {
+        // fallback หาก browser ไม่รองรับ geolocation
         createMap(13.736717, 100.523186, 13);
       }
-    );
+    } catch (error) {
+      console.error("Error loading Leaflet:", error);
+    }
   };
 
+  // Rest of your component code remains the same...
   const handleGalleryImageClick = (index: number) => {
     galleryInputRefs[index]?.current?.click();
   };
