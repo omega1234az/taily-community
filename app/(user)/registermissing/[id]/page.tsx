@@ -197,6 +197,7 @@ export default function RegisterMissing() {
   };
 
   // Initialize Leaflet map
+// Initialize Leaflet map
 useEffect(() => {
   if (mapContainerRef.current && !mapRef.current) {
     // เรียก GPS ของผู้ใช้
@@ -205,6 +206,7 @@ useEffect(() => {
         const userLat = position.coords.latitude;
         const userLng = position.coords.longitude;
         if (!mapContainerRef.current) return;
+        
         // สร้าง map และตั้งค่า view ตาม GPS
         mapRef.current = L.map(mapContainerRef.current, {
           zoomControl: true,
@@ -217,8 +219,8 @@ useEffect(() => {
           maxZoom: 19,
         }).addTo(mapRef.current);
 
-        // Marker
-        
+        // อัปเดต coords เป็นตำแหน่ง GPS
+        setCoords({ lat: userLat, lng: userLng });
 
         // วงกลม 200 เมตร
         const circle = L.circle([userLat, userLng], {
@@ -233,7 +235,6 @@ useEffect(() => {
           const center = mapRef.current?.getCenter();
           if (center) {
             setCoords({ lat: center.lat, lng: center.lng });
-            
             circle.setLatLng(center);
           }
         };
@@ -242,12 +243,45 @@ useEffect(() => {
       },
       (err) => {
         console.error("ไม่สามารถเข้าถึง GPS:", err);
-        // fallback ถ้า GPS ไม่ได้ ให้ใช้ default
+        
+        // fallback ถ้า GPS ไม่ได้ ให้ใช้ default coordinates
         if (!mapContainerRef.current) return;
-        mapRef.current = L.map(mapContainerRef.current).setView(
-          [13.736717, 100.523186],
-          13
-        );
+        
+        const defaultLat = 13.736717;
+        const defaultLng = 100.523186;
+        
+        mapRef.current = L.map(mapContainerRef.current, {
+          zoomControl: true,
+          dragging: true,
+          scrollWheelZoom: true,
+        }).setView([defaultLat, defaultLng], 13);
+
+        // เพิ่ม Tile layer สำหรับ fallback
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 19,
+        }).addTo(mapRef.current);
+
+        // อัปเดต coords เป็นตำแหน่ง default
+        setCoords({ lat: defaultLat, lng: defaultLng });
+
+        // วงกลม 200 เมตร สำหรับ fallback
+        const circle = L.circle([defaultLat, defaultLng], {
+          radius: 200,
+          color: "red",
+          fillColor: "red",
+          fillOpacity: 0.2,
+        }).addTo(mapRef.current);
+
+        // อัปเดต coords ถ้า map ถูกลาก (สำหรับ fallback)
+        const updateCenterCoords = () => {
+          const center = mapRef.current?.getCenter();
+          if (center) {
+            setCoords({ lat: center.lat, lng: center.lng });
+            circle.setLatLng(center);
+          }
+        };
+
+        mapRef.current.on("move", updateCenterCoords);
       }
     );
   }

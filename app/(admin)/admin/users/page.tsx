@@ -66,12 +66,6 @@ export default function Users() {
 
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
 
-  const handleHide = (index: number) => {
-    const newUsers = [...users];
-    newUsers.splice(indexOfFirstUser + index, 1);
-    setUsers(newUsers);
-  };
-
   const handleDelete = async (index: number, id: string) => {
     try {
       const res = await fetch(`/api/users/${id}`, {
@@ -86,6 +80,27 @@ export default function Users() {
     } catch (error) {
       console.error("Error deleting user:", error);
       alert("ลบผู้ใช้ไม่สำเร็จ");
+    }
+  };
+
+  const handleChangeRole = async (index: number, id: string, newRole: string) => {
+    try {
+      const res = await fetch(`/api/users/${id}`, {
+        method: "PUT", // เปลี่ยนจาก PATCH เป็น PUT ตามที่ระบุ
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ role: newRole }),
+      });
+
+      if (!res.ok) throw new Error("Failed to update role");
+
+      const newUsers = [...users];
+      newUsers[indexOfFirstUser + index].role = newRole;
+      setUsers(newUsers);
+    } catch (error) {
+      console.error("Error updating role:", error);
+      alert("เปลี่ยนบทบาทไม่สำเร็จ");
     }
   };
 
@@ -130,15 +145,23 @@ export default function Users() {
         >
           <div>
             <img
-              src={user.image }
+              src={user.image}
               alt={`${user.name}'s avatar`}
               className="w-8 h-8 rounded-full object-cover"
-               // Fallback หากรูปโหลดไม่ได้
             />
           </div>
           <div>{user.name}</div>
           <div>{user.email}</div>
-          <div>{user.role}</div>
+          <div>
+            <select
+              value={user.role}
+              onChange={(e) => handleChangeRole(index, user.id, e.target.value)}
+              className="border rounded px-2 py-1 lg:text-sm sm:text-xs text-[8px]"
+            >
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
           <div className="lg:pl-14 sm:pl-8 pl-7">
             {new Date(user.updatedAt).toLocaleString("th-TH")}
           </div>
@@ -151,12 +174,6 @@ export default function Users() {
               {user.status ? "ใช้งาน" : "ไม่ใช้งาน"}
             </span>
             <div className="text-right lg:space-x-6 md:space-x-4 sm:space-x-3 space-x-2">
-              <button
-                onClick={() => handleHide(index)}
-                className="bg-[#EAD64D] hover:bg-yellow-300 text-black lg:px-7.5 lg:py-1.5 md:px-6 md:py-1.5 sm:px-4.5 sm:py-1.5 px-3 py-1 rounded cursor-pointer"
-              >
-                ซ่อน
-              </button>
               <button
                 onClick={() => handleDelete(index, user.id)}
                 className="bg-[#EA3434] hover:bg-red-700 text-black lg:px-9 md:px-6 md:py-1.5 sm:px-4.5 sm:py-1.5 px-3 py-1 rounded cursor-pointer"
