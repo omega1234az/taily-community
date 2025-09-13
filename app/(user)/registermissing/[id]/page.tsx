@@ -1,55 +1,60 @@
-
 "use client";
 
 import React, { useRef, useState, useEffect, ChangeEvent } from "react";
+import { useParams, useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import L from "leaflet";
-import "leaflet/dist/leaflet.css";
-import { useParams , useRouter} from 'next/navigation';
-
+// Type definition for pet data
 type PetData = {
   name: string;
   age: string;
   gender: string;
   breed: string;
   sterilized: string;
-  color: string | string[];
+  color: string[];
   markings: string;
   description: string;
-  missingDate: string;
-  missingLocation: string;
-  missingDetail: string;
-  reward?: string;
+  species: string;
   ownerName: string;
   contactNumber: string;
   facebook: string;
+  mainImage?: string | null;
+  galleryImages?: (string | null)[];
 };
+
+// Dynamically import Leaflet components to avoid SSR issues
+
+import "leaflet/dist/leaflet.css";
 
 export default function RegisterMissing() {
   const params = useParams<{ id: string }>();
-  const [name, setName] = useState<string>("");
-  const [age, setAge] = useState<string>("");
-  const [gender, setGender] = useState<string>("");
-  const [breed, setBreed] = useState<string>("");
-  const [sterilized, setSterilized] = useState<string>("");
-  const [color, setColor] = useState<string>("");
-  const [markings, setMarkings] = useState<string>("");
-  const [description, setDescription] = useState<string>("");
-  const [missingDate, setMissingDate] = useState<string>("");
-  const [missingLocation, setMissingLocation] = useState<string>("");
-  const [missingDetail, setMissingDetail] = useState<string>("");
-  const [reward, setReward] = useState<string>("");
-  const [ownerName, setOwnerName] = useState<string>("");
-  const [contactNumber, setContactNumber] = useState<string>("");
-  const [facebook, setFacebook] = useState<string>("");
-  const [coords, setCoords] = useState<{ lat: number; lng: number }>({
-    lat: 13.736717,
-    lng: 100.523186,
-  });
-  const [selectedType, setSelectedType] = useState<string>("");
-  const [mainImage, setMainImage] = useState<string | null>(null);
-  const [galleryImages, setGalleryImages] = useState<(string | null)[]>([null, null, null]);
-  const [selectedColors, setSelectedColors] = useState<string[]>([]);
+  const router = useRouter();
 
+  // States
+  const [pet, setPet] = useState<PetData>({
+    name: "",
+    age: "",
+    gender: "",
+    breed: "",
+    sterilized: "",
+    color: [],
+    markings: "",
+    description: "",
+    species: "",
+    ownerName: "",
+    contactNumber: "",
+    facebook: "",
+    mainImage: null,
+    galleryImages: [null, null, null],
+  });
+
+  const [missingDate, setMissingDate] = useState("");
+  const [missingLocation, setMissingLocation] = useState("");
+  const [missingDetail, setMissingDetail] = useState("");
+  const [reward, setReward] = useState("");
+  const [coords, setCoords] = useState({ lat: 13.736717, lng: 100.523186 });
+
+  // Refs
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mainInputRef = useRef<HTMLInputElement | null>(null);
@@ -58,7 +63,8 @@ export default function RegisterMissing() {
     useRef<HTMLInputElement | null>(null),
     useRef<HTMLInputElement | null>(null),
   ];
-  const router = useRouter();
+
+  // Colors
   const colors = [
     { name: "ขาว", code: "bg-white" },
     { name: "เหลือง", code: "bg-yellow-300" },
@@ -75,86 +81,60 @@ export default function RegisterMissing() {
     { name: "ดำ", code: "bg-black" },
   ];
 
-  // Fetch pet data from API
-  useEffect(() => {
-    const fetchPetData = async () => {
-      if (params.id) {
-        try {
-          const response = await fetch(`http://localhost:3000/api/pets/${params.id}`);
-          const data = await response.json();
-          console.log("API Response:", data); // Debug API response
+  // Fetch pet data
+  const fetchPetData = async () => {
+    if (!params.id) return;
+    try {
+      const response = await fetch(`http://localhost:3000/api/pets/${params.id}`);
+      const data = await response.json();
 
-          // Update state with API data
-          setName(data.name || "");
-          setAge(data.age ? data.age.toString() : "");
-          setGender(data.gender || "");
-          setBreed(data.breed || "");
-          setSterilized(data.isNeutered === 1 ? "ทำหมันแล้ว" : "ยังไม่ได้ทำหมัน");
-          setMarkings(data.markings || "");
-          setDescription(data.description || "");
-          setOwnerName(data.user?.name || "");
-          setContactNumber(data.user?.phone || "");
-          setFacebook(data.user?.name || "");
-          setSelectedType(data.species?.name || "");
-
-          // Handle color (array or string)
-          if (data.color) {
-            if (Array.isArray(data.color)) {
-              setSelectedColors(data.color.filter((c: string) => c.trim()));
-              setColor(data.color.join(","));
-            } else {
-              setSelectedColors(data.color.split(",").filter((c: string) => c.trim()));
-              setColor(data.color);
-            }
-          } else {
-            setSelectedColors([]);
-            setColor("");
-          }
-
-          // Set images
-          const mainImg = data.images?.find((img: any) => img.mainImage === true)?.url || null;
-          const galleryImgs = data.images
-            ?.filter((img: any) => img.mainImage === false)
-            ?.map((img: any) => img.url)
-            .slice(0, 3);
-          setMainImage(mainImg);
-          setGalleryImages([
-            galleryImgs?.[0] || null,
-            galleryImgs?.[1] || null,
-            galleryImgs?.[2] || null,
-          ]);
-
-          // Initialize missing fields
-          setMissingDate("");
-          setMissingLocation("");
-          setMissingDetail("");
-          setReward("");
-        } catch (error) {
-          console.error("Error fetching pet data:", error);
-        }
-      }
-    };
-
-    fetchPetData();
-  }, [params.id]);
-
-  const handleMainImageChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) setMainImage(URL.createObjectURL(file));
-  };
-
-  const handleGalleryImageChange = (
-    e: ChangeEvent<HTMLInputElement>,
-    index: number
-  ) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const newImages = [...galleryImages];
-      newImages[index] = URL.createObjectURL(file);
-      setGalleryImages(newImages);
+      setPet({
+        name: data.name || "",
+        age: data.age?.toString() || "",
+        gender: data.gender || "",
+        breed: data.breed || "",
+        sterilized: data.isNeutered === 1 ? "ทำหมันแล้ว" : "ยังไม่ได้ทำหมัน",
+        color: Array.isArray(data.color)
+          ? data.color
+          : data.color
+          ? data.color.split(",").filter((c: string) => c.trim())
+          : [],
+        markings: data.markings || "",
+        description: data.description || "",
+        species: data.species?.name || "",
+        ownerName: data.user?.name || "",
+        contactNumber: data.user?.phone || "",
+        facebook: data.user?.name || "",
+        mainImage: data.images?.find((img: any) => img.mainImage)?.url || null,
+        galleryImages: data.images
+          ?.filter((img: any) => !img.mainImage)
+          ?.map((img: any) => img.url)
+          .slice(0, 3) || [null, null, null],
+      });
+    } catch (error) {
+      console.error("Error fetching pet data:", error);
     }
   };
 
+  // Handle main image change
+  const handleMainImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPet((prev) => ({ ...prev, mainImage: URL.createObjectURL(file) }));
+    }
+  };
+
+  // Handle gallery image change
+  const handleGalleryImageChange = (e: ChangeEvent<HTMLInputElement>, index: number) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const newImages = [...(pet.galleryImages || [])];
+      newImages[index] = URL.createObjectURL(file);
+      setPet((prev) => ({ ...prev, galleryImages: newImages }));
+    }
+  };
+
+  // Submit form
   const handleSubmit = async () => {
     if (new Date(missingDate) > new Date()) {
       alert("วันที่หายต้องไม่เป็นวันในอนาคต");
@@ -168,125 +148,112 @@ export default function RegisterMissing() {
       lostDate: missingDate ? new Date(missingDate).toISOString() : null,
       reward: reward ? parseInt(reward) : 0,
       petId: parseInt(params.id),
-      facebook: facebook,
-      ownerName: ownerName,
-      phone: contactNumber,
+      facebook: pet.facebook,
+      ownerName: pet.ownerName,
+      phone: pet.contactNumber,
     };
 
     try {
-      const response = await fetch('http://localhost:3000/api/lostpet', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const response = await fetch("http://localhost:3000/api/lostpet", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
       if (response.ok) {
-        const result = await response.json();
         alert("ลงทะเบียนสัตว์เลี้ยงหายสำเร็จ!");
-        router.push(`/announcement`);
+        router.push("/announcement");
       } else {
         const errorData = await response.json();
-        alert(`เกิดข้อผิดพลาดในการส่งข้อมูล: ${errorData.message || 'ไม่ทราบสาเหตุ'}`);
+        alert(`เกิดข้อผิดพลาด: ${errorData.message || "ไม่ทราบสาเหตุ"}`);
       }
     } catch (error) {
-      console.error("Error submitting data:", error);
+      console.error("Error submitting:", error);
       alert("เกิดข้อผิดพลาดในการเชื่อมต่อ API");
     }
   };
 
-  // Initialize Leaflet map
-// Initialize Leaflet map
-useEffect(() => {
-  if (mapContainerRef.current && !mapRef.current) {
-    // เรียก GPS ของผู้ใช้
+  // Initialize map
+  const initializeMap = () => {
+    if (!mapContainerRef.current) return;
+
+    if (mapRef.current) {
+      mapRef.current.remove();
+      mapRef.current = null;
+    }
+
+    if (mapContainerRef.current) {
+      mapContainerRef.current.innerHTML = '';
+    }
+
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const userLat = position.coords.latitude;
-        const userLng = position.coords.longitude;
-        if (!mapContainerRef.current) return;
-        
-        // สร้าง map และตั้งค่า view ตาม GPS
-        mapRef.current = L.map(mapContainerRef.current, {
-          zoomControl: true,
-          dragging: true,
-          scrollWheelZoom: true,
-        }).setView([userLat, userLng], 17);
-
-        // Tile layer
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          maxZoom: 19,
-        }).addTo(mapRef.current);
-
-        // อัปเดต coords เป็นตำแหน่ง GPS
-        setCoords({ lat: userLat, lng: userLng });
-
-        // วงกลม 200 เมตร
-        const circle = L.circle([userLat, userLng], {
-          radius: 200,
-          color: "red",
-          fillColor: "red",
-          fillOpacity: 0.2,
-        }).addTo(mapRef.current);
-
-        // อัปเดต coords ถ้า map ถูกลาก
-        const updateCenterCoords = () => {
-          const center = mapRef.current?.getCenter();
-          if (center) {
-            setCoords({ lat: center.lat, lng: center.lng });
-            circle.setLatLng(center);
-          }
-        };
-
-        mapRef.current.on("move", updateCenterCoords);
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        createMap(latitude, longitude, 17);
       },
-      (err) => {
-        console.error("ไม่สามารถเข้าถึง GPS:", err);
-        
-        // fallback ถ้า GPS ไม่ได้ ให้ใช้ default coordinates
-        if (!mapContainerRef.current) return;
-        
-        const defaultLat = 13.736717;
-        const defaultLng = 100.523186;
-        
-        mapRef.current = L.map(mapContainerRef.current, {
-          zoomControl: true,
-          dragging: true,
-          scrollWheelZoom: true,
-        }).setView([defaultLat, defaultLng], 13);
-
-        // เพิ่ม Tile layer สำหรับ fallback
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          maxZoom: 19,
-        }).addTo(mapRef.current);
-
-        // อัปเดต coords เป็นตำแหน่ง default
-        setCoords({ lat: defaultLat, lng: defaultLng });
-
-        // วงกลม 200 เมตร สำหรับ fallback
-        const circle = L.circle([defaultLat, defaultLng], {
-          radius: 200,
-          color: "red",
-          fillColor: "red",
-          fillOpacity: 0.2,
-        }).addTo(mapRef.current);
-
-        // อัปเดต coords ถ้า map ถูกลาก (สำหรับ fallback)
-        const updateCenterCoords = () => {
-          const center = mapRef.current?.getCenter();
-          if (center) {
-            setCoords({ lat: center.lat, lng: center.lng });
-            circle.setLatLng(center);
-          }
-        };
-
-        mapRef.current.on("move", updateCenterCoords);
+      () => {
+        createMap(13.736717, 100.523186, 13);
       }
     );
-  }
-}, []);
+  };
 
+  const createMap = async (lat: number, lng: number, zoom: number) => {
+    if (!mapContainerRef.current) return;
+
+    try {
+      // Ensure Leaflet is loaded
+      const L = (await import("leaflet")).default;
+
+      mapRef.current = L.map(mapContainerRef.current, {
+        zoomControl: true,
+        dragging: true,
+        scrollWheelZoom: true,
+      }).setView([lat, lng], zoom);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+      }).addTo(mapRef.current);
+
+      setCoords({ lat, lng });
+
+      const circle = L.circle([lat, lng], {
+        radius: 200,
+        color: "red",
+        fillColor: "red",
+        fillOpacity: 0.2,
+      }).addTo(mapRef.current);
+
+      mapRef.current.on("move", () => {
+        const center = mapRef.current?.getCenter();
+        if (center) {
+          setCoords({ lat: center.lat, lng: center.lng });
+          circle.setLatLng(center);
+        }
+      });
+    } catch (error) {
+      console.error("Error creating map:", error);
+    }
+  };
+
+  // useEffect for fetching pet data
+  useEffect(() => {
+    fetchPetData();
+  }, [params.id]);
+
+  // useEffect for map initialization
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      initializeMap();
+    }, 100);
+
+    return () => {
+      clearTimeout(timeout);
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, []);
 
   return (
     <div>
@@ -301,7 +268,7 @@ useEffect(() => {
         <div className="lg:pl-0 md:pl-28 sm:pl-24 pl-20 pb-5">
           <div className="your-container">
             <img
-              src={mainImage || "/all/image.png"}
+              src={pet.mainImage || "/all/image.png"}
               alt="main"
               onClick={() => mainInputRef.current?.click()}
               className="2xl:w-72 2xl:h-80 xl:w-64 xl:h-72 lg:w-60 lg:h-64 md:w-56 md:h-60 sm:w-48 sm:h-56 w-36 h-48 object-cover rounded-2xl cursor-pointer overflow-hidden"
@@ -313,22 +280,21 @@ useEffect(() => {
               className="hidden"
               onChange={handleMainImageChange}
             />
-
             <div className="flex gap-2 pt-3">
-              {[0, 1, 2].map((index) => (
-                <div key={index}>
+              {[0, 1, 2].map((i) => (
+                <div key={i}>
                   <img
-                    src={galleryImages[index] || "/all/image.png"}
-                    alt={`gallery-${index}`}
-                    onClick={() => galleryInputRefs[index]?.current?.click()}
+                    src={pet.galleryImages?.[i] || "/all/image.png"}
+                    alt={`gallery-${i}`}
+                    onClick={() => galleryInputRefs[i].current?.click()}
                     className="2xl:w-22 2xl:h-22 xl:w-20 xl:h-20 lg:w-18 lg:h-18 md:w-17 md:h-17 sm:w-14 sm:h-14 w-11 h-11 object-cover cursor-pointer rounded-md"
                   />
                   <input
-                    ref={galleryInputRefs[index]}
+                    ref={galleryInputRefs[i]}
                     type="file"
                     accept="image/*"
                     className="hidden"
-                    onChange={(e) => handleGalleryImageChange(e, index)}
+                    onChange={(e) => handleGalleryImageChange(e, i)}
                   />
                 </div>
               ))}
@@ -339,7 +305,7 @@ useEffect(() => {
         <div className="flex flex-col w-full 2xl:max-w-xl xl:max-w-lg md:max-w-md sm:max-w-sm max-w-xs mb-2">
           <p className="sm:text-lg xl:text-xl">ชื่อ</p>
           <input
-            value={name}
+            value={pet.name}
             disabled
             className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
           />
@@ -349,7 +315,7 @@ useEffect(() => {
               <p className="sm:text-lg xl:text-xl">อายุ</p>
               <input
                 type="text"
-                value={age}
+                value={pet.age}
                 disabled
                 className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
               />
@@ -357,7 +323,7 @@ useEffect(() => {
             <div className="flex flex-col">
               <p className="sm:text-lg xl:text-xl">เพศ</p>
               <input
-                value={gender}
+                value={pet.gender}
                 disabled
                 className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
               />
@@ -368,7 +334,7 @@ useEffect(() => {
             <div className="flex flex-col">
               <p className="sm:text-lg xl:text-xl">ประเภท</p>
               <input
-                value={selectedType}
+                value={pet.species}
                 disabled
                 className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
               />
@@ -376,7 +342,7 @@ useEffect(() => {
             <div className="flex flex-col">
               <p className="sm:text-lg xl:text-xl">สายพันธุ์</p>
               <input
-                value={breed}
+                value={pet.breed}
                 disabled
                 className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
               />
@@ -387,7 +353,7 @@ useEffect(() => {
             <div className="flex flex-col mb-4">
               <p className="sm:text-lg xl:text-xl">ทำหมัน</p>
               <input
-                value={sterilized}
+                value={pet.sterilized}
                 disabled
                 className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
               />
@@ -395,7 +361,7 @@ useEffect(() => {
 
             <div className="flex flex-wrap gap-3 mb-2">
               {colors.map((color, idx) => {
-                const isSelected = selectedColors.includes(color.name);
+                const isSelected = pet.color.includes(color.name);
                 return (
                   <div
                     key={idx}
@@ -416,7 +382,7 @@ useEffect(() => {
           <div className="flex flex-col mb-2">
             <p className="sm:text-lg xl:text-xl">รอยตำหนิ</p>
             <input
-              value={markings}
+              value={pet.markings}
               disabled
               className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
             />
@@ -425,7 +391,7 @@ useEffect(() => {
           <div className="flex flex-col mb-2">
             <p className="sm:text-lg xl:text-xl">รายละเอียด</p>
             <input
-              value={description}
+              value={pet.description}
               disabled
               className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
             />
@@ -477,6 +443,7 @@ useEffect(() => {
             ref={mapContainerRef}
             id="map"
             className="w-full h-[500px] relative"
+            style={{ zIndex: 1 }}
           ></div>
           <img
             id="pin"
@@ -496,16 +463,16 @@ useEffect(() => {
         <div className="flex flex-col w-full xl:max-w-xl md:max-w-md sm:max-w-sm max-w-xs mb-2">
           <p className="sm:text-lg xl:text-xl">ชื่อเจ้าของ</p>
           <input
-            value={ownerName}
-            onChange={(e) => setOwnerName(e.target.value)}
+            value={pet.ownerName}
+            onChange={(e) => setPet({ ...pet, ownerName: e.target.value })}
             className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3"
           />
 
           <div className="flex flex-col my-3">
             <p className="sm:text-lg xl:text-xl">เบอร์ติดต่อ</p>
             <input
-              value={contactNumber}
-              onChange={(e) => setContactNumber(e.target.value)}
+              value={pet.contactNumber}
+              onChange={(e) => setPet({ ...pet, contactNumber: e.target.value })}
               className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3"
             />
           </div>
@@ -513,8 +480,8 @@ useEffect(() => {
           <div className="flex flex-col mb-2">
             <p className="sm:text-lg xl:text-xl">Facebook</p>
             <input
-              value={facebook}
-              onChange={(e) => setFacebook(e.target.value)}
+              value={pet.facebook}
+              onChange={(e) => setPet({ ...pet, facebook: e.target.value })}
               className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3"
             />
           </div>
