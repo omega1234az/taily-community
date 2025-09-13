@@ -1,5 +1,0 @@
--- AlterTable
-ALTER TABLE `foundpet` ADD COLUMN `views` INTEGER NOT NULL DEFAULT 0;
-
--- AlterTable
-ALTER TABLE `lostpet` ADD COLUMN `views` INTEGER NOT NULL DEFAULT 0;
