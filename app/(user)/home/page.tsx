@@ -310,7 +310,7 @@ export default function PetSearchHome() {
   useEffect(() => {
     const fetchSpecies = async () => {
       try {
-        const data = await fetchData<Species[]>('http://localhost:3000/api/pets/species')
+        const data = await fetchData<Species[]>('/api/pets/species')
         setSpeciesList(data)
       } catch (err) {
         setError('ไม่สามารถดึงข้อมูลประเภทสัตว์ได้')
@@ -337,7 +337,7 @@ export default function PetSearchHome() {
           ...(filterDate ? { [status === 'lost' ? 'lostDate' : 'foundDate']: filterDate } : {})
         })
 
-        const data = await fetchData<ApiResponse>(`http://localhost:3000/api/${endpoint}?${queryParams}`)
+        const data = await fetchData<ApiResponse>(`/api/${endpoint}?${queryParams}`)
         
         if (status === 'lost') {
           setPets(data.data.map((pet: any) => ({ 
