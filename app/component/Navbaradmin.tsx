@@ -104,6 +104,13 @@ export default function TopNavbar() {
           {profileOpen && (
             <div className="absolute right-3 mt-6 lg:w-36 sm:w-28 w-20 bg-white border border-gray-300 rounded shadow-md z-50">
               <ul className="text-[10px] sm:text-sm lg:text-md text-gray-700">
+                <Link
+                href="/profile"
+               >
+                <li className="px-2 sm;px-4 py-2 hover:bg-gray-300">
+                โปรไฟล์
+              </li>
+              </Link>
                 <li className="px-2 sm;px-4 py-2 hover:bg-gray-300">
                   <button
                     className="w-full text-left cursor-pointer"

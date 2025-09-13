@@ -2,17 +2,31 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { MapContainer, TileLayer, Marker, Popup, ZoomControl } from "react-leaflet";
+import dynamic from "next/dynamic";
 import L, { Map } from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-// Fix Leaflet default marker icons
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "/leaflet/marker-icon-2x.png",
-  iconUrl: "/leaflet/marker-icon.png",
-  shadowUrl: "/leaflet/marker-shadow.png",
-});
+// Dynamically import react-leaflet components with SSR disabled
+const MapContainer = dynamic(
+  () => import("react-leaflet").then((mod) => mod.MapContainer),
+  { ssr: false }
+);
+const TileLayer = dynamic(
+  () => import("react-leaflet").then((mod) => mod.TileLayer),
+  { ssr: false }
+);
+const Marker = dynamic(
+  () => import("react-leaflet").then((mod) => mod.Marker),
+  { ssr: false }
+);
+const Popup = dynamic(
+  () => import("react-leaflet").then((mod) => mod.Popup),
+  { ssr: false }
+);
+const ZoomControl = dynamic(
+  () => import("react-leaflet").then((mod) => mod.ZoomControl),
+  { ssr: false }
+);
 
 // Interfaces
 interface LostPetImage {
@@ -302,6 +316,16 @@ export default function Home() {
   const friendSectionRef = useRef<HTMLDivElement>(null);
   const petsPerPage = 10;
 
+  // Configure Leaflet default marker icons (moved inside the component)
+  useEffect(() => {
+    delete (L.Icon.Default.prototype as any)._getIconUrl;
+    L.Icon.Default.mergeOptions({
+      iconRetinaUrl: "/leaflet/marker-icon-2x.png",
+      iconUrl: "/leaflet/marker-icon.png",
+      shadowUrl: "/leaflet/marker-shadow.png",
+    });
+  }, []);
+
   // Fetch species data
   useEffect(() => {
     const fetchSpecies = async () => {
@@ -420,7 +444,7 @@ export default function Home() {
 
   // Get user location
   useEffect(() => {
-    if (navigator.geolocation) {
+    if (typeof window !== "undefined" && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;

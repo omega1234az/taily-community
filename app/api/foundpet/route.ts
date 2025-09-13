@@ -84,9 +84,9 @@ export async function POST(req: NextRequest) {
     // ตรวจสอบและอัปโหลดรูปภาพ
     const allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp'];
     const imageUrls: string[] = [];
-    if (images.length > 5) {
+    if (images.length > 4) {
       return NextResponse.json(
-        { message: 'สามารถอัปโหลดรูปได้ไม่เกิน 5 รูป' },
+        { message: 'สามารถอัปโหลดรูปได้ไม่เกิน 4 รูป' },
         { status: 400 }
       );
     }
@@ -110,12 +110,12 @@ export async function POST(req: NextRequest) {
         try {
           const imgBuffer = Buffer.from(await image.arrayBuffer());
           const compressedImgBuffer = await sharp(imgBuffer)
-            .resize(500, 500, {
+            .resize(1000, 1000, {
               fit: 'inside',
               withoutEnlargement: true,
             })
             .jpeg({
-              quality: 65,
+              quality: 90,
               progressive: true,
             })
             .toBuffer();

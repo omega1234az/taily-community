@@ -5,7 +5,7 @@ import TopNavbar from "@/app/component/Navbaradmin";
 
 const UsersLayout = ({ children }: { children: React.ReactNode }) => {
   return (
-    <div>
+   <div className="bg-gradient-to-br from-blue-50 to-indigo-100 h-auto pb-10  ">
       <TopNavbar />
 
       <main className="m-10 sm:m-12 lg:m-18 overflow-auto">{children}</main>

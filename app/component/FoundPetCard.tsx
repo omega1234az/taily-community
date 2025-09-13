@@ -111,9 +111,7 @@ const FoundPetCard: React.FC<FoundPetCardProps> = ({
           <p>
             <strong>สัตว์:</strong> {species}
           </p>
-          <p>
-            <strong>อายุ:</strong> {age}
-          </p>
+          
           <p>
             <strong>เพศ:</strong> {gender}
           </p>

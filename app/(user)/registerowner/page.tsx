@@ -3,6 +3,7 @@
 import React, { useState, useRef, ChangeEvent, useEffect } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { useParams , useRouter} from 'next/navigation';
 
 interface Species {
   id: number;
@@ -22,7 +23,7 @@ export default function FoundPetRegistration() {
     useRef<HTMLInputElement | null>(null),
     useRef<HTMLInputElement | null>(null),
   ];
-
+  const router = useRouter();
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -279,6 +280,7 @@ export default function FoundPetRegistration() {
         setMainImagePreview(null);
         setGalleryImages([null, null, null]);
         setGalleryPreviews([null, null, null]);
+        router.push(`/announcement`);
       } else {
         const error = await response.json();
         alert(`เกิดข้อผิดพลาด: ${error.message}`);

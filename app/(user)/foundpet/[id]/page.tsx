@@ -22,7 +22,7 @@ type FoundPet = {
   breed: string;
   gender: string;
   color: string[];
-  age: number;
+  
   distinctive: string;
   status: string;
   userId: string;
@@ -217,9 +217,9 @@ export default function FoundPetPage() {
       <div className="flex items-center justify-between">
         <h1 className="lg:text-3xl text-2xl font-semibold">
           <span className="bg-[#EAD64D] lg:py-6 lg:pl-6 sm:py-5 sm:pl-5 py-3 pl-4 rounded-full">
-            {pet.description.slice(0, 2)}
+            {pet.species.name.slice(0, 2)}
           </span>
-          {pet.description.slice(2)}
+          {pet.species.name.slice(2)}
         </h1>
         <div className="flex gap-3">
           
@@ -319,10 +319,7 @@ export default function FoundPetPage() {
       <div className="flex flex-col lg:mt-2 text-lg lg:text-xl space-y-8">
         <div className="mt-10 flex flex-col sm:grid grid-cols-3 gap-5 md:gap-10 lg:gap-28 xl:gap-40 2xl:gap-52">
           <div className="mt-2 xl:mt-5 text-lg lg:text-2xl space-y-6">
-            <p>
-              <span className="text-lg lg:text-2xl">อายุ:</span>{" "}
-              <span className="text-[16px] lg:text-xl">{pet.age} ปี</span>
-            </p>
+            
             <p>
               <span className="text-lg lg:text-2xl">เพศ:</span>{" "}
               <span className="text-[16px] lg:text-xl">{pet.gender}</span>

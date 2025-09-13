@@ -165,7 +165,8 @@ const PetCard: React.FC<AnCardProps> = ({
           <p><strong>สถานที่หาย:</strong> {lostLocation}</p>
           <p><strong>วันที่โพสต์:</strong> {createdAt ? formatThaiDate(createdAt) : '-'}</p>
           
-          <p><strong>เงินรางวัล:</strong> {reward ? `${reward} บาท` : "ไม่มีระบุ"}</p>
+          <p><strong>เงินรางวัล:</strong> {reward ? `${Number(reward).toLocaleString()} บาท` : "ไม่มีระบุ"}</p>
+
           <p><strong>สถานะ:</strong> {getDaysUntilExpiration()}</p>
         </div>
 

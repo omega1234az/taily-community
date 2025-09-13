@@ -103,7 +103,7 @@ export default function Report() {
 
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-6 bg-white rounded-2xl shadow-xl">
+    <div className="w-full max-w-7xl mx-auto p-6  bg-white rounded-2xl shadow-xl">
       <h1 className="text-3xl font-bold text-gray-800 mb-8 text-center">จัดการรายงาน</h1>
 
       {/* Summary Section */}
@@ -146,52 +146,62 @@ export default function Report() {
 
       {/* Table Section */}
       <div className="mb-10">
-        <h2 className="text-xl font-semibold text-gray-700 mb-4">รายการรายงาน</h2>
-        <div className="overflow-x-auto rounded-xl shadow-md">
-          <div className="grid grid-cols-5 gap-4 bg-blue-50 p-4 font-semibold text-gray-700 text-sm">
-            <div>ชื่อผู้รายงาน</div>
-            <div>อีเมล</div>
-            <div>เหตุผลการรายงาน</div>
-            <div>ประเภทโพสต์</div>
-            <div className="text-center">การจัดการ</div>
-          </div>
-          {currentReports.map((r, index) => (
-            <div
-              key={r.id}
-              className={`grid grid-cols-5 gap-4 items-center p-4 text-sm ${
-                index % 2 === 0 ? "bg-white" : "bg-gray-50"
-              } hover:bg-gray-100 transition-colors border-b border-gray-100`}
-            >
-              <div className="truncate">{r.name}</div>
-              <div className="truncate">{r.email}</div>
-              <div className="truncate max-w-xs">{r.report}</div>
-              <div className="capitalize">
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  r.post.type === "lostpet" 
-                    ? "bg-red-100 text-red-700" 
-                    : "bg-blue-100 text-blue-700"
-                }`}>
-                  {r.post.type === "lostpet" ? "สัตว์หาย" : "หาเจ้าของ"}
-                </span>
-              </div>
-              <div className="flex justify-end space-x-2">
-                <button
-                  onClick={() => openModal(r)}
-                  className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                >
-                  ดูรายละเอียด
-                </button>
-                <button
-                  onClick={() => handleDelete(r.id)}
-                  className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                >
-                  ลบ
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+  <h2 className="text-xl font-semibold text-gray-700 mb-4">รายการรายงาน</h2>
+  <div className="overflow-x-auto rounded-xl shadow-md">
+    <div className="grid grid-cols-5 gap-4 bg-blue-50 p-4 font-semibold text-gray-700 text-sm">
+      <div>ชื่อผู้รายงาน</div>
+      <div>อีเมล</div>
+      <div>เหตุผลการรายงาน</div>
+      <div>ประเภทโพสต์</div>
+      <div className="text-center">การจัดการ</div>
+    </div>
+
+    {currentReports.length === 0 ? (
+      <div className="p-6 text-center text-gray-500 text-sm">
+        ไม่มีรายงาน
       </div>
+    ) : (
+      currentReports.map((r, index) => (
+        <div
+          key={r.id}
+          className={`grid grid-cols-5 gap-4 items-center p-4 text-sm ${
+            index % 2 === 0 ? "bg-white" : "bg-gray-50"
+          } hover:bg-gray-100 transition-colors border-b border-gray-100`}
+        >
+          <div className="truncate">{r.name}</div>
+          <div className="truncate">{r.email}</div>
+          <div className="truncate max-w-xs">{r.report}</div>
+          <div className="capitalize">
+            <span
+              className={`px-2 py-1 rounded-full text-xs font-medium ${
+                r.post.type === "lostpet"
+                  ? "bg-red-100 text-red-700"
+                  : "bg-blue-100 text-blue-700"
+              }`}
+            >
+              {r.post.type === "lostpet" ? "สัตว์หาย" : "หาเจ้าของ"}
+            </span>
+          </div>
+          <div className="flex justify-end space-x-2">
+            <button
+              onClick={() => openModal(r)}
+              className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              ดูรายละเอียด
+            </button>
+            <button
+              onClick={() => handleDelete(r.id)}
+              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              ลบ
+            </button>
+          </div>
+        </div>
+      ))
+    )}
+  </div>
+</div>
+
 
       {/* Modal */}
       {selectedReport && (

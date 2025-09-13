@@ -171,12 +171,12 @@ export async function POST(request: Request) {
 
           // บีบอัดและปรับขนาดด้วย Sharp
           const compressedImgBuffer = await sharp(imgBuffer)
-            .resize(500, 500, {
+            .resize(1000, 1000, {
               fit: 'inside',
               withoutEnlargement: true,
             })
             .jpeg({
-              quality: 65,
+              quality: 90,
               progressive: true,
             })
             .toBuffer();
