@@ -8,14 +8,15 @@ const prisma = new PrismaClient();
 /* PATCH: อ่านแจ้งเตือนทีละอัน */
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params; // ✅ await
   const session = await getServerSession(options);
   if (!session?.user?.id) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
-  const notifId = Number(params.id);
+  const notifId = Number(id);
   const notif = await prisma.notification.findUnique({ where: { id: notifId } });
 
   if (!notif || notif.userId !== session.user.id) {
@@ -33,14 +34,15 @@ export async function PATCH(
 /* DELETE: ลบแจ้งเตือน */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params; // ✅ await
   const session = await getServerSession(options);
   if (!session?.user?.id) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
-  const notifId = Number(params.id);
+  const notifId = Number(id);
   const notif = await prisma.notification.findUnique({ where: { id: notifId } });
 
   if (!notif || notif.userId !== session.user.id) {
