@@ -1,8 +1,18 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef ,useEffect} from "react";
 import dynamic from "next/dynamic";
 import { getSession } from "next-auth/react";
+import {
+  FacebookShareButton,
+  LineShareButton,
+  TwitterShareButton,
+  WhatsappShareButton,
+  FacebookIcon,
+  LineIcon,
+  TwitterIcon,
+  WhatsappIcon,
+} from "react-share";
 // โหลด component แบบ dynamic เพื่อป้องกัน SSR error
 const PetMap = dynamic(() => import("./PetMap"), { ssr: false });
 
@@ -65,7 +75,15 @@ export default function LostPetDetails({ pet }: Props) {
   const [reportType, setReportType] = useState<string>("");
   const [showOtherInput, setShowOtherInput] = useState(false);
   const [reportMessage, setReportMessage] = useState("");
+const [shareUrl, setShareUrl] = useState("");
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setShareUrl(window.location.href); // ✅ ใช้ URL ปัจจุบัน
+    }
+  }, []);
+
+  const title = "ช่วยตามหาสัตว์เลี้ยงของฉันด้วยนะ!";
 const handleSubmitReport = async () => {
   // เช็ค session ของผู้ใช้ก่อน
   const session = await getSession();
@@ -532,27 +550,24 @@ const handleSubmitReport = async () => {
         </div>
 
         <div className="flex row space-x-3 lg:mt-8 mt-2">
-          <img
-            src="/home/f.png"
-            alt="image"
-            className="lg:w-14 sm:w-12 w-10 h-auto object-cover"
-          />
-          <img
-            src="/home/l.png"
-            alt="image"
-            className="lg:w-14 sm:w-12 w-10 h-auto object-cover"
-          />
-          <img
-            src="/home/x.png"
-            alt="image"
-            className="lg:w-14 sm:w-12 w-10 h-auto object-cover"
-          />
-          <img
-            src="/home/ch.png"
-            alt="image"
-            className="lg:w-14 sm:w-12 w-10 h-auto object-cover"
-          />
-        </div>
+      {/* Facebook */}
+      <FacebookShareButton url={shareUrl} hashtag={`#${title}` }>
+        <FacebookIcon size={48} round /> 
+      </FacebookShareButton>
+
+      {/* Line */}
+      <LineShareButton url={shareUrl} title={title}>
+        <LineIcon size={48} round />
+      </LineShareButton>
+
+      {/* Twitter (X) */}
+      <TwitterShareButton url={shareUrl} title={title}>
+        <TwitterIcon size={48} round />
+      </TwitterShareButton>
+
+      {/* WhatsApp (แทน ch.png) */}
+     
+    </div>
 
         <h2 className="text-lg lg:text-2xl lg:mt-8 mt-2">สถานที่หาย</h2>
         <p className="text-[16px] lg:text-xl mb-5">{pet.lostLocation}</p>
