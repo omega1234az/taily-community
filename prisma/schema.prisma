@@ -103,6 +103,7 @@ model LostPet {
   id          Int          @id @default(autoincrement())
   description String
   location    String
+  missingLocation String?
   lat         Float?
   lng         Float?
   lostDate    DateTime

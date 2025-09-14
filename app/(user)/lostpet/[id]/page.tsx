@@ -71,6 +71,7 @@ type LostPet = {
   ownerName?: string;
   mainImage: string;
   phone?: string;
+  missingLocation?: string;
   createdAt: string;
   pet: Pet;
   user: User;
@@ -199,6 +200,7 @@ type LostPetForComponent = {
   reward?: string;
   ownerName?: string;
   phone?: string;
+  missingLocation?: string;
   facebook?: string;
 };
 
@@ -209,6 +211,7 @@ const convertLostPetForComponent = (lostPet: LostPet): LostPetForComponent => {
     age: formatPetAge(lostPet.pet.age),
     gender: lostPet.pet.gender || "ไม่ระบุ",
     type: "สัตว์เลี้ยง",
+    missingLocation: lostPet.missingLocation || "ไม่ระบุ",
     breed: lostPet.pet.breed || "ไม่ระบุ",
     sterilized: formatNeuteredStatus(lostPet.pet.isNeutered),
     color: formatColors(lostPet.pet.color),

@@ -36,6 +36,7 @@ type LostPet = {
   ownerName?: string;
   phone?: string;
   facebook?: string;
+  missingLocation?: string;
   lat?: number;
   lng?: number;
 };
@@ -531,8 +532,7 @@ const handleSubmitReport = async () => {
             <h2 className="text-lg lg:text-2xl">รอยตำหนิ</h2>
             <p className="text-[16px] lg:text-lg mb-10">{pet.marks}</p>
 
-            <h2 className="text-lg lg:text-2xl">รายละเอียด</h2>
-            <p className="text-[16px] lg:text-lg mb-10">{pet.description}</p>
+            
 
             <h2 className="text-lg lg:text-2xl">วันที่หาย</h2>
             <p className="text-[16px] lg:text-lg">{pet.lostDate}</p>
@@ -570,6 +570,7 @@ const handleSubmitReport = async () => {
     </div>
 
         <h2 className="text-lg lg:text-2xl lg:mt-8 mt-2">สถานที่หาย</h2>
+        <p className="text-[16px] lg:text-xl mb-5">{pet.missingLocation} </p>
         <p className="text-[16px] lg:text-xl mb-5">{pet.lostLocation}</p>
 
         <PetMap lat={pet.lat} lng={pet.lng} zoom={15} />

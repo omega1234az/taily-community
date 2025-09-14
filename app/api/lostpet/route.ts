@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
       status,
       petId,
       ownerName,
+      missingLocation,
       phone,
       facebook,
     } = body;
@@ -102,6 +103,7 @@ export async function POST(req: NextRequest) {
       data: {
         description,
         location,
+        missingLocation,
         lat: lat ? parseFloat(lat) : null,
         lng: lng ? parseFloat(lng) : null,
         lostDate: new Date(lostDate),

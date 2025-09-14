@@ -149,6 +149,7 @@ export default function RegisterMissing() {
       reward: reward ? parseInt(reward) : 0,
       petId: parseInt(params.id),
       facebook: pet.facebook,
+      missingLocation : missingLocation,
       ownerName: pet.ownerName,
       phone: pet.contactNumber,
     };
