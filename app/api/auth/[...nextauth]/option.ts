@@ -22,7 +22,7 @@ declare module "next-auth" {
       email?: string | null;
       image?: string | null;
       role?: string | null;
-    }
+    };
   }
 }
 
@@ -48,7 +48,7 @@ export const options: NextAuthOptions = {
     }),
     LineProvider({
       authorization: { params: { scope: "profile openid email" } },
-      clientId: process.env.LINE_CLIENT_ID as string, 
+      clientId: process.env.LINE_CLIENT_ID as string,
       clientSecret: process.env.LINE_CLIENT_SECRET as string,
     }),
     DiscordProvider({
@@ -61,7 +61,7 @@ export const options: NextAuthOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials, req) {
+      async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
         const user = await prisma.user.findUnique({
@@ -70,7 +70,10 @@ export const options: NextAuthOptions = {
 
         if (!user || !user.password) return null;
 
-        const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
+        const isPasswordValid = await bcrypt.compare(
+          credentials.password,
+          user.password
+        );
         if (!isPasswordValid) return null;
 
         return {
@@ -85,31 +88,35 @@ export const options: NextAuthOptions = {
   ],
   session: {
     strategy: "jwt",
-    maxAge: 60 * 60 * 24 * 7, // 7 วัน, ปรับได้ตามต้องการ
+    maxAge: 60 * 60 * 24 * 7, // 7 วัน
   },
   pages: {
     signIn: "/login",
-    error: '/auth/error',
+    error: "/auth/error",
   },
   callbacks: {
-    // เก็บข้อมูล JWT ตอน login
+    // ✅ ดึง role ล่าสุดจาก DB ทุกครั้งที่ verify JWT
     async jwt({ token, user }) {
       if (user) {
         token.userId = user.id;
-        token.role = user.role;
       }
-      return token;
-    },
 
-    // อัพเดต session ทุกครั้ง ให้ role ใหม่ล่าสุดจาก DB
-    async session({ session, token }) {
-      if (session.user && token.userId) {
+      if (token.userId) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.userId },
           select: { role: true },
         });
+        token.role = dbUser?.role ?? "user"; // ถ้าไม่มี role -> ให้เป็น "user"
+      }
+
+      return token;
+    },
+
+    // ✅ session จะ sync role จาก token เสมอ
+    async session({ session, token }) {
+      if (session.user) {
         session.user.id = token.userId;
-        session.user.role = dbUser?.role ?? null;
+        session.user.role = token.role ?? null;
       }
       return session;
     },
