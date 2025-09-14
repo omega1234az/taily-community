@@ -58,6 +58,7 @@ type LostPetData = {
 
 export default function ViewLostPet() {
   const params = useParams<{ id: string }>();
+  const [isLoading, setIsLoading] = useState<boolean>(true); // Add loading state
 
   // State for form fields
   const [name, setName] = useState<string>("");
@@ -131,6 +132,7 @@ export default function ViewLostPet() {
   const fetchLostPetData = async () => {
     if (params.id) {
       try {
+        setIsLoading(true); // Set loading to true before fetching
         const response = await fetch(`/api/lostpet/${params.id}`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -175,6 +177,8 @@ export default function ViewLostPet() {
       } catch (error) {
         console.error("Error fetching LostPet data:", error);
         alert("เกิดข้อผิดพลาดในการดึงข้อมูล");
+      } finally {
+        setIsLoading(false); // Set loading to false after fetching
       }
     }
   };
@@ -182,6 +186,16 @@ export default function ViewLostPet() {
   useEffect(() => {
     fetchLostPetData();
   }, [params.id]);
+
+  // Loading state UI
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen">
+        <div className="w-16 h-16 border-4 border-t-4 border-gray-200 border-t-[#EAD64D] rounded-full animate-spin"></div>
+        <p className="mt-4 text-lg text-gray-600">กำลังโหลดข้อมูล...</p>
+      </div>
+    );
+  }
 
   return (
     <div>

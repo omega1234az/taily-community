@@ -95,7 +95,7 @@ const ManageAnnouncements: React.FC = () => {
           status: "lost",
         });
 
-        const response = await fetch(`http://localhost:3000/api/lostpet?${queryParams}`, {
+        const response = await fetch(`/api/lostpet?${queryParams}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -139,7 +139,7 @@ const ManageAnnouncements: React.FC = () => {
           status: "finding",
         });
 
-        const response = await fetch(`http://localhost:3000/api/foundpet?${queryParams}`, {
+        const response = await fetch(`/api/foundpet?${queryParams}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -169,7 +169,7 @@ const ManageAnnouncements: React.FC = () => {
     if (!confirm("คุณแน่ใจหรือไม่ว่าต้องการลบประกาศนี้?")) return;
 
     try {
-      const response = await fetch(`http://localhost:3000/api/lostpet/${id}`, {
+      const response = await fetch(`/api/lostpet/${id}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -192,7 +192,7 @@ const ManageAnnouncements: React.FC = () => {
     if (!confirm("คุณแน่ใจหรือไม่ว่าต้องการลบประกาศนี้?")) return;
 
     try {
-      const response = await fetch(`http://localhost:3000/api/foundpet/${id}`, {
+      const response = await fetch(`/api/foundpet/${id}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { put } from "@vercel/blob";
+import { getServerSession } from 'next-auth'
+import { options } from '../../../auth/[...nextauth]/option';
 import sharp from "sharp";
 
 const prisma = new PrismaClient();
@@ -10,6 +12,11 @@ export async function POST(
   context: { params: Promise<{ id: string }> } // ✅ รับเป็น Promise
 ) {
   try {
+    const session = await getServerSession(options);
+    
+        if (!session || !session.user || !session.user.id) {
+          return NextResponse.json({ message: 'กรุณาเข้าสู่ระบบก่อน' }, { status: 401 });
+        }
     const { id } = await context.params; // ✅ ต้อง await
     const lostPetId = Number(id);
 
@@ -103,18 +110,19 @@ export async function POST(
     }
 
     const clue = await prisma.clue.create({
-      data: {
-        content: sightingDetails,
-        location: location || null,
-        lat: parsedLat,
-        lng: parsedLng,
-        witnessName,
-        contactDetails,
-        lostPet: { connect: { id: lostPetId } },
-        images: { create: imageUrls.map((url) => ({ url })) },
-      },
-      include: { images: true },
-    });
+  data: {
+    content: sightingDetails,
+    location: location || null,
+    lat: parsedLat,
+    lng: parsedLng,
+    witnessName,
+    contactDetails,
+    userId: session.user.id,
+    lostPetId: lostPetId, 
+    images: { create: imageUrls.map((url) => ({ url })) },
+  },
+  include: { images: true },
+});
 
     await prisma.notification.create({
       data: {

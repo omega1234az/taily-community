@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from "react";
 import dynamic from "next/dynamic";
-
+import { getSession } from "next-auth/react";
 // โหลด component แบบ dynamic เพื่อป้องกัน SSR error
 const PetMap = dynamic(() => import("./PetMap"), { ssr: false });
 
@@ -66,7 +66,16 @@ export default function LostPetDetails({ pet }: Props) {
   const [showOtherInput, setShowOtherInput] = useState(false);
   const [reportMessage, setReportMessage] = useState("");
 
-  const handleSubmitReport = async () => {
+const handleSubmitReport = async () => {
+  // เช็ค session ของผู้ใช้ก่อน
+  const session = await getSession();
+
+  if (!session) {
+    alert("คุณต้องเข้าสู่ระบบก่อนที่จะรายงาน");
+    return;
+  }
+
+  // ถ้าไม่มีการเลือกประเภทเหตุผล
   if (!reportType) {
     alert("กรุณาเลือกเหตุผลในการรายงาน");
     return;
@@ -103,7 +112,6 @@ export default function LostPetDetails({ pet }: Props) {
     alert("เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่");
   }
 };
-
   const handleButtonClick = () => {
     fileInputRef.current?.click();
   };
@@ -150,6 +158,9 @@ export default function LostPetDetails({ pet }: Props) {
 
   const handleSubmit = async () => {
     // Validate form
+    
+
+ 
     if (!witnessName.trim() || !contactDetail.trim() || !sightingDetail.trim()) {
       setClueError("กรุณากรอกข้อมูลให้ครบถ้วน");
       return;

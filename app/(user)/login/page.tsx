@@ -196,16 +196,7 @@ export default function Login() {
             </div>
             
             <div className="flex items-center justify-center space-x-4">
-              <button 
-                type="button" 
-                onClick={() => signIn("facebook", { callbackUrl: '/' })}
-                className="cursor-pointer inline-flex justify-center items-center p-2 border border-gray-300 rounded-full shadow-sm bg-white hover:bg-gray-50"
-              >
-                <span className="sr-only">Sign in with Facebook</span>
-                <svg className="h-10 w-10 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M22,12c0-5.52-4.48-10-10-10S2,6.48,2,12c0,4.84,3.44,8.87,8,9.8V15H8v-3h2V9.5C10,7.57,11.57,6,13.5,6H16v3h-2 c-0.55,0-1,0.45-1,1v2h3v3h-3v6.95C18.05,21.45,22,17.19,22,12z" />
-                </svg>
-              </button>
+              
               
               <button 
                 type="button" 
@@ -228,14 +219,7 @@ export default function Login() {
                 <span className="sr-only">Sign in with Line</span>
                 <img className='h-10 w-10' src="login/line.png" alt="" />
               </button>
-              <button 
-                type="button" 
-                onClick={() => signIn("discord", { callbackUrl: '/' })}
-                className="cursor-pointer inline-flex justify-center items-center p-2 border border-gray-300 rounded-full shadow-sm bg-white hover:bg-gray-50"
-              >
-                <span className="sr-only">Sign in with Line</span>
-                <img className='h-10 w-10' src="login/discord.png" alt="" />
-              </button>
+              
             </div>
 
             <div>
