@@ -4,13 +4,12 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import LostPetDetails from "@/app/component/LostPetDetails";
 import {
-  formatPetAge,
+  
   formatNeuteredStatus,
   formatReward,
-  formatLostPetStatus,
-  getMainPetImage,
   formatDate,
   formatColors,
+  getMainPetImage,
 } from "../../../utils/petFormatter";
 
 // ---------------- Types ----------------
@@ -69,7 +68,6 @@ type LostPet = {
   petId: number;
   facebook?: string;
   ownerName?: string;
-  mainImage: string;
   phone?: string;
   missingLocation?: string;
   createdAt: string;
@@ -100,7 +98,9 @@ export default function Id() {
         setLoading(true);
         setError(null);
 
-        const response = await fetch(`/api/lostpet/${numericPetId}`);
+        const response = await fetch(`/api/lostpet/${numericPetId}`, {
+          cache: 'no-store',
+        });
 
         if (!response.ok) {
           if (response.status === 404) {
@@ -204,31 +204,41 @@ type LostPetForComponent = {
   phone?: string;
   missingLocation?: string;
   facebook?: string;
+  user: {
+    id: string;
+    name: string;
+    image: string;
+  };
 };
 
 const convertLostPetForComponent = (lostPet: LostPet): LostPetForComponent => {
   return {
     id: lostPet.id.toString(),
-    name: lostPet.pet.name,
-    age: formatPetAge(lostPet.pet.age),
+    name: lostPet.pet.name || "ไม่ระบุ",
+    age: lostPet.pet.age ? String(lostPet.pet.age) : "ไม่ระบุ",
     gender: lostPet.pet.gender || "ไม่ระบุ",
-    type: "สัตว์เลี้ยง",
-    missingLocation: lostPet.missingLocation || "ไม่ระบุ",
+    type: lostPet.pet.speciesId === 1 ? "แมว" : "ไม่ระบุ", // ปรับตาม speciesId
     breed: lostPet.pet.breed || "ไม่ระบุ",
-    sterilized: formatNeuteredStatus(lostPet.pet.isNeutered),
-    color: formatColors(lostPet.pet.color),
+    sterilized: formatNeuteredStatus(lostPet.pet.isNeutered) || "ไม่ระบุ",
+    color: formatColors(lostPet.pet.color) || "ไม่ระบุ",
     marks: lostPet.pet.markings || "ไม่มี",
-    description: lostPet.pet.description || lostPet.description,
-    lostDate: formatDate(lostPet.lostDate),
+    description: lostPet.pet.description || lostPet.description || "ไม่ระบุ",
+    lostDate: formatDate(lostPet.lostDate) || "ไม่ระบุ",
+    mainImage: getMainPetImage(lostPet.pet.images) || "/fallback-image.png",
+    lostDetail: lostPet.description || "ไม่ระบุ",
+    lostLocation: lostPet.location || "ไม่ระบุ",
+    images: lostPet.pet.images?.map((img) => img.url) || [],
+    reward: lostPet.reward ? formatReward(lostPet.reward) : undefined,
+    ownerName: lostPet.ownerName || "ไม่ระบุ",
+    phone: lostPet.phone || "ไม่ระบุ",
+    facebook: lostPet.facebook || "ไม่ระบุ",
+    missingLocation: lostPet.missingLocation || "ไม่ระบุ",
     lat: lostPet.lat,
     lng: lostPet.lng,
-    mainImage: getMainPetImage(lostPet.pet.images) || "/default-image.jpg",
-    lostDetail: lostPet.description,
-    lostLocation: lostPet.location,
-    images: lostPet.pet.images.map((img) => img.url),
-    reward: lostPet.reward ? formatReward(lostPet.reward) : undefined,
-    ownerName: lostPet.ownerName,
-    phone: lostPet.phone,
-    facebook: lostPet.facebook,
+    user: {
+      id: lostPet.user?.id || "",
+      name: lostPet.user?.name || "ไม่ระบุ",
+      image: lostPet.user?.image || "/all/owen.png",
+    },
   };
 };

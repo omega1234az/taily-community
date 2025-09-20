@@ -165,7 +165,16 @@ const PetCard: React.FC<AnCardProps> = ({
             <strong>ชื่อ:</strong> {name}
           </p>
           <p>
-            <strong>อายุ:</strong> {age}
+            <strong>อายุ:</strong>{" "}
+{(() => {
+  const totalMonths = Number(age);
+  const years = Math.floor(totalMonths / 12);
+  const months = totalMonths % 12;
+
+  if (years > 0 && months > 0) return `${years} ปี ${months} เดือน`;
+  if (years > 0) return `${years} ปี`;
+  return `${months} เดือน`;
+})()}
           </p>
           <p>
             <strong>เพศ:</strong> {gender}

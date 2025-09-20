@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState, useRef, ChangeEvent } from "react";
@@ -53,8 +54,7 @@ export default function PetDetailsModal({
 }: PetDetailsModalProps) {
   const [speciesList, setSpeciesList] = useState<Species[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
-  const [sterilizedDropdownVisible, setSterilizedDropdownVisible] =
-    useState(false);
+  const [sterilizedDropdownVisible, setSterilizedDropdownVisible] = useState(false);
   const [genderDropdownVisible, setGenderDropdownVisible] = useState(false);
   const [mainImage, setMainImage] = useState<PetImage | null>(null);
   const [images, setImages] = useState<PetImage[]>([]);
@@ -62,7 +62,8 @@ export default function PetDetailsModal({
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
   const [owner, setOwner] = useState("");
   const [name, setName] = useState("");
-  const [age, setAge] = useState("");
+  const [year, setYear] = useState(""); // เปลี่ยนจาก age เป็น year
+  const [month, setMonth] = useState(""); // เพิ่ม month
   const [gender, setGender] = useState("");
   const [selectedType, setSelectedType] = useState("");
   const [breed, setBreed] = useState("");
@@ -137,7 +138,12 @@ export default function PetDetailsModal({
 
     setOwner(selectedPet.ownerName || "");
     setName(selectedPet.name || "");
-    setAge(selectedPet.age || "");
+    // แปลงเดือนเป็นปีและเดือน
+    const totalMonths = parseInt(selectedPet.age || "0");
+    const years = Math.floor(totalMonths / 12);
+    const months = totalMonths % 12;
+    setYear(years.toString());
+    setMonth(months.toString());
     setGender(selectedPet.gender || "");
     const species = speciesList.find((s) => s.id === selectedPet.speciesId);
     setSelectedType(species?.name || "");
@@ -215,7 +221,6 @@ export default function PetDetailsModal({
           mainImage: false,
         });
       }
-      // เรียงลำดับให้ mainImage อยู่ index 0
       const mainIndex = updatedImages.findIndex(
         (img: PetImage) => img.mainImage
       );
@@ -280,7 +285,6 @@ export default function PetDetailsModal({
           mainImage: false,
         });
       }
-      // เรียงลำดับให้ mainImage อยู่ index 0
       const mainIndex = updatedImages.findIndex(
         (img: PetImage) => img.mainImage
       );
@@ -313,10 +317,30 @@ export default function PetDetailsModal({
 
   const [confirming, setConfirming] = useState(false);
 
-  const handleDelete = () => {
-    // เรียกเมื่อกดปุ่ม "ยืนยัน" จริง ๆ
-    console.log("ลบเรียบร้อย (ยังไม่เชื่อม API)");
-    setConfirming(false); // รีเซ็ต state
+  const handleDelete = async () => {
+    if (!selectedPet) return;
+
+    try {
+      const response = await fetch(`/api/pets/${selectedPet.id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to delete pet");
+      }
+
+      alert("ลบสัตว์เลี้ยงสำเร็จ");
+      setShowModal(false);
+      window.location.reload();
+    } catch (error) {
+      console.error("Error deleting pet:", error);
+      alert(
+        error instanceof Error ? error.message : "ไม่สามารถลบสัตว์เลี้ยงได้"
+      );
+    } finally {
+      setConfirming(false);
+    }
   };
 
   const handleSetMainImage = async (index: number) => {
@@ -350,7 +374,6 @@ export default function PetDetailsModal({
           mainImage: false,
         });
       }
-      // สลับตำแหน่งให้รูปที่ตั้งเป็น main ไปอยู่ index 0
       const mainIndex = updatedImages.findIndex(
         (img: PetImage) => img.mainImage
       );
@@ -403,7 +426,6 @@ export default function PetDetailsModal({
           mainImage: false,
         });
       }
-      // เรียงลำดับให้ mainImage อยู่ index 0
       const mainIndex = updatedImages.findIndex(
         (img: PetImage) => img.mainImage
       );
@@ -441,11 +463,15 @@ export default function PetDetailsModal({
   };
 
   const handleCancel = () => {
-    setConfirming(false); // ยกเลิกการลบ
+    setConfirming(false);
     setIsEditing(false);
     if (selectedPet) {
       setName(selectedPet.name || "");
-      setAge(selectedPet.age || "");
+      const totalMonths = parseInt(selectedPet.age || "0");
+      const years = Math.floor(totalMonths / 12);
+      const months = totalMonths % 12;
+      setYear(years.toString());
+      setMonth(months.toString());
       setGender(selectedPet.gender || "");
       const species = speciesList.find((s) => s.id === selectedPet.speciesId);
       setSelectedType(species?.name || "");
@@ -483,7 +509,6 @@ export default function PetDetailsModal({
           mainImage: false,
         });
       }
-      // เรียงลำดับให้ mainImage อยู่ index 0
       const mainIndex = petImages.findIndex((img) => img.mainImage);
       if (mainIndex !== -1 && mainIndex !== 0) {
         [petImages[0], petImages[mainIndex]] = [
@@ -504,7 +529,8 @@ export default function PetDetailsModal({
     try {
       const formData = new FormData();
       formData.append("name", name);
-      formData.append("age", age);
+      const totalMonths = (parseInt(year || "0") * 12) + parseInt(month || "0");
+      formData.append("age", totalMonths.toString());
       formData.append("gender", gender);
       const species = speciesList.find((s) => s.name === selectedType);
       formData.append("speciesId", species?.id.toString() || "");
@@ -619,7 +645,7 @@ export default function PetDetailsModal({
             <img
               src={mainImage?.url || "/all/bgprint4.png"}
               alt={name || "Pet"}
-              className="2xl:w-72 2xl:h-64  xl:w-64 xl:h-52 lg:w-56 lg:h-48 md:w-64 md:h-60 sm:w-52 sm:h-48 w-48 h-48 object-cover rounded-xl cursor-pointer"
+              className="2xl:w-72 2xl:h-64 xl:w-64 xl:h-52 lg:w-56 lg:h-48 md:w-64 md:h-60 sm:w-52 sm:h-48 w-48 h-48 object-cover rounded-xl cursor-pointer"
               onClick={handleMainImageClick}
             />
             <input
@@ -687,16 +713,40 @@ export default function PetDetailsModal({
                     />
                   </div>
                   <div className="flex flex-col">
-                    <p className="sm:text-md xl:text-lg">อายุ</p>
+                    <p className="sm:text-md xl:text-lg">ชื่อเจ้าของ</p>
+                    <input
+                      value={owner}
+                      onChange={(e) => setOwner(e.target.value)}
+                      disabled={!isEditing}
+                      className="w-full mt-1 p-2 border border-gray-300 rounded-md disabled:bg-gray-100"
+                    />
+                  </div>
+                  <div className="flex flex-col">
+                    <p className="sm:text-md xl:text-lg">อายุ (ปี)</p>
                     <input
                       type="text"
-                      value={age}
+                      value={year}
                       onChange={(e) => {
                         const value = e.target.value;
-                        if (/^\d*$/.test(value)) setAge(value);
+                        if (/^\d*$/.test(value)) setYear(value);
                       }}
                       disabled={!isEditing}
                       className="w-full mt-1 p-2 border border-gray-300 rounded-md disabled:bg-gray-100"
+                      placeholder="ปี"
+                    />
+                  </div>
+                  <div className="flex flex-col">
+                    <p className="sm:text-md xl:text-lg">อายุ (เดือน)</p>
+                    <input
+                      type="text"
+                      value={month}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (/^\d*$/.test(value) && (!value || parseInt(value) <= 11)) setMonth(value);
+                      }}
+                      disabled={!isEditing}
+                      className="w-full mt-1 p-2 border border-gray-300 rounded-md disabled:bg-gray-100"
+                      placeholder="เดือน"
                     />
                   </div>
                   <div className="flex flex-col relative">
@@ -908,7 +958,6 @@ export default function PetDetailsModal({
             <div className="flex 2xl:gap-14 lg:gap-10 gap-5 mb-5">
               {!isEditing && !confirming ? (
                 <>
-                  {/* ปุ่มกลุ่มซ้าย */}
                   <div className="flex 2xl:gap-48 lg:pl-0 md:pl-10 pl-8 lg:gap-40 md:gap-32 sm:gap-36 gap-18">
                     <button
                       onClick={handlePrint}
@@ -923,8 +972,6 @@ export default function PetDetailsModal({
                       แก้ไข
                     </button>
                   </div>
-
-                  {/* ปุ่มลบอยู่ขวา */}
                   <div className="flex gap-4">
                     <button
                       onClick={() => setConfirming(true)}
@@ -935,7 +982,6 @@ export default function PetDetailsModal({
                   </div>
                 </>
               ) : !isEditing && confirming ? (
-                /* โหมดยืนยันลบ */
                 <div className="flex 2xl:gap-70 lg:gap-64 lg:pl-0 md:pl-10 pl-8 md:gap-48 sm:gap-52 gap-36">
                   <button
                     onClick={() => setConfirming(false)}
@@ -951,7 +997,6 @@ export default function PetDetailsModal({
                   </button>
                 </div>
               ) : (
-                /* โหมดแก้ไข */
                 <div className="flex 2xl:gap-70 lg:gap-64 lg:pl-0 md:pl-10 pl-8 md:gap-48 sm:gap-52 gap-36">
                   <button
                     onClick={handleCancel}
@@ -988,19 +1033,15 @@ export default function PetDetailsModal({
           }}
         >
           <div className="mx-auto h-full w-full flex flex-col items-center gap-6 relative">
-            {/* ชื่อสัตว์เลี้ยง */}
-            <h1 className="text-5xl font-bold text-[#7CBBEB]  drop-shadow-lg">
+            <h1 className="text-5xl font-bold text-[#7CBBEB] drop-shadow-lg">
               {name || "ชื่อสัตว์เลี้ยง"}
             </h1>
-
-            {/* ภาพสัตว์เลี้ยง */}
             <div className="relative w-[350px] h-[350px] rounded-xl overflow-hidden shadow-lg">
               <img
                 src={mainImage?.url || "/all/bgprint4.png"}
                 alt="Pet"
                 className="w-full h-full object-cover"
               />
-              {/* ตกแต่งเล็ก ๆ */}
               <img
                 src="/all/bgprint2.png"
                 alt="decoration"
@@ -1012,16 +1053,14 @@ export default function PetDetailsModal({
                 className="absolute bottom-4 right-4 w-8 h-8 opacity-50"
               />
             </div>
-
-            {/* ประวัติสัตว์เลี้ยง */}
-            <div className="  mt-2 pl-20 w-full max-w-[500px] ">
+            <div className="mt-2 pl-20 w-full max-w-[500px]">
               <h2 className="text-3xl font-semibold pb-5">ประวัติ</h2>
               <div className="space-y-5 text-2xl w-full">
                 <p>
                   <strong>ชื่อเจ้าของ:</strong> {owner || "-"}
                 </p>
                 <p>
-                  <strong>อายุ:</strong> {age || "-"}
+                  <strong>อายุ:</strong> {year ? `${year} ปี` : "-"} {month ? `${month} เดือน` : ""}
                 </p>
                 <p>
                   <strong>สายพันธุ์:</strong> {breed || "-"}
@@ -1036,14 +1075,12 @@ export default function PetDetailsModal({
                 <p>
                   <strong>รายละเอียด:</strong> {description || "-"}
                 </p>
-
-                {/* ข้อมูลติดต่อใต้รูป แต่ละบรรทัด */}
                 <div className="flex flex-col pr-32 mt-2 text-lg gap-1">
                   <div className="flex items-center gap-2">
                     <img
                       src="/all/call.png"
                       alt="Call"
-                      className="w-6 h-6  mt-5"
+                      className="w-6 h-6 mt-5"
                     />
                     <span className="text-2xl">{phone || "เบอร์โทร"}</span>
                   </div>

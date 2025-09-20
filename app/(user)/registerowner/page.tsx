@@ -256,13 +256,7 @@ export default function FoundPetRegistration() {
         return;
       }
 
-      if (
-        formData.facebook &&
-        !/^https?:\/\/(www\.)?facebook\.com\/.+$/.test(formData.facebook)
-      ) {
-        alert("กรุณากรอก URL Facebook ที่ถูกต้อง");
-        return;
-      }
+      
 
       const formDataToSend = new FormData();
 
@@ -602,13 +596,7 @@ export default function FoundPetRegistration() {
         </div>
 
         <div className="flex flex-col w-full xl:max-w-xl md:max-w-md sm:max-w-sm max-w-xs mb-2">
-          <p className="sm:text-lg xl:text-xl">ชื่อผู้พบ</p>
-          <input
-            name="finderName"
-            value={formData.finderName}
-            onChange={handleChange}
-            className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3"
-          />
+          
 
           <div className="flex flex-col my-3">
             <p className="sm:text-lg xl:text-xl">เบอร์ติดต่อ</p>

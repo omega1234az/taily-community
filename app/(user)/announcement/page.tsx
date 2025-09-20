@@ -190,7 +190,7 @@ export default function Announcement() {
                 id={lostPet.id}
                 imageSrc={lostPet.pet.images[0]?.url || "/placeholder.jpg"}
                 name={lostPet.pet.name}
-                age={`${lostPet.pet.age} ปี`}
+                age={`${lostPet.pet.age}`}
                 gender={lostPet.pet.gender}
                 breed={lostPet.pet.breed}
                 lostDate={formatThaiDate(lostPet.lostDate)}

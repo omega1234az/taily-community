@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useRef, useState, useEffect } from "react";
@@ -29,6 +30,7 @@ type LostPetData = {
   ownerName: string;
   phone: string;
   status: string;
+  missingLocation?: string;
   pet: {
     id: number;
     name: string;
@@ -65,11 +67,11 @@ type LostPetData = {
 
 export default function ViewLostPet() {
   const params = useParams<{ id: string }>();
-  const [isLoading, setIsLoading] = useState<boolean>(true); // Add loading state
-
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   // State for form fields
   const [name, setName] = useState<string>("");
-  const [age, setAge] = useState<string>("");
+  const [year, setYear] = useState<string>(""); // เปลี่ยนจาก age เป็น year
+  const [month, setMonth] = useState<string>(""); // เพิ่ม month
   const [gender, setGender] = useState<string>("");
   const [breed, setBreed] = useState<string>("");
   const [sterilized, setSterilized] = useState<string>("");
@@ -77,7 +79,8 @@ export default function ViewLostPet() {
   const [markings, setMarkings] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [missingDate, setMissingDate] = useState<string>("");
-  const [missingLocation, setMissingLocation] = useState<string>("");
+  const [missingLocation, setMissingLocation] = useState<string>("ไม่ระบุ");
+  const [location, setLocation] = useState<string>("ไม่ระบุ");
   const [missingDetail, setMissingDetail] = useState<string>("");
   const [reward, setReward] = useState<string>("");
   const [ownerName, setOwnerName] = useState<string>("");
@@ -128,7 +131,6 @@ export default function ViewLostPet() {
     { name: "ดำ", code: "bg-black" },
   ];
 
-  // Map LostPetStatus enum to Thai labels
   const statusLabels: { [key: string]: string } = {
     lost: "หาย",
     found: "พบแล้ว",
@@ -143,7 +145,7 @@ export default function ViewLostPet() {
   const fetchLostPetData = async () => {
     if (params.id) {
       try {
-        setIsLoading(true); // Set loading to true before fetching
+        setIsLoading(true);
         const response = await fetch(`/api/lostpet/${params.id}`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -152,7 +154,11 @@ export default function ViewLostPet() {
 
         // Populate pet-related fields
         setName(data.pet.name || "");
-        setAge(data.pet.age ? data.pet.age.toString() : "");
+        const totalMonths = data.pet.age || 0;
+        const years = Math.floor(totalMonths / 12);
+        const months = totalMonths % 12;
+        setYear(years.toString());
+        setMonth(months.toString());
         setGender(data.pet.gender || "");
         setBreed(data.pet.breed || "");
         setSterilized(data.pet.isNeutered ? "ทำหมันแล้ว" : "ยังไม่ได้ทำหมัน");
@@ -177,7 +183,8 @@ export default function ViewLostPet() {
             ? new Date(data.lostDate).toISOString().split("T")[0]
             : ""
         );
-        setMissingLocation(data.location || "");
+        setMissingLocation(data.missingLocation || "ไม่ระบุ");
+        setLocation(data.location || "ไม่ระบุ");
         setReward(data.reward ? data.reward.toString() : "");
         setOwnerName(data.ownerName || data.user.name || "");
         setContactNumber(data.phone || "");
@@ -204,7 +211,7 @@ export default function ViewLostPet() {
         console.error("Error fetching LostPet data:", error);
         alert("เกิดข้อผิดพลาดในการดึงข้อมูล");
       } finally {
-        setIsLoading(false); // Set loading to false after fetching
+        setIsLoading(false);
       }
     }
   };
@@ -231,12 +238,10 @@ export default function ViewLostPet() {
 
     pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
 
-    // ใช้ชื่อสัตว์เลี้ยงเป็นชื่อไฟล์ ถ้าไม่มีให้ fallback เป็น "pet"
     const fileName = `ประกาศ-${name || "pet"}.pdf`;
     pdf.save(fileName);
   };
 
-  // Loading state UI
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-screen">
@@ -257,14 +262,12 @@ export default function ViewLostPet() {
           ข้อมูลสัตว์เลี้ยงหาย
         </h1>
         <div className="flex justify-center mt-6 mr-40">
-          {" "}
           <button
             onClick={handlePrint}
             className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 text-lg cursor-pointer"
           >
-            {" "}
-            พิมพ์{" "}
-          </button>{" "}
+            พิมพ์
+          </button>
         </div>
 
         <div
@@ -272,7 +275,7 @@ export default function ViewLostPet() {
           style={{
             position: "absolute",
             top: 0,
-            left: -9999, // ซ่อนออกนอกหน้าจอ
+            left: -9999,
             width: "200mm",
             height: "285mm",
             backgroundImage: "url('/all/missing.jpg')",
@@ -297,7 +300,6 @@ export default function ViewLostPet() {
             ประกาศตามหาสัตว์เลี้ยง!
           </h1>
 
-          {/* รูปสัตว์ */}
           <div
             style={{
               display: "flex",
@@ -307,7 +309,6 @@ export default function ViewLostPet() {
               margin: "24px 0",
             }}
           >
-            {/* รูปซ้าย */}
             {mainImage && (
               <img
                 src={galleryImages[0] || "/all/image.png"}
@@ -321,8 +322,6 @@ export default function ViewLostPet() {
                 }}
               />
             )}
-
-            {/* รูปกลางใหญ่ */}
             <img
               src={mainImage || "/all/image.png"}
               alt="main"
@@ -334,8 +333,6 @@ export default function ViewLostPet() {
                 border: "1px solid #ccc",
               }}
             />
-
-            {/* รูปขวา */}
             {galleryImages[1] && (
               <img
                 src={galleryImages[1]}
@@ -351,8 +348,6 @@ export default function ViewLostPet() {
             )}
           </div>
 
-          {/* รายละเอียด */}
-          {/* รายละเอียด */}
           <div
             style={{
               display: "flex",
@@ -364,7 +359,6 @@ export default function ViewLostPet() {
               marginTop: "30px",
             }}
           >
-            {/* คอลัมน์ซ้าย */}
             <div style={{ textAlign: "left" }}>
               <p style={{ display: "flex", gap: "8px", marginBottom: "20px" }}>
                 <strong>ชื่อ:</strong> {name || "-"}
@@ -379,8 +373,6 @@ export default function ViewLostPet() {
                 <strong>สี:</strong> {selectedColors.join(", ") || "-"}
               </p>
             </div>
-
-            {/* คอลัมน์ขวา */}
             <div style={{ textAlign: "left" }}>
               <p style={{ display: "flex", gap: "8px", marginBottom: "20px" }}>
                 <strong>รอยตำหนิ:</strong> {markings || "-"}
@@ -392,12 +384,11 @@ export default function ViewLostPet() {
                 <strong>วันที่หาย:</strong> {missingDate || "-"}
               </p>
               <p style={{ display: "flex", gap: "8px", marginBottom: "20px" }}>
-                <strong>สถานที่หาย:</strong> {missingLocation || "-"}
+                <strong>สถานที่หาย:</strong> {missingLocation || "ไม่ระบุ"} {location}
               </p>
             </div>
           </div>
 
-          {/* เงินรางวัล */}
           {reward && (
             <div
               style={{
@@ -405,25 +396,23 @@ export default function ViewLostPet() {
                 margin: "20px 0",
                 fontSize: "28px",
                 fontWeight: "bold",
-                color: "#EAB308", // สีทองเด่น ๆ
-                textShadow: "2px 2px 4px rgba(0,0,0,0.3)", // ทำให้เด่นขึ้น
+                color: "#EAB308",
+                textShadow: "2px 2px 4px rgba(0,0,0,0.3)",
               }}
             >
-              💰 เงินรางวัล: {reward} บาท 💰
+              💰 เงินรางวัล: {Number(reward).toLocaleString()} บาท 💰
             </div>
           )}
 
-          {/* ช่องทางติดต่อ + รูป + QR + ปุ่มปริ้น บรรทัดเดียว */}
           <div
             style={{
               marginTop: "24px",
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
-              gap: "40px", // ระยะห่างระหว่างแต่ละส่วน
+              gap: "40px",
             }}
           >
-            {/* รายละเอียดการติดต่อ */}
             <div
               style={{ textAlign: "left", fontSize: "20px", lineHeight: 1.6 }}
             >
@@ -439,7 +428,6 @@ export default function ViewLostPet() {
                 หากพบเห็นกรุณาติดต่อ
               </p>
               <p>
-                {" "}
                 <strong>ชื่อ:</strong> {ownerName || "ไม่ระบุ"}
               </p>
               <p>
@@ -449,8 +437,6 @@ export default function ViewLostPet() {
                 <strong>facebook:</strong> {facebook || "ไม่ระบุ"}
               </p>
             </div>
-
-            {/* รูปสัตว์ / โลโก้ */}
             <img
               src="/all/logo1.png"
               alt="สัตว์เลี้ยง"
@@ -462,8 +448,6 @@ export default function ViewLostPet() {
                 marginTop: "70px",
               }}
             />
-
-            {/* QR Code */}
             <QRCode
               value={typeof window !== "undefined" ? window.location.href : ""}
               style={{
@@ -484,7 +468,6 @@ export default function ViewLostPet() {
               alt="main"
               className="2xl:w-72 2xl:h-80 xl:w-64 xl:h-72 lg:w-60 lg:h-64 md:w-56 md:h-60 sm:w-48 sm:h-56 w-36 h-48 object-cover rounded-2xl"
             />
-
             <div className="flex gap-2 pt-3">
               {[0, 1, 2].map((index) => (
                 <div key={index}>
@@ -507,16 +490,32 @@ export default function ViewLostPet() {
             className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
           />
 
+          
+
           <div className="grid grid-cols-2 gap-4 mb-2">
             <div className="flex flex-col">
-              <p className="sm:text-lg xl:text-xl">อายุ</p>
+              <p className="sm:text-lg xl:text-xl">อายุ (ปี)</p>
               <input
                 type="text"
-                value={age}
+                value={year}
                 disabled
                 className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
+                placeholder="ปี"
               />
             </div>
+            <div className="flex flex-col">
+              <p className="sm:text-lg xl:text-xl">อายุ (เดือน)</p>
+              <input
+                type="text"
+                value={month}
+                disabled
+                className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
+                placeholder="เดือน"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 mb-2">
             <div className="flex flex-col">
               <p className="sm:text-lg xl:text-xl">เพศ</p>
               <input
@@ -525,9 +524,6 @@ export default function ViewLostPet() {
                 className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
               />
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 mb-2">
             <div className="flex flex-col">
               <p className="sm:text-lg xl:text-xl">ประเภท</p>
               <input
@@ -536,6 +532,9 @@ export default function ViewLostPet() {
                 className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 mb-2">
             <div className="flex flex-col">
               <p className="sm:text-lg xl:text-xl">สายพันธุ์</p>
               <input
@@ -544,10 +543,7 @@ export default function ViewLostPet() {
                 className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
               />
             </div>
-          </div>
-
-          <div className="flex flex-col gap-4 mb-2">
-            <div className="flex flex-col mb-4">
+            <div className="flex flex-col">
               <p className="sm:text-lg xl:text-xl">ทำหมัน</p>
               <input
                 value={sterilized}
@@ -555,7 +551,9 @@ export default function ViewLostPet() {
                 className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
               />
             </div>
+          </div>
 
+          <div className="flex flex-col gap-4 mb-2">
             <div className="flex flex-wrap gap-3 mb-2">
               {colors.map((color, idx) => {
                 const isSelected = selectedColors.includes(color.name);
@@ -626,7 +624,7 @@ export default function ViewLostPet() {
           <div className="flex flex-col mb-2">
             <p className="sm:text-lg xl:text-xl">เงินรางวัล</p>
             <input
-              value={reward}
+              value={reward.toLocaleString()}
               disabled
               className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
             />
@@ -645,6 +643,7 @@ export default function ViewLostPet() {
 
       <div className="flex flex-col mb-10 2xl:mr-40 xl:mr-32 lg:mr-28 lg:ml-10 md:mr-20 sm:mr-18 mr-10">
         <div className="relative">
+          <p className="sm:text-lg xl:text-xl mb-2">สถานที่หาย : {location}</p>
           <DynamicMap coords={coords} />
           <div className="mt-3 text-sm">
             Lat: {coords.lat.toFixed(6)}, Lng: {coords.lng.toFixed(6)}

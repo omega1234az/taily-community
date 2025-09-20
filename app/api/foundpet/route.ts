@@ -53,9 +53,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Validate facebook (optional, if provided)
-    if (facebook && !/^https?:\/\/(www\.)?facebook\.com\/.+$/.test(facebook)) {
-      return NextResponse.json({ message: "URL Facebook ไม่ถูกต้อง" }, { status: 400 });
-    }
+    
 
     // ตรวจสอบ color (ต้องเป็น array หรือ undefined)
     let color;

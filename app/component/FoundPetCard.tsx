@@ -100,7 +100,7 @@ const FoundPetCard: React.FC<FoundPetCardProps> = ({
   return (
     <div className="flex flex-col sm:flex-row gap-6 p-6 rounded-2xl shadow-lg bg-[#E5EEFF] 2xl:w-[500px] 2xl:h-[320px] xl:w-[430px] xl:h-[300px] lg:w-[350px] lg:h-[290px] md:w-[450px] md:h-[290px] sm:w-[380px] sm:h-[290px] w-[280px] h-[420px] hover:bg-gray-200 transition-transform duration-200 transform hover:scale-105">
       {/* Image */}
-      <div className="mx-auto 2xl:w-[370px] 2xl:h-[240px] xl:w-[370px] xl:h-[230px] lg:w-[300px] lg:h-[195px] md:w-[300px] md:h-[210px] sm:w-[320px] sm:h-[195px] w-[110px] h-[140px] rounded-xl overflow-hidden">
+      <div className="mt-2 mx-auto 2xl:w-[370px] 2xl:h-[200px] xl:w-[370px] xl:h-[230px] lg:w-[300px] lg:h-[195px] md:w-[300px] md:h-[210px] sm:w-[320px] sm:h-[195px] w-[110px] h-[140px] rounded-xl overflow-hidden">
         <img
           src={imageSrc}
           alt={species}
@@ -110,7 +110,7 @@ const FoundPetCard: React.FC<FoundPetCardProps> = ({
 
       {/* Content */}
       <div className="flex flex-col justify-between w-full">
-        <div className="sm:space-y-2 space-y-2 text-[13px] sm:text-[14px] lg:text-[14px] xl:text-[15px] 2xl:text-[16px] sm:pl-0 pl-5 xl:pl-3">
+        <div className="pt-5 sm:space-y-2 space-y-2 text-[13px] sm:text-[14px] lg:text-[14px] xl:text-[15px] 2xl:text-[16px] sm:pl-0 pl-5 xl:pl-3">
           <p>
             <strong>สัตว์:</strong> {species}
           </p>
@@ -127,13 +127,11 @@ const FoundPetCard: React.FC<FoundPetCardProps> = ({
           <p>
             <strong>สถานที่พบ:</strong> {foundLocation}
           </p>
-          <p>
-            <strong>ผู้พบ:</strong> {finderName}
-          </p>
+          
         </div>
 
         {/* Buttons */}
-        <div className="flex justify-center md:justify-start items-center mt-2 text-center md:text-left gap-4">
+        <div className="flex justify-center md:justify-start items-center  text-center md:text-left gap-4">
           <Link href={`/foundpet/${id}`}>
             <button className="rounded-xl shadow-md bg-[#EAD64D] text-black text-[13px] sm:text-[14px]   px-4 py-1.5 hover:bg-yellow-200 transition duration-300 cursor-pointer">
               รายละเอียด

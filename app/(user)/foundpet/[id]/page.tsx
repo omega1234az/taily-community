@@ -388,6 +388,7 @@ export default function FoundPetPage() {
 
         {/* Location and Map */}
         <h2 className="text-lg lg:text-2xl lg:mt-8 mt-2">สถานที่พบ</h2>
+        <p className="text-[16px] lg:text-xl mb-5">{pet.description}</p>
         <p className="text-[16px] lg:text-xl mb-5">{pet.location}</p>
         <PetMap lat={pet.lat} lng={pet.lng} zoom={15} />
 

@@ -314,13 +314,13 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   try {
     const session = await getServerSession(options);
     if (!session?.user?.id) {
-      return NextResponse.json({ message: 'กรุณา login ก่อนลบสัตว์เลี้ยง' }, { status: 401 });
+      return NextResponse.json({ message: "กรุณา login ก่อนลบสัตว์เลี้ยง" }, { status: 401 });
     }
 
     const { id } = await params;
     const petId = parseInt(id);
     if (isNaN(petId)) {
-      return NextResponse.json({ message: 'ID สัตว์เลี้ยงไม่ถูกต้อง' }, { status: 400 });
+      return NextResponse.json({ message: "ID สัตว์เลี้ยงไม่ถูกต้อง" }, { status: 400 });
     }
 
     const pet = await prisma.pet.findUnique({
@@ -329,33 +329,76 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     });
 
     if (!pet) {
-      return NextResponse.json({ message: 'ไม่พบสัตว์เลี้ยงที่มี ID นี้' }, { status: 404 });
+      return NextResponse.json({ message: "ไม่พบสัตว์เลี้ยงที่มี ID นี้" }, { status: 404 });
     }
 
     if (pet.userId !== session.user.id) {
-      return NextResponse.json({ message: 'คุณไม่มีสิทธิ์ลบสัตว์เลี้ยงนี้' }, { status: 403 });
+      return NextResponse.json({ message: "คุณไม่มีสิทธิ์ลบสัตว์เลี้ยงนี้" }, { status: 403 });
     }
 
-    // ลบข้อมูลที่เกี่ยวข้อง
-    await prisma.petImage.deleteMany({ where: { petId } });
-    await prisma.vaccineRecord.deleteMany({ where: { petId } });
-    await prisma.petChronicDisease.deleteMany({ where: { petId } });
+    // Start a transaction to ensure all deletions happen atomically
+    await prisma.$transaction(async (prisma) => {
+      // Delete related LostPet records and their dependencies
+      const lostPets = await prisma.lostPet.findMany({
+        where: { petId },
+        select: { id: true },
+      });
 
-    // ลบรูปภาพจาก Vercel Blob
-    for (const image of pet.images) {
-      try {
-        await del(image.url);
-      } catch (error) {
-        console.warn('Failed to delete image from blob:', image.url, error);
+      for (const lostPet of lostPets) {
+        // Delete related Clue records
+        const clues = await prisma.clue.findMany({
+          where: { lostPetId: lostPet.id },
+          select: { id: true },
+        });
+
+        for (const clue of clues) {
+          // Delete ClueImage records
+          await prisma.clueImage.deleteMany({
+            where: { clueId: clue.id },
+          });
+        }
+
+        // Delete Clue records
+        await prisma.clue.deleteMany({
+          where: { lostPetId: lostPet.id },
+        });
+
+        // Delete LostPetImage records
+        await prisma.lostPetImage.deleteMany({
+          where: { lostPetId: lostPet.id },
+        });
       }
-    }
 
-    // ลบสัตว์เลี้ยง
-    await prisma.pet.delete({ where: { id: petId } });
+      // Delete all LostPet records for this pet
+      await prisma.lostPet.deleteMany({
+        where: { petId },
+      });
 
-    return NextResponse.json({ message: 'ลบสัตว์เลี้ยงสำเร็จ' }, { status: 200 });
+      // Delete related PetImage records
+      await prisma.petImage.deleteMany({ where: { petId } });
+
+      // Delete related VaccineRecord records
+      await prisma.vaccineRecord.deleteMany({ where: { petId } });
+
+      // Delete related PetChronicDisease records
+      await prisma.petChronicDisease.deleteMany({ where: { petId } });
+
+      // Delete images from Vercel Blob
+      for (const image of pet.images) {
+        try {
+          await del(image.url);
+        } catch (error) {
+          console.warn("Failed to delete image from blob:", image.url, error);
+        }
+      }
+
+      // Delete the Pet record
+      await prisma.pet.delete({ where: { id: petId } });
+    });
+
+    return NextResponse.json({ message: "ลบสัตว์เลี้ยงสำเร็จ" }, { status: 200 });
   } catch (error) {
-    console.error('[DELETE_PET_ERROR]', error);
-    return NextResponse.json({ message: 'เกิดข้อผิดพลาดในการลบสัตว์เลี้ยง' }, { status: 500 });
+    console.error("[DELETE_PET_ERROR]", error);
+    return NextResponse.json({ message: "เกิดข้อผิดพลาดในการลบสัตว์เลี้ยง" }, { status: 500 });
   }
 }
