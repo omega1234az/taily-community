@@ -53,9 +53,9 @@ export default function TopNavbar() {
       {/* โลโก้ */}
       <div>
         <img
-          src="/all/owen.png"
+          src="/all/logo.png"
           alt="logo"
-          className="lg:w-12 lg:h-12 xl:w-14 xl:h-14 w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-full object-cover"
+          className="lg:w-10 lg:h-10 xl:w-11 xl:h-11 w-5.5 h-5.5 sm:w-8 sm:h-8 md:w-9 md:h-9 object-cover"
         />
       </div>
 
@@ -64,19 +64,31 @@ export default function TopNavbar() {
         <Link className="hover:text-sky-600 cursor-pointer" href="/home">
           หน้าหลัก
         </Link>
-        <Link className="hover:text-sky-600 cursor-pointer" href="/admin/manageanns">
+        <Link
+          className="hover:text-sky-600 cursor-pointer"
+          href="/admin/manageanns"
+        >
           จัดการประกาศ
         </Link>
         <Link className="hover:text-sky-600 cursor-pointer" href="/admin/users">
           จัดการผู้ใช้
         </Link>
-        <Link className="hover:text-sky-600 cursor-pointer" href="/admin/category">
+        <Link
+          className="hover:text-sky-600 cursor-pointer"
+          href="/admin/category"
+        >
           จัดการหมวดหมู่
         </Link>
-        <Link className="hover:text-sky-600 cursor-pointer" href="/admin/report">
+        <Link
+          className="hover:text-sky-600 cursor-pointer"
+          href="/admin/report"
+        >
           ตรวจสอบรายงาน
         </Link>
-        <Link className="hover:text-sky-600 cursor-pointer" href="/admin/dashboard">
+        <Link
+          className="hover:text-sky-600 cursor-pointer"
+          href="/admin/dashboard"
+        >
           Dashboard
         </Link>
       </div>
@@ -104,13 +116,11 @@ export default function TopNavbar() {
           {profileOpen && (
             <div className="absolute right-3 mt-6 lg:w-36 sm:w-28 w-20 bg-white border border-gray-300 rounded shadow-md z-50">
               <ul className="text-[10px] sm:text-sm lg:text-md text-gray-700">
-                <Link
-                href="/profile"
-               >
-                <li className="px-2 sm;px-4 py-2 hover:bg-gray-300">
-                โปรไฟล์
-              </li>
-              </Link>
+                <Link href="/profile">
+                  <li className="px-2 sm;px-4 py-2 hover:bg-gray-300">
+                    โปรไฟล์
+                  </li>
+                </Link>
                 <li className="px-2 sm;px-4 py-2 hover:bg-gray-300">
                   <button
                     className="w-full text-left cursor-pointer"

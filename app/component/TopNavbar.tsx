@@ -27,10 +27,16 @@ export default function TopNavbar() {
   // ปิด dropdown เมื่อคลิกข้างนอก
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setDropdownOpen(false);
       }
-      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+      if (
+        profileRef.current &&
+        !profileRef.current.contains(event.target as Node)
+      ) {
         setProfileOpen(false);
       }
     }
@@ -109,9 +115,9 @@ export default function TopNavbar() {
       {/* Logo */}
       <div>
         <img
-          src="/all/owen.png"
+          src="/all/logo.png"
           alt="logo"
-          className="lg:w-12 lg:h-12 xl:w-14 xl:h-14 w-8 h-8 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-full object-cover"
+          className="lg:w-10 lg:h-10 xl:w-11 xl:h-11 w-5.5 h-5.5 sm:w-8 sm:h-8 md:w-9 md:h-9  object-cover"
         />
       </div>
 
@@ -136,7 +142,7 @@ export default function TopNavbar() {
             ▼
           </span>
           {dropdownOpen && (
-            <div className="absolute top-6 left-0 lg:w-40 sm:w-30 w-24 bg-white border border-gray-300 rounded shadow-md z-50">
+            <div className="absolute top-10 left-0 lg:w-40 sm:w-30 w-24 bg-white border border-gray-300 rounded shadow-md z-50">
               <ul className="text-sm text-gray-700">
                 <li className="px-4 py-2 hover:bg-gray-300 cursor-pointer border-b border-gray-300 text-xs sm:text-sm lg:text-md">
                   <Link href="/announcement">สัตว์เลี้ยงหาย</Link>
@@ -185,7 +191,9 @@ export default function TopNavbar() {
 
               <div className="overflow-y-auto max-h-64 sm:max-h-80">
                 {notifications.length === 0 ? (
-                  <div className="p-4 text-gray-500 text-sm">ไม่มีการแจ้งเตือน</div>
+                  <div className="p-4 text-gray-500 text-sm">
+                    ไม่มีการแจ้งเตือน
+                  </div>
                 ) : (
                   notifications.map((n) => (
                     <div
@@ -204,7 +212,9 @@ export default function TopNavbar() {
                       </div>
                       <div className="col-span-3 flex flex-col justify-center">
                         <span className="text-sm font-medium">{n.title}</span>
-                        <span className="text-xs text-gray-600">{n.message}</span>
+                        <span className="text-xs text-gray-600">
+                          {n.message}
+                        </span>
                         <span className="text-[10px] text-gray-400">
                           {new Date(n.createdAt).toLocaleString()}
                         </span>
@@ -224,7 +234,9 @@ export default function TopNavbar() {
           ) : session?.user ? (
             <>
               <img
-                src={userProfile?.image || session.user.image || "/all/profile.png"}
+                src={
+                  userProfile?.image || session.user.image || "/all/profile.png"
+                }
                 alt="profile"
                 className="lg:w-12 lg:h-12 xl:w-14 xl:h-14 w-8 h-8 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-full object-cover cursor-pointer"
                 onClick={toggleProfile}
