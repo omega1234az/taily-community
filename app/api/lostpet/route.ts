@@ -66,13 +66,13 @@ export async function POST(req: NextRequest) {
         petId: petId, 
         OR: [
           { status: "lost" },
-          { status: "pending" }
+          { status: "pending" },
         ]
       },
     });
     if (existsActive) {
       return NextResponse.json({ 
-        message: `สัตว์เลี้ยงตัวนี้มีประกาศที่ยังใช้งานอยู่ (สถานะ: ${existsActive.status}) กรุณาอัพเดทสถานะโพสเก่าก่อนสร้างโพสใหม่` 
+        message: `สัตว์เลี้ยงตัวนี้มีประกาศที่ยังใช้งานอยู่` 
       }, { status: 400 });
     }
 

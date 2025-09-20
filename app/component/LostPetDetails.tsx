@@ -573,7 +573,7 @@ const handleSubmitReport = async () => {
         <p className="text-[16px] lg:text-xl mb-5">{pet.missingLocation} </p>
         <p className="text-[16px] lg:text-xl mb-5">{pet.lostLocation}</p>
 
-        <PetMap lat={pet.lat} lng={pet.lng} zoom={15} />
+        <PetMap lat={pet.lat} lng={pet.lng} zoom={15} />d
 
         <p className="text-lg lg:text-2xl lg:my-8 my-5 sm:my-5">
           ช่องทางการติดต่อ
