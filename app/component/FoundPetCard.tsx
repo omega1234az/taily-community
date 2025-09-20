@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -102,7 +101,11 @@ const FoundPetCard: React.FC<FoundPetCardProps> = ({
     <div className="flex flex-col sm:flex-row gap-6 p-6 rounded-2xl shadow-lg bg-[#E5EEFF] 2xl:w-[500px] 2xl:h-[320px] xl:w-[430px] xl:h-[300px] lg:w-[350px] lg:h-[290px] md:w-[450px] md:h-[290px] sm:w-[380px] sm:h-[290px] w-[280px] h-[420px] hover:bg-gray-200 transition-transform duration-200 transform hover:scale-105">
       {/* Image */}
       <div className="mx-auto 2xl:w-[370px] 2xl:h-[240px] xl:w-[370px] xl:h-[230px] lg:w-[300px] lg:h-[195px] md:w-[300px] md:h-[210px] sm:w-[320px] sm:h-[195px] w-[110px] h-[140px] rounded-xl overflow-hidden">
-        <img src={imageSrc} alt={species} className="w-full h-full object-cover" />
+        <img
+          src={imageSrc}
+          alt={species}
+          className="w-full h-full object-cover"
+        />
       </div>
 
       {/* Content */}
@@ -111,7 +114,7 @@ const FoundPetCard: React.FC<FoundPetCardProps> = ({
           <p>
             <strong>สัตว์:</strong> {species}
           </p>
-          
+
           <p>
             <strong>เพศ:</strong> {gender}
           </p>
@@ -130,14 +133,14 @@ const FoundPetCard: React.FC<FoundPetCardProps> = ({
         </div>
 
         {/* Buttons */}
-        <div className="flex justify-center md:justify-start items-center mt-2 text-center md:text-left gap-2">
+        <div className="flex justify-center md:justify-start items-center mt-2 text-center md:text-left gap-4">
           <Link href={`/foundpet/${id}`}>
-            <button className="rounded-xl shadow-md bg-[#EAD64D] text-black text-[13px] sm:text-[14px] lg:text-[12px] xl:text-[15px] 2xl:text-[16px] sm:px-2 md:px-4 lg:px-1.5 xl:px-2.5 sm:py-2 px-4 py-1.5 hover:bg-yellow-200 transition duration-300 cursor-pointer">
+            <button className="rounded-xl shadow-md bg-[#EAD64D] text-black text-[13px] sm:text-[14px]   px-4 py-1.5 hover:bg-yellow-200 transition duration-300 cursor-pointer">
               รายละเอียด
             </button>
           </Link>
           <button
-            className="rounded-xl shadow-md bg-red-500 text-white text-[13px] sm:text-[14px] lg:text-[12px] xl:text-[15px] 2xl:text-[16px] sm:px-2 md:px-6 lg:px-2.5 xl:px-4 2xl:px-4.5 sm:py-2 px-6 py-1.5 hover:bg-red-400 transition duration-300 cursor-pointer"
+            className="rounded-xl shadow-md bg-red-500 text-white text-[13px] sm:text-[14px]   px-6 py-1.5 hover:bg-red-400 transition duration-300 cursor-pointer"
             onClick={() => setIsReportOpen(true)}
           >
             ลบโพสต์

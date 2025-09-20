@@ -61,7 +61,9 @@ const PetCard: React.FC<AnCardProps> = ({
 
   // Select the image with mainImage: true, or fall back to the first image
   const imageSrc =
-    pet.images.find((image) => image.mainImage)?.url || pet.images[0]?.url || "/default-image.jpg";
+    pet.images.find((image) => image.mainImage)?.url ||
+    pet.images[0]?.url ||
+    "/default-image.jpg";
 
   // Calculate if the post is within 7 days from createdAt
   const isWithin7Days = () => {
@@ -80,7 +82,9 @@ const PetCard: React.FC<AnCardProps> = ({
     const createdDate = new Date(createdAt);
     if (isNaN(createdDate.getTime())) return "วันที่ไม่ถูกต้อง";
     const now = new Date();
-    const expirationDate = new Date(createdDate.getTime() + 14 * 24 * 60 * 60 * 1000);
+    const expirationDate = new Date(
+      createdDate.getTime() + 14 * 24 * 60 * 60 * 1000
+    );
     const diffTime = expirationDate.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 3600 * 24));
     if (diffDays > 0) {
@@ -157,36 +161,56 @@ const PetCard: React.FC<AnCardProps> = ({
       {/* เนื้อหา */}
       <div className="flex flex-col justify-between w-full sm:w-1/2">
         <div className="space-y-1 text-[13px] sm:text-[14px] lg:text-[15px]">
-          <p><strong>ชื่อ:</strong> {name}</p>
-          <p><strong>อายุ:</strong> {age}</p>
-          <p><strong>เพศ:</strong> {gender}</p>
-          <p><strong>สายพันธุ์:</strong> {breed}</p>
-          <p><strong>หายวันที่:</strong> {lostDate}</p>
-          <p><strong>สถานที่หาย:</strong> {lostLocation}</p>
-          <p><strong>วันที่โพสต์:</strong> {createdAt ? formatThaiDate(createdAt) : '-'}</p>
-          
-          <p><strong>เงินรางวัล:</strong> {reward ? `${Number(reward).toLocaleString()} บาท` : "ไม่มีระบุ"}</p>
+          <p>
+            <strong>ชื่อ:</strong> {name}
+          </p>
+          <p>
+            <strong>อายุ:</strong> {age}
+          </p>
+          <p>
+            <strong>เพศ:</strong> {gender}
+          </p>
+          <p>
+            <strong>สายพันธุ์:</strong> {breed}
+          </p>
+          <p>
+            <strong>หายวันที่:</strong> {lostDate}
+          </p>
+          <p>
+            <strong>สถานที่หาย:</strong> {lostLocation}
+          </p>
+          <p>
+            <strong>วันที่โพสต์:</strong>{" "}
+            {createdAt ? formatThaiDate(createdAt) : "-"}
+          </p>
 
-          <p><strong>สถานะ:</strong> {getDaysUntilExpiration()}</p>
+          <p>
+            <strong>เงินรางวัล:</strong>{" "}
+            {reward ? `${Number(reward).toLocaleString()} บาท` : "ไม่มีระบุ"}
+          </p>
+
+          <p>
+            <strong>สถานะ:</strong> {getDaysUntilExpiration()}
+          </p>
         </div>
 
         {/* ปุ่ม */}
-        <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-3">
+        <div className="flex flex-wrap justify-center sm:justify-start gap-4 mt-3">
           <Link href={`/eggtunmissing/${id}`}>
-            <button className="rounded-xl shadow-md bg-[#EAD64D] text-black text-[13px] sm:text-[14px] px-4 py-1.5 hover:bg-yellow-200 transition duration-300">
+            <button className="rounded-xl shadow-md bg-[#EAD64D] text-black text-[13px] sm:text-[14px] px-4 py-1.5 hover:bg-yellow-200 transition duration-300 cursor-pointer">
               รายละเอียด
             </button>
           </Link>
           {isWithin7Days() && (
             <button
-              className="rounded-xl shadow-md bg-green-500 text-white text-[13px] sm:text-[14px] px-4 py-1.5 hover:bg-green-400 transition duration-300"
+              className="rounded-xl shadow-md bg-green-500 text-white text-[13px] sm:text-[14px] px-4 py-1.5 hover:bg-green-400 transition duration-300 cursor-pointer"
               onClick={handleRenewPost}
             >
               ต่ออายุ
             </button>
           )}
           <button
-            className="rounded-xl shadow-md bg-red-500 text-white text-[13px] sm:text-[14px] px-4 py-1.5 hover:bg-red-400 transition duration-300"
+            className="rounded-xl shadow-md bg-red-500 text-white text-[13px] sm:text-[14px] px-6 py-1.5 hover:bg-red-400 transition duration-300 cursor-pointer"
             onClick={() => setIsReportOpen(true)}
           >
             ลบโพสต์
