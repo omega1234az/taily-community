@@ -311,6 +311,14 @@ export default function PetDetailsModal({
     }
   };
 
+  const [confirming, setConfirming] = useState(false);
+
+  const handleDelete = () => {
+    // เรียกเมื่อกดปุ่ม "ยืนยัน" จริง ๆ
+    console.log("ลบเรียบร้อย (ยังไม่เชื่อม API)");
+    setConfirming(false); // รีเซ็ต state
+  };
+
   const handleSetMainImage = async (index: number) => {
     if (!selectedPet || !images[index].id) return;
 
@@ -433,6 +441,7 @@ export default function PetDetailsModal({
   };
 
   const handleCancel = () => {
+    setConfirming(false); // ยกเลิกการลบ
     setIsEditing(false);
     if (selectedPet) {
       setName(selectedPet.name || "");
@@ -896,24 +905,54 @@ export default function PetDetailsModal({
                 </div>
               </div>
             </div>
-            <div className="flex justify-between xl:gap-40 lg:gap-24 2xl:mx-14 xl:mx-6 lg:mx-2 md:mx-2 sm:mx-2 mx-6 mb-5">
-              {!isEditing ? (
+            <div className="flex 2xl:gap-14 lg:gap-10 gap-5 mb-5">
+              {!isEditing && !confirming ? (
                 <>
-                  <button
-                    onClick={handlePrint}
-                    className="bg-[#EAD64D] border-[#edd017] hover:bg-[#ffef8a] hover:border-[#e0d37a] text-white sm:text-lg xl:text-xl px-6 py-1 rounded-xl cursor-pointer"
-                  >
-                    พิมพ์
-                  </button>
-                  <button
-                    onClick={() => setIsEditing(true)}
-                    className="bg-[#7CBBEB] text-white hover:bg-sky-600 shadow-md rounded-xl px-6 py-1 sm:text-lg xl:text-xl cursor-pointer"
-                  >
-                    แก้ไข
-                  </button>
+                  {/* ปุ่มกลุ่มซ้าย */}
+                  <div className="flex 2xl:gap-48 lg:pl-0 md:pl-10 pl-8 lg:gap-40 md:gap-32 sm:gap-36 gap-18">
+                    <button
+                      onClick={handlePrint}
+                      className="bg-[#EAD64D] border-[#edd017] hover:bg-[#ffef8a] hover:border-[#e0d37a] text-white sm:text-lg xl:text-xl px-6 py-1 rounded-xl cursor-pointer"
+                    >
+                      พิมพ์
+                    </button>
+                    <button
+                      onClick={() => setIsEditing(true)}
+                      className="bg-[#7CBBEB] text-white hover:bg-sky-600 shadow-md rounded-xl px-6 py-1 sm:text-lg xl:text-xl cursor-pointer"
+                    >
+                      แก้ไข
+                    </button>
+                  </div>
+
+                  {/* ปุ่มลบอยู่ขวา */}
+                  <div className="flex gap-4">
+                    <button
+                      onClick={() => setConfirming(true)}
+                      className="bg-red-500 text-white hover:bg-red-600 shadow-md rounded-xl px-6 py-1 sm:text-lg xl:text-xl cursor-pointer"
+                    >
+                      ลบ
+                    </button>
+                  </div>
                 </>
+              ) : !isEditing && confirming ? (
+                /* โหมดยืนยันลบ */
+                <div className="flex 2xl:gap-70 lg:gap-64 lg:pl-0 md:pl-10 pl-8 md:gap-48 sm:gap-52 gap-36">
+                  <button
+                    onClick={() => setConfirming(false)}
+                    className="bg-gray-400 text-white hover:bg-gray-600 shadow-md rounded-xl px-6 py-1 sm:text-lg xl:text-xl cursor-pointer"
+                  >
+                    ยกเลิก
+                  </button>
+                  <button
+                    onClick={handleDelete}
+                    className="bg-red-500 text-white hover:bg-red-600 shadow-md rounded-xl px-6 py-1 sm:text-lg xl:text-xl cursor-pointer"
+                  >
+                    ยืนยัน
+                  </button>
+                </div>
               ) : (
-                <>
+                /* โหมดแก้ไข */
+                <div className="flex 2xl:gap-70 lg:gap-64 lg:pl-0 md:pl-10 pl-8 md:gap-48 sm:gap-52 gap-36">
                   <button
                     onClick={handleCancel}
                     className="bg-gray-400 text-white hover:bg-gray-600 shadow-md rounded-xl px-6 py-1 sm:text-lg xl:text-xl cursor-pointer"
@@ -926,7 +965,7 @@ export default function PetDetailsModal({
                   >
                     บันทึก
                   </button>
-                </>
+                </div>
               )}
             </div>
           </div>
@@ -939,312 +978,86 @@ export default function PetDetailsModal({
             left: "-10000px",
             width: "210mm",
             height: "297mm",
-            backgroundColor: "white",
-            padding: "20px",
+            backgroundImage: "url('/all/bgpet.jpg')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
+            padding: "40px",
             boxSizing: "border-box",
             overflow: "hidden",
           }}
         >
-          <div className="mx-auto bg-white h-full">
-            <img
-              src="/all/bgprint.png"
-              alt="bg"
-              className="w-40 h-14 object-cover ml-28 mt-[-20px] mb-[-20px]"
-            />
-            <img
-              src="/all/bgprint2.png"
-              alt="bg"
-              className="w-8 h-8 object-cover ml-[-28] mb-[-20px] mt-[-32px]"
-            />
-            <div className="py-5 flex gap-0">
-              <div className="flex flex-col border-r-4 relative z-10 border-[#c5b3a2]">
-                <div className="pr-5 pl-3 relative z-10 w-[350px] h-[400px]">
-                  <img
-                    src="/all/bgprint2.png"
-                    alt="bg"
-                    className="absolute right-0 mt-40 w-44 h-40 object-cover z-0"
-                  />
-                  <img
-                    src="/all/bgprint2.png"
-                    alt="bg"
-                    className="absolute right-3 mt-10 w-5 h-5 object-cover z-0"
-                  />
-                  <img
-                    src="/all/bgprint2.png"
-                    alt="bg"
-                    className="absolute left-0 mt-28 w-10 h-10 object-cover z-0"
-                  />
-                  <img
-                    src="/all/bgprint2.png"
-                    alt="bg"
-                    className="absolute left-[-20px] mt-56 w-5 h-5 object-cover z-0"
-                  />
-                  <img
-                    src="/all/bgprint4.png"
-                    alt="bg"
-                    className="object-cover absolute ml-[-160px] mt-80 w-36 h-36"
-                  />
-                  <img
-                    src="/all/bgprint2.png"
-                    alt="bg"
-                    className="object-cover absolute mt-96 w-3 h-3"
-                  />
-                  <img
-                    src={mainImage?.url || "/all/bgprint4.png"}
-                    alt="pet"
-                    className="w-[350px] h-[400px] object-cover relative z-10"
-                  />
-                </div>
-                <div className="border-b-4 border-[#c5b3a2] w-full my-5"></div>
-                <div className="mt-5 px-2 relative flex-1 flex flex-col justify-start">
-                  <img
-                    src="/all/bgprint2.png"
-                    alt="bg"
-                    className="absolute mt-[-30px] right-64 w-3 h-3 object-cover"
-                  />
-                  <div className="relative flex items-center gap-2 mb-4 pl-8 z-10">
+          <div className="mx-auto h-full w-full flex flex-col items-center gap-6 relative">
+            {/* ชื่อสัตว์เลี้ยง */}
+            <h1 className="text-5xl font-bold text-[#7CBBEB]  drop-shadow-lg">
+              {name || "ชื่อสัตว์เลี้ยง"}
+            </h1>
+
+            {/* ภาพสัตว์เลี้ยง */}
+            <div className="relative w-[350px] h-[350px] rounded-xl overflow-hidden shadow-lg">
+              <img
+                src={mainImage?.url || "/all/bgprint4.png"}
+                alt="Pet"
+                className="w-full h-full object-cover"
+              />
+              {/* ตกแต่งเล็ก ๆ */}
+              <img
+                src="/all/bgprint2.png"
+                alt="decoration"
+                className="absolute top-4 left-4 w-6 h-6 opacity-50"
+              />
+              <img
+                src="/all/bgprint2.png"
+                alt="decoration"
+                className="absolute bottom-4 right-4 w-8 h-8 opacity-50"
+              />
+            </div>
+
+            {/* ประวัติสัตว์เลี้ยง */}
+            <div className="  mt-2 pl-20 w-full max-w-[500px] ">
+              <h2 className="text-3xl font-semibold pb-5">ประวัติ</h2>
+              <div className="space-y-5 text-2xl w-full">
+                <p>
+                  <strong>ชื่อเจ้าของ:</strong> {owner || "-"}
+                </p>
+                <p>
+                  <strong>อายุ:</strong> {age || "-"}
+                </p>
+                <p>
+                  <strong>สายพันธุ์:</strong> {breed || "-"}
+                </p>
+                <p>
+                  <strong>ทำหมัน:</strong>{" "}
+                  {sterilized === "1" ? "ทำหมันแล้ว" : "ยังไม่ได้ทำหมัน"}
+                </p>
+                <p>
+                  <strong>รอยตำหนิ:</strong> {markings || "-"}
+                </p>
+                <p>
+                  <strong>รายละเอียด:</strong> {description || "-"}
+                </p>
+
+                {/* ข้อมูลติดต่อใต้รูป แต่ละบรรทัด */}
+                <div className="flex flex-col pr-32 mt-2 text-lg gap-1">
+                  <div className="flex items-center gap-2">
                     <img
-                      src="/all/print2.png"
-                      alt="History"
-                      className="relative z-10 -mr-9 w-24 h-16 object-cover"
+                      src="/all/call.png"
+                      alt="Call"
+                      className="w-6 h-6  mt-5"
                     />
-                    <img
-                      src="/all/bgprint2.png"
-                      alt="bg"
-                      className="absolute right-32 mb-10 w-6 h-6 object-cover z-0"
-                    />
-                    <img
-                      src="/all/bgprint2.png"
-                      alt="bg"
-                      className="absolute left-[-10px] mt-10 w-4 h-4 object-cover z-0"
-                    />
-                    <h2 className="text-2xl font-bold pb-5 pl-9 pr-10 border-3 rounded-3xl border-[#c77932] relative z-0">
-                      ประวัติ
-                    </h2>
+                    <span className="text-2xl">{phone || "เบอร์โทร"}</span>
                   </div>
-                  <div className="text-xl">
+                  <div className="flex items-center gap-2">
                     <img
-                      src="/all/bgprint3.png"
-                      alt="bg"
-                      className="absolute ml-[-20px] w-56 h-40 object-cover z-0"
+                      src="/all/face.png"
+                      alt="Facebook"
+                      className="w-6 h-6 mt-5"
                     />
-                    <p className="pb-3 relative z-10 pl-4">
-                      ชื่อเจ้าของ: {owner || "-"}
-                    </p>
-                    <p className="pb-3 relative z-10 pl-4">
-                      ชื่อสัตว์เลี้ยง: {name || "-"}
-                    </p>
-                    <img
-                      src="/all/bgprint2.png"
-                      alt="bg"
-                      className="absolute ml-32 w-5 h-5 object-cover z-0"
-                    />
-                    <p className="pb-3 relative z-10 pl-4">
-                      อายุ: {age || "-"}
-                    </p>
-                    <img
-                      src="/all/bgprint2.png"
-                      alt="bg"
-                      className="absolute ml-[-20px] w-2 h-2 object-cover z-0"
-                    />
-                    <p className="pb-3 z-10 pl-4">สายพันธุ์: {breed || "-"}</p>
-                    <img
-                      src="/all/bgprint2.png"
-                      alt="bg"
-                      className="absolute mb-20 ml-56 w-10 h-10 object-cover z-0"
-                    />
-                    <p className="pb-3 z-10 pl-4">
-                      ทำหมัน:{" "}
-                      {sterilized === "1" ? "ทำหมันแล้ว" : "ยังไม่ได้ทำหมัน"}
-                    </p>
-                    <img
-                      src="/all/bgprint4.png"
-                      alt="bg"
-                      className="absolute ml-[-140px] w-36 h-36 object-cover z-0"
-                    />
-                    <img
-                      src="/all/bgprint2.png"
-                      alt="bg"
-                      className="absolute mb-20 ml-20 w-4 h-4 object-cover z-0"
-                    />
-                    <p className="pb-3 z-10 pl-4">
-                      รอยตำหนิ: {markings || "-"}
-                    </p>
-                    <img
-                      src="/all/bgprint2.png"
-                      alt="bg"
-                      className="absolute ml-40 w-5 h-5 object-cover z-0"
-                    />
-                    <p className="pb-3 z-10 pl-4">
-                      รายละเอียด: {description || "-"}
-                    </p>
-                    <img
-                      src="/all/bgprint2.png"
-                      alt="bg"
-                      className="absolute ml-5 w-2 h-2 object-cover z-0"
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className="flex flex-col flex-1 relative z-10">
-                <div className="pl-5 pb-5">
-                  <img
-                    src="/all/bgprint2.png"
-                    alt="bg"
-                    className="absolute w-10 h-10 object-cover -top-20 right-40 z-0"
-                  />
-                  <img
-                    src="/all/bgprint2.png"
-                    alt="bg"
-                    className="absolute w-3 h-3 object-cover -top-10 right-10 z-0"
-                  />
-                  <img
-                    src="/all/bgprint2.png"
-                    alt="bg"
-                    className="absolute w-5 h-5 object-cover top-40 -right-6 z-0"
-                  />
-                  <img
-                    src="/all/bgprint4.png"
-                    alt="bg"
-                    className="absolute w-56 h-48 object-cover right-0 z-0"
-                  />
-                  <img
-                    src="/all/bgprint2.png"
-                    alt="bg"
-                    className="absolute w-5 h-5 object-cover top-0 right-72 z-0"
-                  />
-                  <img
-                    src="/all/bgprint2.png"
-                    alt="bg"
-                    className="absolute w-10 h-10 object-cover top-11 right-80 z-0"
-                  />
-                  <img
-                    src="/all/bgprint2.png"
-                    alt="bg"
-                    className="absolute w-3 h-3 object-cover top-40 right-72 z-0"
-                  />
-                  <img
-                    src="/all/bgprint2.png"
-                    alt="bg"
-                    className="absolute w-7 h-7 object-cover top-[420px] right-64 z-0"
-                  />
-                  <img
-                    src="/all/bgprint2.png"
-                    alt="bg"
-                    className="absolute w-5 h-6 object-cover top-[290px] right-36 z-0"
-                  />
-                  <img
-                    src="/all/bgprint2.png"
-                    alt="bg"
-                    className="absolute w-4 h-4 object-cover top-[250px] right-10 z-0"
-                  />
-                  <img
-                    src="/all/bgprint2.png"
-                    alt="bg"
-                    className="absolute w-7 h-7 object-cover top-[210px] right-[200px] z-0"
-                  />
-                  <img
-                    src="/all/bgprint2.png"
-                    alt="bg"
-                    className="absolute w-3 h-3 object-cover top-[360px] right-[360px] z-0"
-                  />
-                  <img
-                    src="/all/bgprint2.png"
-                    alt="bg"
-                    className="absolute w-10 h-10 object-cover top-[340px] right-10 z-0"
-                  />
-                  <img
-                    src="/all/bgprint5.png"
-                    alt="bg"
-                    className="absolute w-48 h-52 object-cover top-[420px] -right-5 z-0"
-                  />
-                  <div className="flex items-center space-x-2 mb-5 relative z-10">
-                    <h1 className="text-5xl font-semibold">
-                      {name || "ไข่ตุ๋น"}
-                    </h1>
-                    <img
-                      src="/all/foot.png"
-                      alt="Foot"
-                      className="w-14 h-14 object-cover mt-5"
-                    />
-                  </div>
-                  <div className="text-xl space-y-2">
-                    <div className="flex items-center gap-2">
-                      <img src="/all/call.png" alt="Call" className="w-6 h-6" />
-                      <span className="pb-5">{phone || "เบอร์โทร"}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <img
-                        src="/all/face.png"
-                        alt="Facebook"
-                        className="w-6 h-6"
-                      />
-                      <span className="pb-5">{facebook || "Facebook"}</span>
-                    </div>
+                    <span className="text-2xl">{facebook || "Facebook"}</span>
                   </div>
                 </div>
               </div>
             </div>
-            <img
-              src="/all/bgprint2.png"
-              alt="bg"
-              className="absolute bottom-10 ml-10 w-7 h-7 object-cover z-0"
-            />
-            <img
-              src="/all/bgprint4.png"
-              alt="bg"
-              className="absolute -bottom-20 ml-20 w-56 h-40 object-cover z-0"
-            />
-            <img
-              src="/all/bgprint2.png"
-              alt="bg"
-              className="absolute bottom-1 ml-[490px] w-9 h-9 object-cover z-0"
-            />
-            <img
-              src="/all/bgprint2.png"
-              alt="bg"
-              className="absolute bottom-24 ml-[560px] w-5 h-5 object-cover z-0"
-            />
-            <img
-              src="/all/bgprint2.png"
-              alt="bg"
-              className="absolute -bottom-4 ml-[380px] w-7 h-7 object-cover z-0"
-            />
-            <img
-              src="/all/bgprint2.png"
-              alt="bg"
-              className="absolute -bottom-1 ml-[620px] w-3 h-3 object-cover z-0"
-            />
-            <img
-              src="/all/bgprint4.png"
-              alt="bg"
-              className="absolute -bottom-32 -right-24 w-40 h-40 object-cover z-0"
-            />
-            <img
-              src="/all/bgprint4.png"
-              alt="bg"
-              className="absolute bottom-20 -right-24 w-64 h-52 object-cover z-0"
-            />
-            <img
-              src="/all/bgprint2.png"
-              alt="bg"
-              className="absolute bottom-[310px] right-16 w-10 h-10 object-cover z-0"
-            />
-            <img
-              src="/all/bgprint2.png"
-              alt="bg"
-              className="absolute bottom-[255px] right-64 w-3 h-3 object-cover z-0"
-            />
-            <img
-              src="/all/bgprint2.png"
-              alt="bg"
-              className="absolute bottom-[360px] right-56 w-6 h-6 object-cover z-0"
-            />
-            <img
-              src="/all/bgprint2.png"
-              alt="bg"
-              className="absolute bottom-[445px] right-32 w-6 h-6 object-cover z-0"
-            />
           </div>
         </div>
       </div>
