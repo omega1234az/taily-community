@@ -8,12 +8,17 @@ export default function RegisterPet() {
 
   // ตัวแปรสำหรับจัดการ dropdown
   const [isGenderDropdownVisible, setGenderDropdownVisible] = useState(false);
-  const [isNeuteredDropdownVisible, setNeuteredDropdownVisible] = useState(false);
+  const [isNeuteredDropdownVisible, setNeuteredDropdownVisible] =
+    useState(false);
   const [isDropdownVisible, setDropdownVisible] = useState(false);
 
   // ตัวแปรสำหรับรูปภาพ
   const [mainImage, setMainImage] = useState<string | null>(null);
-  const [galleryImages, setGalleryImages] = useState<(string | null)[]>([null, null, null]);
+  const [galleryImages, setGalleryImages] = useState<(string | null)[]>([
+    null,
+    null,
+    null,
+  ]);
   const mainInputRef = useRef<HTMLInputElement | null>(null);
   const galleryInputRefs = [
     useRef<HTMLInputElement | null>(null),
@@ -44,7 +49,9 @@ export default function RegisterPet() {
   // กำหนดสถานะฟอร์ม
   const [isEditing, setIsEditing] = useState(true);
   const [selectedType, setSelectedType] = useState("");
-  const [speciesList, setSpeciesList] = useState<{ id: number; name: string }[]>([]); // ✅ State สำหรับเก็บข้อมูลจาก API
+  const [speciesList, setSpeciesList] = useState<
+    { id: number; name: string }[]
+  >([]); // ✅ State สำหรับเก็บข้อมูลจาก API
 
   const [formData, setFormData] = useState({
     name: "",
@@ -113,7 +120,10 @@ export default function RegisterPet() {
     }
   };
 
-  const handleGalleryImageChange = (e: ChangeEvent<HTMLInputElement>, index: number) => {
+  const handleGalleryImageChange = (
+    e: ChangeEvent<HTMLInputElement>,
+    index: number
+  ) => {
     const file = e.target.files?.[0];
     if (file) {
       if (galleryImages[index]) URL.revokeObjectURL(galleryImages[index]!);
@@ -140,7 +150,9 @@ export default function RegisterPet() {
     setDropdownVisible(false);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     if (name === "age" && !/^\d*$/.test(value)) return;
     setFormData((prevData) => ({ ...prevData, [name]: value }));
@@ -159,7 +171,16 @@ export default function RegisterPet() {
   };
 
   const validateForm = () => {
-    const requiredFields = ["name", "age", "gender", "type", "breed", "neutered", "mark", "details"];
+    const requiredFields = [
+      "name",
+      "age",
+      "gender",
+      "type",
+      "breed",
+      "neutered",
+      "mark",
+      "details",
+    ];
     for (const field of requiredFields) {
       const value = formData[field as keyof typeof formData];
       if (!value || value.trim() === "") {
@@ -197,7 +218,9 @@ export default function RegisterPet() {
       form.append("type", formData.type);
 
       // ✅ ค้นหา speciesId จาก speciesList
-      const selectedSpecies = speciesList.find((species) => species.name === formData.type);
+      const selectedSpecies = speciesList.find(
+        (species) => species.name === formData.type
+      );
       if (!selectedSpecies) {
         alert("ไม่พบประเภทสัตว์เลี้ยงที่เลือก");
         return;
@@ -254,6 +277,7 @@ export default function RegisterPet() {
 
   return (
     <div className="">
+      <title>ลงทะเบียนสัตว์เลี้ยง</title>
       <h1 className="text-2xl font-semibold">
         <span className="bg-[#EAD64D] py-5 pl-3 sm:py-7 sm:pl-5 xl:py-9 xl:pl-7 rounded-full">
           ลง
@@ -336,7 +360,8 @@ export default function RegisterPet() {
                 className="w-full mt-1 pr-10 border border-gray-300 rounded-md mb-3 disabled:bg-gray-100 sm:text-md xl:text-lg text-sm p-2 px-3"
                 disabled={!isEditing}
                 onClick={() => {
-                  if (isEditing) setGenderDropdownVisible(!isGenderDropdownVisible);
+                  if (isEditing)
+                    setGenderDropdownVisible(!isGenderDropdownVisible);
                 }}
                 readOnly
               />
@@ -346,7 +371,9 @@ export default function RegisterPet() {
                 }`}
                 viewBox="0 0 20 20"
                 fill="currentColor"
-                onClick={() => setGenderDropdownVisible(!isGenderDropdownVisible)}
+                onClick={() =>
+                  setGenderDropdownVisible(!isGenderDropdownVisible)
+                }
               >
                 <path
                   fillRule="evenodd"
@@ -452,7 +479,8 @@ export default function RegisterPet() {
                 className="w-full mt-1 sm:text-md xl:text-lg text-sm p-2 px-3 border border-gray-300 rounded-md mb-3 disabled:bg-gray-100"
                 disabled={!isEditing}
                 onClick={() => {
-                  if (isEditing) setNeuteredDropdownVisible(!isNeuteredDropdownVisible);
+                  if (isEditing)
+                    setNeuteredDropdownVisible(!isNeuteredDropdownVisible);
                 }}
                 readOnly
               />
@@ -462,7 +490,9 @@ export default function RegisterPet() {
                 }`}
                 viewBox="0 0 20 20"
                 fill="currentColor"
-                onClick={() => setNeuteredDropdownVisible(!isNeuteredDropdownVisible)}
+                onClick={() =>
+                  setNeuteredDropdownVisible(!isNeuteredDropdownVisible)
+                }
               >
                 <path
                   fillRule="evenodd"
@@ -504,7 +534,9 @@ export default function RegisterPet() {
                       setFormData((prevData) => ({
                         ...prevData,
                         color: isSelected
-                          ? selectedColors.filter((c) => c !== color.name).join(",")
+                          ? selectedColors
+                              .filter((c) => c !== color.name)
+                              .join(",")
                           : [...selectedColors, color.name].join(","),
                       }));
                     }}

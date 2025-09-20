@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, ChangeEvent, useEffect } from "react";
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter } from "next/navigation";
 import "leaflet/dist/leaflet.css";
 // Remove the direct Leaflet imports and CSS import from the top
 
@@ -14,8 +14,16 @@ export default function FoundPetRegistration() {
   const [species, setSpecies] = useState<Species[]>([]);
   const [mainImage, setMainImage] = useState<File | null>(null);
   const [mainImagePreview, setMainImagePreview] = useState<string | null>(null);
-  const [galleryImages, setGalleryImages] = useState<(File | null)[]>([null, null, null]);
-  const [galleryPreviews, setGalleryPreviews] = useState<(string | null)[]>([null, null, null]);
+  const [galleryImages, setGalleryImages] = useState<(File | null)[]>([
+    null,
+    null,
+    null,
+  ]);
+  const [galleryPreviews, setGalleryPreviews] = useState<(string | null)[]>([
+    null,
+    null,
+    null,
+  ]);
 
   const mainInputRef = useRef<HTMLInputElement | null>(null);
   const galleryInputRefs = [
@@ -68,27 +76,26 @@ export default function FoundPetRegistration() {
 
   const fetchSpecies = async () => {
     try {
-      const response = await fetch('/api/pets/species');
+      const response = await fetch("/api/pets/species");
       if (response.ok) {
         const data = await response.json();
         setSpecies(data);
       }
     } catch (error) {
-      console.error('Error fetching species:', error);
+      console.error("Error fetching species:", error);
     }
   };
 
   // Initialize Leaflet map with dynamic import
   const initializeMap = async () => {
     // Check if we're in the browser
-    if (typeof window === 'undefined' || !mapContainerRef.current) return;
-    
+    if (typeof window === "undefined" || !mapContainerRef.current) return;
+
     try {
       // Dynamic import of Leaflet to ensure it only runs on client side
-      const L = (await import('leaflet')).default;
-      
-      // Import Leaflet CSS dynamically
+      const L = (await import("leaflet")).default;
 
+      // Import Leaflet CSS dynamically
 
       // Clean up existing map instance before creating a new one
       if (mapRef.current) {
@@ -99,7 +106,7 @@ export default function FoundPetRegistration() {
       // ฟังก์ชันสร้าง map เพื่อลดการเขียนโค้ดซ้ำ
       const createMap = (lat: number, lng: number, zoom: number) => {
         if (!mapContainerRef.current) return;
-        
+
         mapRef.current = L.map(mapContainerRef.current, {
           zoomControl: true,
           dragging: true,
@@ -130,7 +137,7 @@ export default function FoundPetRegistration() {
 
         // เพิ่ม event listener
         mapRef.current.on("move", updateCenterCoords);
-        
+
         // อัปเดต coords เริ่มต้น
         setCoords({ lat, lng });
       };
@@ -171,7 +178,10 @@ export default function FoundPetRegistration() {
     }
   };
 
-  const handleGalleryImageChange = (e: ChangeEvent<HTMLInputElement>, index: number) => {
+  const handleGalleryImageChange = (
+    e: ChangeEvent<HTMLInputElement>,
+    index: number
+  ) => {
     const file = e.target.files?.[0];
     if (file) {
       const newImages = [...galleryImages];
@@ -184,18 +194,20 @@ export default function FoundPetRegistration() {
   };
 
   const handleSelectSpecies = (speciesItem: Species) => {
-    setFormData(prev => ({ ...prev, speciesId: speciesItem.id.toString() }));
+    setFormData((prev) => ({ ...prev, speciesId: speciesItem.id.toString() }));
     setSpeciesDropdownVisible(false);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
 
     if (name === "phone" && !/^\+?\d*$/.test(value)) {
       return; // อนุญาตเฉพาะตัวเลขและเครื่องหมาย +
     }
 
-    setFormData(prevData => ({ ...prevData, [name]: value }));
+    setFormData((prevData) => ({ ...prevData, [name]: value }));
   };
 
   // Color options
@@ -216,11 +228,11 @@ export default function FoundPetRegistration() {
   ];
 
   const handleColorToggle = (colorName: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       color: prev.color.includes(colorName)
-        ? prev.color.filter(c => c !== colorName)
-        : [...prev.color, colorName]
+        ? prev.color.filter((c) => c !== colorName)
+        : [...prev.color, colorName],
     }));
   };
 
@@ -244,7 +256,10 @@ export default function FoundPetRegistration() {
         return;
       }
 
-      if (formData.facebook && !/^https?:\/\/(www\.)?facebook\.com\/.+$/.test(formData.facebook)) {
+      if (
+        formData.facebook &&
+        !/^https?:\/\/(www\.)?facebook\.com\/.+$/.test(formData.facebook)
+      ) {
         alert("กรุณากรอก URL Facebook ที่ถูกต้อง");
         return;
       }
@@ -252,39 +267,42 @@ export default function FoundPetRegistration() {
       const formDataToSend = new FormData();
 
       // Add form data
-      formDataToSend.append('description', formData.description);
-      formDataToSend.append('speciesId', formData.speciesId);
-      formDataToSend.append('breed', formData.breed);
-      formDataToSend.append('gender', formData.gender);
-      formDataToSend.append('color', JSON.stringify(formData.color));
-      formDataToSend.append('phone', formData.phone);
-      formDataToSend.append('facebook', formData.facebook);
-      formDataToSend.append('finderName', formData.finderName);
-      formDataToSend.append('distinctive', formData.distinctive);
-      formDataToSend.append('status', formData.status);
+      formDataToSend.append("description", formData.description);
+      formDataToSend.append("speciesId", formData.speciesId);
+      formDataToSend.append("breed", formData.breed);
+      formDataToSend.append("gender", formData.gender);
+      formDataToSend.append("color", JSON.stringify(formData.color));
+      formDataToSend.append("phone", formData.phone);
+      formDataToSend.append("facebook", formData.facebook);
+      formDataToSend.append("finderName", formData.finderName);
+      formDataToSend.append("distinctive", formData.distinctive);
+      formDataToSend.append("status", formData.status);
 
       // Add location data
-      formDataToSend.append('lat', coords.lat.toString());
-      formDataToSend.append('lng', coords.lng.toString());
+      formDataToSend.append("lat", coords.lat.toString());
+      formDataToSend.append("lng", coords.lng.toString());
 
       // Add found date if provided
       if (formData.foundDate) {
-        formDataToSend.append('foundDate', new Date(formData.foundDate).toISOString());
+        formDataToSend.append(
+          "foundDate",
+          new Date(formData.foundDate).toISOString()
+        );
       }
 
       // Add images
       if (mainImage) {
-        formDataToSend.append('images', mainImage);
+        formDataToSend.append("images", mainImage);
       }
 
       galleryImages.forEach((image) => {
         if (image) {
-          formDataToSend.append('images', image);
+          formDataToSend.append("images", image);
         }
       });
 
-      const response = await fetch('/api/foundpet', {
-        method: 'POST',
+      const response = await fetch("/api/foundpet", {
+        method: "POST",
         body: formDataToSend,
       });
 
@@ -317,17 +335,20 @@ export default function FoundPetRegistration() {
         alert(`เกิดข้อผิดพลาด: ${error.message}`);
       }
     } catch (error) {
-      console.error('Error submitting form:', error);
+      console.error("Error submitting form:", error);
       alert("เกิดข้อผิดพลาดในการส่งข้อมูล");
     } finally {
       setLoading(false);
     }
   };
 
-  const selectedSpecies = species.find(s => s.id.toString() === formData.speciesId);
+  const selectedSpecies = species.find(
+    (s) => s.id.toString() === formData.speciesId
+  );
 
   return (
     <div>
+      <title>ลงทะเบียนหาเจ้าของ</title>
       <h1 className="text-xl font-semibold">
         <span className="bg-[#EAD64D] py-5 pl-3 sm:py-7 sm:pl-5 xl:py-9 xl:pl-7 rounded-full">
           ลง
@@ -384,13 +405,17 @@ export default function FoundPetRegistration() {
               <div className="relative w-full">
                 <input
                   value={selectedSpecies?.name || ""}
-                  onClick={() => setSpeciesDropdownVisible(!isSpeciesDropdownVisible)}
+                  onClick={() =>
+                    setSpeciesDropdownVisible(!isSpeciesDropdownVisible)
+                  }
                   readOnly
                   className="w-full mt-1 p-2 pr-10 border border-gray-300 rounded-md mb-3 cursor-pointer"
                 />
                 <svg
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 w-7 h-7 pb-1 text-gray-500 cursor-pointer"
-                  onClick={() => setSpeciesDropdownVisible(!isSpeciesDropdownVisible)}
+                  onClick={() =>
+                    setSpeciesDropdownVisible(!isSpeciesDropdownVisible)
+                  }
                   viewBox="0 0 24 24"
                   fill="none"
                 >
@@ -437,14 +462,18 @@ export default function FoundPetRegistration() {
                 <input
                   value={formData.gender}
                   readOnly
-                  onClick={() => setGenderDropdownVisible(!isGenderDropdownVisible)}
+                  onClick={() =>
+                    setGenderDropdownVisible(!isGenderDropdownVisible)
+                  }
                   className="w-full mt-1 p-2 pr-10 border border-gray-300 rounded-md cursor-pointer"
                 />
                 <svg
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-500 cursor-pointer"
                   viewBox="0 0 20 20"
                   fill="currentColor"
-                  onClick={() => setGenderDropdownVisible(!isGenderDropdownVisible)}
+                  onClick={() =>
+                    setGenderDropdownVisible(!isGenderDropdownVisible)
+                  }
                 >
                   <path
                     fillRule="evenodd"
@@ -461,7 +490,10 @@ export default function FoundPetRegistration() {
                           key={option}
                           className="px-4 py-2 text-sm cursor-pointer hover:bg-gray-200 border-b border-gray-300 last:border-b-0"
                           onClick={() => {
-                            setFormData(prev => ({ ...prev, gender: option }));
+                            setFormData((prev) => ({
+                              ...prev,
+                              gender: option,
+                            }));
                             setGenderDropdownVisible(false);
                           }}
                         >
@@ -486,10 +518,14 @@ export default function FoundPetRegistration() {
                     key={idx}
                     onClick={() => handleColorToggle(color.name)}
                     className={`flex items-center gap-2 px-3 py-1 rounded-full cursor-pointer text-sm ${
-                      isSelected ? "bg-blue-200 border-2 border-blue-400" : "bg-gray-200"
+                      isSelected
+                        ? "bg-blue-200 border-2 border-blue-400"
+                        : "bg-gray-200"
                     }`}
                   >
-                    <div className={`w-4 h-4 rounded-full ${color.code} border border-gray-400`}></div>
+                    <div
+                      className={`w-4 h-4 rounded-full ${color.code} border border-gray-400`}
+                    ></div>
                     <span>{color.name}</span>
                   </div>
                 );

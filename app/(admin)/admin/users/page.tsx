@@ -82,7 +82,11 @@ export default function Users() {
     }
   };
 
-  const handleToggleBan = async (index: number, id: string, currentStatus: boolean) => {
+  const handleToggleBan = async (
+    index: number,
+    id: string,
+    currentStatus: boolean
+  ) => {
     try {
       const res = await fetch(`/api/users/${id}`, {
         method: "PUT",
@@ -103,7 +107,11 @@ export default function Users() {
     }
   };
 
-  const handleChangeRole = async (index: number, id: string, newRole: string) => {
+  const handleChangeRole = async (
+    index: number,
+    id: string,
+    newRole: string
+  ) => {
     try {
       const res = await fetch(`/api/users/${id}`, {
         method: "PUT",
@@ -143,6 +151,7 @@ export default function Users() {
     name: string
   ) => (
     <div className="relative">
+      <title>จัดการผู้ใช้</title>
       <p className="text-sm font-semibold text-gray-700 mb-1">{label}</p>
       <div className="relative w-full mb-4">
         <input
@@ -177,11 +186,15 @@ export default function Users() {
 
   return (
     <div className="w-full max-w-7xl mx-auto p-6 bg-white rounded-2xl shadow-xl">
-      <h1 className="text-3xl font-bold text-gray-800 mb-8 text-center">จัดการผู้ใช้</h1>
+      <h1 className="text-3xl font-bold text-gray-800 mb-8 text-center">
+        จัดการผู้ใช้
+      </h1>
 
       {/* Filter Section */}
       <div className="mb-10">
-        <h2 className="text-xl font-semibold text-gray-700 mb-4">ตัวกรองผู้ใช้</h2>
+        <h2 className="text-xl font-semibold text-gray-700 mb-4">
+          ตัวกรองผู้ใช้
+        </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {renderDropdown(
             "สถานะผู้ใช้",
@@ -198,34 +211,74 @@ export default function Users() {
 
       {/* Summary Section */}
       <div className="mb-10">
-        <h2 className="text-xl font-semibold text-gray-700 mb-4">สรุปข้อมูลผู้ใช้</h2>
+        <h2 className="text-xl font-semibold text-gray-700 mb-4">
+          สรุปข้อมูลผู้ใช้
+        </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           <div className="bg-blue-50 p-6 rounded-xl shadow-md flex items-start gap-4">
-            <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+            <svg
+              className="w-10 h-10 text-blue-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+              />
             </svg>
             <div>
-              <h3 className="font-semibold text-blue-600 text-lg">ผู้ใช้ทั้งหมด</h3>
-              <p className="text-3xl font-bold text-gray-800 mt-1">{users.length}</p>
+              <h3 className="font-semibold text-blue-600 text-lg">
+                ผู้ใช้ทั้งหมด
+              </h3>
+              <p className="text-3xl font-bold text-gray-800 mt-1">
+                {users.length}
+              </p>
             </div>
           </div>
           <div className="bg-green-50 p-6 rounded-xl shadow-md flex items-start gap-4">
-            <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              className="w-10 h-10 text-green-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
             <div>
-              <h3 className="font-semibold text-green-600 text-lg">ผู้ใช้ที่ใช้งาน</h3>
+              <h3 className="font-semibold text-green-600 text-lg">
+                ผู้ใช้ที่ใช้งาน
+              </h3>
               <p className="text-3xl font-bold text-gray-800 mt-1">
                 {users.filter((user) => user.status).length}
               </p>
             </div>
           </div>
           <div className="bg-red-50 p-6 rounded-xl shadow-md flex items-start gap-4">
-            <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              className="w-10 h-10 text-red-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
             <div>
-              <h3 className="font-semibold text-red-600 text-lg">ผู้ใช้ที่ไม่ใช้งาน</h3>
+              <h3 className="font-semibold text-red-600 text-lg">
+                ผู้ใช้ที่ไม่ใช้งาน
+              </h3>
               <p className="text-3xl font-bold text-gray-800 mt-1">
                 {users.filter((user) => !user.status).length}
               </p>
@@ -236,7 +289,9 @@ export default function Users() {
 
       {/* Table Section */}
       <div>
-        <h2 className="text-xl font-semibold text-gray-700 mb-4">รายการผู้ใช้</h2>
+        <h2 className="text-xl font-semibold text-gray-700 mb-4">
+          รายการผู้ใช้
+        </h2>
         <div className="overflow-x-auto rounded-xl shadow-md">
           <div className="grid grid-cols-6 gap-4 bg-blue-50 p-4 font-semibold text-gray-700 text-sm">
             <div>รูป</div>
@@ -271,7 +326,9 @@ export default function Users() {
                 <div>
                   <select
                     value={user.role}
-                    onChange={(e) => handleChangeRole(index, user.id, e.target.value)}
+                    onChange={(e) =>
+                      handleChangeRole(index, user.id, e.target.value)
+                    }
                     className="w-full text-sm p-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="user">User</option>
@@ -325,8 +382,18 @@ export default function Users() {
           disabled={currentPage === 1}
           className="bg-gray-200 hover:bg-gray-300 rounded-lg p-3 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+          <svg
+            className="w-5 h-5 text-gray-600"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M15 19l-7-7 7-7"
+            />
           </svg>
         </button>
         <span className="bg-gray-200 rounded-lg px-4 py-2 text-sm font-semibold text-gray-600">
@@ -341,8 +408,18 @@ export default function Users() {
           disabled={currentPage === totalPages}
           className="bg-gray-200 hover:bg-gray-300 rounded-lg p-3 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+          <svg
+            className="w-5 h-5 text-gray-600"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M9 5l7 7-7 7"
+            />
           </svg>
         </button>
       </div>

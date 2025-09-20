@@ -202,6 +202,7 @@ export default function Pet() {
   if (!isRegistered) {
     return (
       <div className="flex flex-col items-center justify-center flex-grow mt-10">
+        <title>สัตว์เลี้ยง</title>
         <h1 className="text-xl font-bold text-center mb-6">สัตว์เลี้ยงหาย</h1>
         <p className="text-center mb-6 text-gray-600">
           กรุณาลงทะเบียนสัตว์เลี้ยง

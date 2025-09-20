@@ -15,6 +15,7 @@ const AnnouncementLayout = ({ children }: { children: React.ReactNode }) => {
         </div>
 
         <main className="flex-1  xl:p-11  md:pt-16 sm:pt-9 pt-7 overflow-auto">
+          <title>ประกาศ</title>
           {children}
         </main>
       </div>

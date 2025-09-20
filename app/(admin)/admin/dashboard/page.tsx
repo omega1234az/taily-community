@@ -18,7 +18,7 @@ type ChartData = {
   ownerSearch: number;
   newUsers: number;
   cluesReported: number;
-  lostPetViews: number;  // ยอดวิว LostPet (แบบเก่า)
+  lostPetViews: number; // ยอดวิว LostPet (แบบเก่า)
   ownerSearchViews: number; // ยอดวิว FoundPet (แบบเก่า)
 };
 
@@ -44,10 +44,14 @@ const CustomTooltip = ({ active, payload, label, metric }: any) => {
         <p className="font-bold text-gray-800">{label}</p>
         {payload.map((p: any, index: number) => (
           <p key={index} className="text-sm" style={{ color: p.fill }}>
-            {`${p.name}: ${p.value || 0} ${metric === 'views' ? 'ครั้ง' : 'โพสต์'}`}
+            {`${p.name}: ${p.value || 0} ${
+              metric === "views" ? "ครั้ง" : "โพสต์"
+            }`}
           </p>
         ))}
-        <p className="font-bold mt-2 text-gray-800">รวม: {total} {metric === 'views' ? 'ครั้ง' : 'โพสต์'}</p>
+        <p className="font-bold mt-2 text-gray-800">
+          รวม: {total} {metric === "views" ? "ครั้ง" : "โพสต์"}
+        </p>
       </div>
     );
   }
@@ -62,7 +66,9 @@ const Dashboard = () => {
   const [selectedRange, setSelectedRange] = useState<
     "1 สัปดาห์" | "1 เดือน" | "6 เดือน" | "1 ปี"
   >("1 ปี");
-  const [selectedMetric, setSelectedMetric] = useState<"posts" | "views">("posts");
+  const [selectedMetric, setSelectedMetric] = useState<"posts" | "views">(
+    "posts"
+  );
   const [openDropdown, setOpenDropdown] = useState<null | string>(null);
 
   const {
@@ -115,6 +121,7 @@ const Dashboard = () => {
     name: string
   ) => (
     <div className="relative">
+      <title>แดชบอร์ดสถิติระบบ</title>
       <p className="text-sm font-semibold text-gray-700 mb-1">{label}</p>
       <div className="relative w-full mb-4">
         <input
@@ -149,13 +156,28 @@ const Dashboard = () => {
 
   if (speciesError)
     return (
-      <div className="text-red-500 text-center py-8">เกิดข้อผิดพลาดในการโหลดประเภทสัตว์เลี้ยง: {speciesError.message}</div>
+      <div className="text-red-500 text-center py-8">
+        เกิดข้อผิดพลาดในการโหลดประเภทสัตว์เลี้ยง: {speciesError.message}
+      </div>
     );
-  if (speciesLoading) return <div className="text-center py-8">กำลังโหลดประเภทสัตว์เลี้ยง...</div>;
-  if (error) return <div className="text-red-500 text-center py-8">เกิดข้อผิดพลาดในการโหลดข้อมูล: {error.message}</div>;
-  if (isLoading) return <div className="text-center py-8">กำลังโหลดข้อมูลชาร์ต...</div>;
+  if (speciesLoading)
+    return (
+      <div className="text-center py-8">กำลังโหลดประเภทสัตว์เลี้ยง...</div>
+    );
+  if (error)
+    return (
+      <div className="text-red-500 text-center py-8">
+        เกิดข้อผิดพลาดในการโหลดข้อมูล: {error.message}
+      </div>
+    );
+  if (isLoading)
+    return <div className="text-center py-8">กำลังโหลดข้อมูลชาร์ต...</div>;
   if (chartData.length === 0)
-    return <div className="text-center py-8 text-gray-600">ไม่มีข้อมูลสำหรับตัวกรองที่เลือก</div>;
+    return (
+      <div className="text-center py-8 text-gray-600">
+        ไม่มีข้อมูลสำหรับตัวกรองที่เลือก
+      </div>
+    );
 
   const categoryOptions = [
     { label: "ทั้งหมด", value: "all" },
@@ -171,11 +193,11 @@ const Dashboard = () => {
   // เลือก dataKey และชื่อตาม metric
   const getDataKeyAndName = (type: "lost" | "found") => {
     if (selectedMetric === "posts") {
-      return type === "lost" 
+      return type === "lost"
         ? { key: "lostPets", name: "สัตว์เลี้ยงหาย" }
         : { key: "ownerSearch", name: "หาเจ้าของ" };
     } else {
-      return type === "lost" 
+      return type === "lost"
         ? { key: "lostPetViews", name: "สัตว์เลี้ยงหาย (วิว)" }
         : { key: "ownerSearchViews", name: "หาเจ้าของ (วิว)" };
     }
@@ -186,11 +208,15 @@ const Dashboard = () => {
 
   return (
     <div className="w-full max-w-7xl mx-auto p-6 bg-white rounded-2xl shadow-xl">
-      <h1 className="text-3xl font-bold text-gray-800 mb-8 text-center">แดชบอร์ดสถิติระบบ</h1>
-      
+      <h1 className="text-3xl font-bold text-gray-800 mb-8 text-center">
+        แดชบอร์ดสถิติระบบ
+      </h1>
+
       {/* Filters Section */}
       <div className="mb-10">
-        <h2 className="text-xl font-semibold text-gray-700 mb-4">ตัวกรองข้อมูล</h2>
+        <h2 className="text-xl font-semibold text-gray-700 mb-4">
+          ตัวกรองข้อมูล
+        </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
           {renderDropdown(
             "ประเภทประกาศ",
@@ -202,7 +228,12 @@ const Dashboard = () => {
             ],
             "type"
           )}
-          {renderDropdown("ประเภทสัตว์เลี้ยง", selectedCategoryId, categoryOptions, "category")}
+          {renderDropdown(
+            "ประเภทสัตว์เลี้ยง",
+            selectedCategoryId,
+            categoryOptions,
+            "category"
+          )}
           {renderDropdown(
             "ช่วงเวลา",
             selectedRange,
@@ -225,51 +256,109 @@ const Dashboard = () => {
 
       {/* Summary Section */}
       <div className="mb-10">
-        <h2 className="text-xl font-semibold text-gray-700 mb-4">สรุปสถิติรวม</h2>
+        <h2 className="text-xl font-semibold text-gray-700 mb-4">
+          สรุปสถิติรวม
+        </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
           <div className="bg-blue-50 p-6 rounded-xl shadow-md flex items-start gap-4">
-            <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+            <svg
+              className="w-10 h-10 text-blue-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+              />
             </svg>
             <div>
               <h3 className="font-semibold text-blue-600 text-lg">
-                {selectedMetric === "posts" ? "จำนวนสัตว์เลี้ยงหาย" : "ยอดวิวสัตว์เลี้ยงหาย"}
+                {selectedMetric === "posts"
+                  ? "จำนวนสัตว์เลี้ยงหาย"
+                  : "ยอดวิวสัตว์เลี้ยงหาย"}
               </h3>
               <p className="text-3xl font-bold text-gray-800 mt-1">
-                {chartData.reduce((sum, d) => sum + (d[lostData.key as keyof ChartData] as number), 0)}
+                {chartData.reduce(
+                  (sum, d) =>
+                    sum + (d[lostData.key as keyof ChartData] as number),
+                  0
+                )}
               </p>
             </div>
           </div>
           <div className="bg-yellow-50 p-6 rounded-xl shadow-md flex items-start gap-4">
-            <svg className="w-10 h-10 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+            <svg
+              className="w-10 h-10 text-yellow-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+              />
             </svg>
             <div>
               <h3 className="font-semibold text-yellow-600 text-lg">
-                {selectedMetric === "posts" ? "จำนวนหาเจ้าของ" : "ยอดวิวหาเจ้าของ"}
+                {selectedMetric === "posts"
+                  ? "จำนวนหาเจ้าของ"
+                  : "ยอดวิวหาเจ้าของ"}
               </h3>
               <p className="text-3xl font-bold text-gray-800 mt-1">
-                {chartData.reduce((sum, d) => sum + (d[foundData.key as keyof ChartData] as number), 0)}
+                {chartData.reduce(
+                  (sum, d) =>
+                    sum + (d[foundData.key as keyof ChartData] as number),
+                  0
+                )}
               </p>
             </div>
           </div>
           <div className="bg-green-50 p-6 rounded-xl shadow-md flex items-start gap-4">
-            <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0-12l-1 3m-3-3h6l-1 3M7 10l-1 3m-3-3h6l-1 3m9-9v12" />
+            <svg
+              className="w-10 h-10 text-green-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0-12l-1 3m-3-3h6l-1 3M7 10l-1 3m-3-3h6l-1 3m9-9v12"
+              />
             </svg>
             <div>
-              <h3 className="font-semibold text-green-600 text-lg">จำนวนผู้ใช้ใหม่</h3>
+              <h3 className="font-semibold text-green-600 text-lg">
+                จำนวนผู้ใช้ใหม่
+              </h3>
               <p className="text-3xl font-bold text-gray-800 mt-1">
                 {chartData.reduce((sum, d) => sum + d.newUsers, 0)}
               </p>
             </div>
           </div>
           <div className="bg-purple-50 p-6 rounded-xl shadow-md flex items-start gap-4">
-            <svg className="w-10 h-10 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            <svg
+              className="w-10 h-10 text-purple-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M13 10V3L4 14h7v7l9-11h-7z"
+              />
             </svg>
             <div>
-              <h3 className="font-semibold text-purple-600 text-lg">จำนวนเบาะแสที่แจ้ง</h3>
+              <h3 className="font-semibold text-purple-600 text-lg">
+                จำนวนเบาะแสที่แจ้ง
+              </h3>
               <p className="text-3xl font-bold text-gray-800 mt-1">
                 {chartData.reduce((sum, d) => sum + d.cluesReported, 0)}
               </p>
@@ -280,7 +369,9 @@ const Dashboard = () => {
 
       {/* Chart Section */}
       <div>
-        <h2 className="text-xl font-semibold text-gray-700 mb-4">กราฟสถิติรายปี</h2>
+        <h2 className="text-xl font-semibold text-gray-700 mb-4">
+          กราฟสถิติรายปี
+        </h2>
         <ResponsiveContainer width="100%" height={400}>
           <BarChart
             data={chartData}
@@ -300,7 +391,10 @@ const Dashboard = () => {
             />
             <YAxis
               label={{
-                value: selectedMetric === "posts" ? "จำนวนโพสต์ / รายการ" : "ยอดวิว (ครั้ง)",
+                value:
+                  selectedMetric === "posts"
+                    ? "จำนวนโพสต์ / รายการ"
+                    : "ยอดวิว (ครั้ง)",
                 angle: -90,
                 position: "insideLeft",
                 className: "text-sm text-gray-600",
@@ -309,7 +403,8 @@ const Dashboard = () => {
             />
             <Tooltip content={<CustomTooltip metric={selectedMetric} />} />
             <Legend wrapperStyle={{ paddingTop: 20 }} />
-            {(selectedType === "ทั้งหมด" || selectedType === "สัตว์เลี้ยงหาย") && (
+            {(selectedType === "ทั้งหมด" ||
+              selectedType === "สัตว์เลี้ยงหาย") && (
               <Bar
                 dataKey={lostData.key as keyof ChartData}
                 name={lostData.name}

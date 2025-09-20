@@ -15,6 +15,7 @@ const PetLayout = ({ children }: { children: React.ReactNode }) => {
         </div>
 
         <main className="flex-1 xl:p-11 xl:pl-20  md:pt-16 sm:pt-9 pt-7 overflow-auto">
+          <title>สัตว์เลี้ยง</title>
           {children}
         </main>
       </div>

@@ -5,7 +5,9 @@ import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 
 // Dynamic import for PetMap to avoid SSR issues
-const PetMap = dynamic(() => import("../../../component/PetMap"), { ssr: false });
+const PetMap = dynamic(() => import("../../../component/PetMap"), {
+  ssr: false,
+});
 
 type User = { id: string; name: string; image: string };
 type Species = { id: number; name: string };
@@ -22,7 +24,7 @@ type FoundPet = {
   breed: string;
   gender: string;
   color: string[];
-  
+
   distinctive: string;
   status: string;
   userId: string;
@@ -136,7 +138,11 @@ export default function FoundPetPage() {
   };
 
   const handleSubmitClue = async () => {
-    if (!witnessName.trim() || !contactDetail.trim() || !sightingDetail.trim()) {
+    if (
+      !witnessName.trim() ||
+      !contactDetail.trim() ||
+      !sightingDetail.trim()
+    ) {
       setClueError("กรุณากรอกข้อมูลให้ครบถ้วน");
       return;
     }
@@ -214,6 +220,7 @@ export default function FoundPetPage() {
   return (
     <div className=" mx-auto p-4 space-y-6">
       {/* Header */}
+      <title>หาเจ้าของ</title>
       <div className="flex items-center justify-between">
         <h1 className="lg:text-3xl text-2xl font-semibold">
           <span className="bg-[#EAD64D] lg:py-6 lg:pl-6 sm:py-5 sm:pl-5 py-3 pl-4 rounded-full">
@@ -222,7 +229,6 @@ export default function FoundPetPage() {
           {pet.species.name.slice(2)}
         </h1>
         <div className="flex gap-3">
-          
           <div
             className="flex justify-center items-center cursor-pointer"
             onClick={() => setIsReportOpen(true)}
@@ -235,8 +241,6 @@ export default function FoundPetPage() {
           </div>
         </div>
       </div>
-
-      
 
       {/* Report Popup */}
       {isReportOpen && (
@@ -291,7 +295,9 @@ export default function FoundPetPage() {
             <button
               onClick={handleSubmitReport}
               className="mt-4 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={!reportType || (showOtherInput && !reportMessage.trim())}
+              disabled={
+                !reportType || (showOtherInput && !reportMessage.trim())
+              }
             >
               ส่งรายงาน
             </button>
@@ -319,7 +325,6 @@ export default function FoundPetPage() {
       <div className="flex flex-col lg:mt-2 text-lg lg:text-xl space-y-8">
         <div className="mt-10 flex flex-col sm:grid grid-cols-3 gap-5 md:gap-10 lg:gap-28 xl:gap-40 2xl:gap-52">
           <div className="mt-2 xl:mt-5 text-lg lg:text-2xl space-y-6">
-            
             <p>
               <span className="text-lg lg:text-2xl">เพศ:</span>{" "}
               <span className="text-[16px] lg:text-xl">{pet.gender}</span>
@@ -334,18 +339,24 @@ export default function FoundPetPage() {
             </p>
             <p>
               <span className="text-lg lg:text-2xl">สี:</span>{" "}
-              <span className="text-[16px] lg:text-xl">{pet.color.join(", ")}</span>
+              <span className="text-[16px] lg:text-xl">
+                {pet.color.join(", ")}
+              </span>
             </p>
           </div>
           <div className="mt-2 xl:mt-5 space-y-1">
             <h2 className="text-lg lg:text-2xl">ลักษณะเด่น</h2>
             <p className="text-[16px] lg:text-lg mb-10">{pet.distinctive}</p>
             <h2 className="text-lg lg:text-2xl">วันที่พบ</h2>
-            <p className="text-[16px] lg:text-lg">{new Date(pet.foundDate).toLocaleDateString()}</p>
+            <p className="text-[16px] lg:text-lg">
+              {new Date(pet.foundDate).toLocaleDateString()}
+            </p>
           </div>
           <div className="mt-2 xl:mt-5 space-y-1">
             <h2 className="text-lg lg:text-2xl">สถานะ</h2>
-            <p className="text-[16px] lg:text-lg mb-10 text-blue-600">{pet.status}</p>
+            <p className="text-[16px] lg:text-lg mb-10 text-blue-600">
+              {pet.status}
+            </p>
             <h2 className="text-lg lg:text-2xl">ผู้เข้าชม</h2>
             <p className="text-[16px] lg:text-lg">{pet.views}</p>
           </div>
@@ -353,10 +364,26 @@ export default function FoundPetPage() {
 
         {/* Social Media Icons */}
         <div className="flex row space-x-3 lg:mt-8 mt-2">
-          <img src="/home/f.png" alt="facebook" className="lg:w-14 sm:w-12 w-10 h-auto object-cover" />
-          <img src="/home/l.png" alt="line" className="lg:w-14 sm:w-12 w-10 h-auto object-cover" />
-          <img src="/home/x.png" alt="x" className="lg:w-14 sm:w-12 w-10 h-auto object-cover" />
-          <img src="/home/ch.png" alt="chat" className="lg:w-14 sm:w-12 w-10 h-auto object-cover" />
+          <img
+            src="/home/f.png"
+            alt="facebook"
+            className="lg:w-14 sm:w-12 w-10 h-auto object-cover"
+          />
+          <img
+            src="/home/l.png"
+            alt="line"
+            className="lg:w-14 sm:w-12 w-10 h-auto object-cover"
+          />
+          <img
+            src="/home/x.png"
+            alt="x"
+            className="lg:w-14 sm:w-12 w-10 h-auto object-cover"
+          />
+          <img
+            src="/home/ch.png"
+            alt="chat"
+            className="lg:w-14 sm:w-12 w-10 h-auto object-cover"
+          />
         </div>
 
         {/* Location and Map */}
@@ -365,7 +392,9 @@ export default function FoundPetPage() {
         <PetMap lat={pet.lat} lng={pet.lng} zoom={15} />
 
         {/* Contact Section */}
-        <p className="text-lg lg:text-2xl lg:my-8 my-5 sm:my-5">ช่องทางการติดต่อ</p>
+        <p className="text-lg lg:text-2xl lg:my-8 my-5 sm:my-5">
+          ช่องทางการติดต่อ
+        </p>
         <div className="inline-flex gap-8 sm:gap-12 xl:p-8 p-5 bg-[#AFDAFB] rounded-xl items-center sm:mb-20 mb-10 w-auto">
           <div className="flex justify-center items-start">
             <img
@@ -406,8 +435,8 @@ export default function FoundPetPage() {
         </div>
 
         {/* Delete Button */}
-        
       </div>
+      {/* ส่วนโปสเตอร์ประกาศ (ซ่อนจากหน้าจอ แต่ยังอยู่ใน DOM สำหรับ print) */}
     </div>
   );
 }
