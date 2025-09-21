@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef ,useEffect} from "react";
+import React, { useState, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { getSession } from "next-auth/react";
 import {
@@ -13,6 +13,7 @@ import {
   TwitterIcon,
   WhatsappIcon,
 } from "react-share";
+
 // โหลด component แบบ dynamic เพื่อป้องกัน SSR error
 const PetMap = dynamic(() => import("./PetMap"), { ssr: false });
 
@@ -35,6 +36,11 @@ type LostPet = {
   images: string[];
   ownerName?: string;
   phone?: string;
+  user: {
+    id: string;
+    name: string;
+    image: string;
+  };
   facebook?: string;
   missingLocation?: string;
   lat?: number;
@@ -45,9 +51,40 @@ type Props = {
   pet: LostPet;
 };
 
+// ฟังก์ชันแปลงข้อมูล JSON เป็น LostPet type
+export const transformToLostPet = (data: any): LostPet => ({
+  id: String(data.id || ''),
+  name: data.pet?.name || 'ไม่ระบุ',
+  age: String(data.pet?.age || 'ไม่ระบุ'),
+  gender: data.pet?.gender || 'ไม่ระบุ',
+  type: data.pet?.speciesId ? 'แมว' : 'ไม่ระบุ', // ปรับตาม speciesId
+  breed: data.pet?.breed || 'ไม่ระบุ',
+  sterilized: data.pet?.isNeutered ? 'ทำหมันแล้ว' : 'ยังไม่ทำหมัน',
+  color: Array.isArray(data.pet?.color) ? data.pet.color.join(', ') : 'ไม่ระบุ',
+  marks: data.pet?.markings || 'ไม่ระบุ',
+  description: data.pet?.description || 'ไม่ระบุ',
+  lostDate: data.lostDate ? new Date(data.lostDate).toLocaleDateString('th-TH') : 'ไม่ระบุ',
+  lostDetail: data.description || 'ไม่ระบุ',
+  lostLocation: data.location || 'ไม่ระบุ',
+  reward: data.reward ? String(data.reward) : undefined,
+  mainImage: data.pet?.images?.find((img: any) => img.mainImage)?.url || '/fallback-image.png',
+  images: data.pet?.images?.map((img: any) => img.url) || [],
+  ownerName: data.ownerName || 'ไม่ระบุ',
+  phone: data.phone || 'ไม่ระบุ',
+  user: {
+    id: data.user?.id || '',
+    name: data.user?.name || 'ไม่ระบุ',
+    image: data.user?.image || '/all/owen.png', // รูปสำรอง
+  },
+  facebook: data.facebook || 'ไม่ระบุ',
+  missingLocation: data.missingLocation || 'ไม่ระบุ',
+  lat: data.lat || undefined,
+  lng: data.lng || undefined,
+});
+
 export default function LostPetDetails({ pet }: Props) {
-  const [mainImage, setMainImage] = useState(pet.images[0]);
-  const images = [pet.mainImage, ...pet.images];
+  const [mainImage, setMainImage] = useState(pet.mainImage || pet.images?.[0] || '/fallback-image.png');
+  const images = [pet.mainImage, ...(pet.images || [])].filter(Boolean);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isClueOpen, setIsClueOpen] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
@@ -60,6 +97,7 @@ export default function LostPetDetails({ pet }: Props) {
   const [lat, setLat] = useState("");
   const [lng, setLng] = useState("");
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
   // Loading and error states
   const [isSubmittingClue, setIsSubmittingClue] = useState(false);
@@ -71,95 +109,86 @@ export default function LostPetDetails({ pet }: Props) {
   const [facebook, setFacebook] = useState(pet.facebook || "ไม่ระบุ");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-
   const [reportType, setReportType] = useState<string>("");
   const [showOtherInput, setShowOtherInput] = useState(false);
   const [reportMessage, setReportMessage] = useState("");
-const [shareUrl, setShareUrl] = useState("");
+  const [shareUrl, setShareUrl] = useState("");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      setShareUrl(window.location.href); // ✅ ใช้ URL ปัจจุบัน
+      setShareUrl(window.location.href);
     }
   }, []);
 
   const title = "ช่วยตามหาสัตว์เลี้ยงของฉันด้วยนะ!";
-const handleSubmitReport = async () => {
-  // เช็ค session ของผู้ใช้ก่อน
-  const session = await getSession();
 
-  if (!session) {
-    alert("คุณต้องเข้าสู่ระบบก่อนที่จะรายงาน");
-    return;
-  }
+  const handleSubmitReport = async () => {
+    const session = await getSession();
+    if (!session) {
+      alert("คุณต้องเข้าสู่ระบบก่อนที่จะรายงาน");
+      return;
+    }
 
-  // ถ้าไม่มีการเลือกประเภทเหตุผล
-  if (!reportType) {
-    alert("กรุณาเลือกเหตุผลในการรายงาน");
-    return;
-  }
+    if (!reportType) {
+      alert("กรุณาเลือกเหตุผลในการรายงาน");
+      return;
+    }
 
-  const reportData = {
-    referenceType: "lost_pet",
-    referenceId: parseInt(pet.id),
-    reason: reportType === "อื่นๆ" ? reportMessage : reportType,
+    const reportData = {
+      referenceType: "lost_pet",
+      referenceId: parseInt(pet.id),
+      reason: reportType === "อื่นๆ" ? reportMessage : reportType,
+    };
+
+    try {
+      const response = await fetch("/api/reports", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(reportData),
+      });
+
+      const result = await response.json();
+      if (response.ok) {
+        alert("ส่งรายงานสำเร็จ!");
+        setIsReportOpen(false);
+        setReportType("");
+        setReportMessage("");
+        setShowOtherInput(false);
+      } else {
+        alert(result.error || "เกิดข้อผิดพลาดในการส่งรายงาน");
+      }
+    } catch (error) {
+      console.error("Error submitting report:", error);
+      alert("เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่");
+    }
   };
 
-  try {
-    const response = await fetch("/api/reports", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(reportData),
-    });
-
-    const result = await response.json();
-
-    if (response.ok) {
-      alert("ส่งรายงานสำเร็จ!");
-      setIsReportOpen(false);
-      setReportType("");
-      setReportMessage("");
-      setShowOtherInput(false);
-    } else {
-      alert(result.error || "เกิดข้อผิดพลาดในการส่งรายงาน");
-    }
-  } catch (error) {
-    console.error("Error submitting report:", error);
-    alert("เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่");
-  }
-};
   const handleButtonClick = () => {
     fileInputRef.current?.click();
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    
     if (files.length > 4) {
       setClueError("สามารถอัปโหลดรูปได้ไม่เกิน 4 รูป");
       return;
     }
 
     setSelectedImages(files);
-    
-    // สร้าง preview images
     const previews = files.map(file => URL.createObjectURL(file));
     setImagePreviews(previews);
-    setClueError(""); // ล้าง error
+    setClueError("");
   };
 
   const removeImage = (index: number) => {
     const newImages = selectedImages.filter((_, i) => i !== index);
     const newPreviews = imagePreviews.filter((_, i) => i !== index);
-    
     setSelectedImages(newImages);
     setImagePreviews(newPreviews);
   };
 
-  // Reset form function
   const resetClueForm = () => {
     setWitnessName("");
     setContactDetail("");
@@ -173,13 +202,7 @@ const handleSubmitReport = async () => {
     setClueSuccess("");
   };
 
-  console.log("LostPetDetails render with pet:", pet);
-
   const handleSubmit = async () => {
-    // Validate form
-    
-
- 
     if (!witnessName.trim() || !contactDetail.trim() || !sightingDetail.trim()) {
       setClueError("กรุณากรอกข้อมูลให้ครบถ้วน");
       return;
@@ -190,37 +213,31 @@ const handleSubmitReport = async () => {
     setClueSuccess("");
 
     try {
-      // สร้าง FormData
       const formData = new FormData();
       formData.append("witnessName", witnessName.trim());
       formData.append("contactDetails", contactDetail.trim());
       formData.append("sightingDetails", sightingDetail.trim());
-      
+
       if (location.trim()) {
         formData.append("location", location.trim());
       }
-      
       if (lat.trim()) {
         formData.append("lat", lat.trim());
       }
-      
       if (lng.trim()) {
         formData.append("lng", lng.trim());
       }
 
-      // เพิ่มรูปภาพ
       selectedImages.forEach((image) => {
         formData.append("images", image);
       });
 
-      // ส่งข้อมูลไปยัง API
       const response = await fetch(`/api/lostpet/${pet.id}/clues`, {
         method: "POST",
         body: formData,
       });
 
       const result = await response.json();
-
       if (response.ok) {
         setClueSuccess("เพิ่มเบาะแสสำเร็จ!");
         setTimeout(() => {
@@ -241,7 +258,7 @@ const handleSubmitReport = async () => {
   return (
     <div>
       <div className="flex items-center justify-between">
-        <h1 className="lg:text-3xl text_SHADER: text-2xl font-semibold mb-5">
+        <h1 className="lg:text-3xl text-2xl font-semibold mb-5">
           <span className="bg-[#EAD64D] lg:py-6 lg:pl-6 sm:py-5 sm:pl-5 py-3 pl-4 rounded-full">
             {pet.name.slice(0, 2)}
           </span>
@@ -249,7 +266,6 @@ const handleSubmitReport = async () => {
         </h1>
 
         <div className="flex gap-3">
-          {/* ปุ่มแจ้งเบาะแส */}
           <div
             onClick={() => setIsClueOpen(true)}
             className="cursor-pointer border-2 border-gray-400 rounded-lg p-1.5 flex flex-col items-center w-fit"
@@ -264,7 +280,6 @@ const handleSubmitReport = async () => {
             </p>
           </div>
 
-          {/* ปุ่มรายงาน */}
           <div
             className="flex justify-center items-center cursor-pointer"
             onClick={() => setIsReportOpen(true)}
@@ -278,9 +293,8 @@ const handleSubmitReport = async () => {
         </div>
       </div>
 
-      {/* Popup แจ้งเบาะแส */}
       {isClueOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center  bg-opacity-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-opacity-50">
           <div className="bg-white p-6 xl:mt-10 sm:mt-20 rounded-2xl shadow-lg xl:w-[600px] xl:max-h-[90vh] lg:w-[550px] lg:max-h-[85vh] md:w-[500px] md:max-h-[85vh] sm:w-[450px] sm:max-h-[85vh] w-full h-full max-h-full relative overflow-y-auto">
             <span className="absolute top-[-36px] left-1 w-52 h-28 bg-[#7CBBEB] rounded-b-full z-0"></span>
             <span className="absolute top-4 left-64 w-10 h-10 bg-[#EAD64D] rounded-full z-0 -translate-x-1/2"></span>
@@ -292,13 +306,12 @@ const handleSubmitReport = async () => {
               </h2>
             </div>
 
-            {/* แสดงข้อความ Error/Success */}
             {clueError && (
               <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-md text-sm relative z-10">
                 {clueError}
               </div>
             )}
-            
+
             {clueSuccess && (
               <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded-md text-sm relative z-10">
                 {clueSuccess}
@@ -340,12 +353,8 @@ const handleSubmitReport = async () => {
                 />
               </div>
 
-              
-
               <div>
                 <p className="mb-2 text-sm lg:text-md">รูปภาพ (ไม่เกิน 4 รูป)</p>
-                
-                {/* แสดง Preview รูปภาพ */}
                 {imagePreviews.length > 0 && (
                   <div className="mb-2 flex flex-wrap gap-2">
                     {imagePreviews.map((preview, index) => (
@@ -367,7 +376,7 @@ const handleSubmitReport = async () => {
                     ))}
                   </div>
                 )}
-                
+
                 <input
                   type="file"
                   ref={fileInputRef}
@@ -417,9 +426,8 @@ const handleSubmitReport = async () => {
         </div>
       )}
 
-      {/* Popup รายงาน */}
       {isReportOpen && (
-        <div className="fixed inset-0 flex justify-center items-center z-50  bg-opacity-50">
+        <div className="fixed inset-0 flex justify-center items-center z-50 bg-opacity-50">
           <div className="bg-white lg:w-[500px] sm:w-[400px] w-full h-full sm:h-auto rounded-md shadow-lg p-4 relative">
             <button
               onClick={() => setIsReportOpen(false)}
@@ -484,10 +492,9 @@ const handleSubmitReport = async () => {
       )}
 
       <div className="flex flex-col sm:gap-6 gap-4 lg:pt-14 pt-8">
-        {/* ส่วนแสดงรูปเรียงแบบเลื่อนแนวนอน */}
         <div className="flex overflow-x-auto scrollbar-hide pl-6">
           <div className="flex gap-6">
-            {pet.images.slice(0, 4).map((img, idx) => (
+            {images.slice(0, 4).map((img, idx) => (
               <img
                 key={idx}
                 src={img}
@@ -503,9 +510,21 @@ const handleSubmitReport = async () => {
         <div className="mt-10 flex flex-col sm:grid grid-cols-3 gap-5 md:gap-10 lg:gap-28 xl:gap-40 2xl:gap-52">
           <div className="mt-2 xl:mt-5 text-lg lg:text-2xl space-y-6">
             <p>
-              <span className="text-lg lg:text-2xl">อายุ:</span>{" "}
-              <span className="text-[16px] lg:text-xl">{pet.age}</span>
-            </p>
+  <span className="text-lg lg:text-2xl">อายุ:</span>{" "}
+  <span className="text-[16px] lg:text-xl">
+    {(() => {
+      const totalMonths = Number(pet.age);
+      console.log(pet.age) // แปลงจาก string → number
+      const years = Math.floor(totalMonths / 12);
+      const months = totalMonths % 12;
+
+      if (years > 0 && months > 0) return `${years} ปี ${months} เดือน`;
+      if (years > 0) return `${years} ปี`;
+      return `${months} เดือน`;
+    })()}
+  </span>
+</p>
+
             <p>
               <span className="text-lg lg:text-2xl">เพศ:</span>{" "}
               <span className="text-[16px] lg:text-xl">{pet.gender}</span>
@@ -531,9 +550,6 @@ const handleSubmitReport = async () => {
           <div className="mt-2 xl:mt-5 space-y-1">
             <h2 className="text-lg lg:text-2xl">รอยตำหนิ</h2>
             <p className="text-[16px] lg:text-lg mb-10">{pet.marks}</p>
-
-            
-
             <h2 className="text-lg lg:text-2xl">วันที่หาย</h2>
             <p className="text-[16px] lg:text-lg">{pet.lostDate}</p>
           </div>
@@ -541,7 +557,6 @@ const handleSubmitReport = async () => {
           <div className="mt-2 xl:mt-5 text-lg lg:text-xl space-y-1">
             <h2 className="text-lg lg:text-2xl">รายละเอียดการหาย</h2>
             <p className="text-[16px] lg:text-lg mb-10">{pet.lostDetail}</p>
-
             <h2 className="text-lg lg:text-2xl">เงินรางวัล</h2>
             <p className="text-[16px] lg:text-lg">
               {pet.reward ? `${pet.reward} บาท` : "ไม่มีระบุ"}
@@ -550,27 +565,22 @@ const handleSubmitReport = async () => {
         </div>
 
         <div className="flex row space-x-3 lg:mt-8 mt-2">
-      {/* Facebook */}
-      <FacebookShareButton url={shareUrl} hashtag={`#${title}` }>
-        <FacebookIcon size={48} round /> 
-      </FacebookShareButton>
-
-      {/* Line */}
-      <LineShareButton url={shareUrl} title={title}>
-        <LineIcon size={48} round />
-      </LineShareButton>
-
-      {/* Twitter (X) */}
-      <TwitterShareButton url={shareUrl} title={title}>
-        <TwitterIcon size={48} round />
-      </TwitterShareButton>
-
-      {/* WhatsApp (แทน ch.png) */}
-     
-    </div>
+          <FacebookShareButton url={shareUrl} hashtag={`#${title}`}>
+            <FacebookIcon size={48} round />
+          </FacebookShareButton>
+          <LineShareButton url={shareUrl} title={title}>
+            <LineIcon size={48} round />
+          </LineShareButton>
+          <TwitterShareButton url={shareUrl} title={title}>
+            <TwitterIcon size={48} round />
+          </TwitterShareButton>
+          <WhatsappShareButton url={shareUrl} title={title}>
+            <WhatsappIcon size={48} round />
+          </WhatsappShareButton>
+        </div>
 
         <h2 className="text-lg lg:text-2xl lg:mt-8 mt-2">สถานที่หาย</h2>
-        <p className="text-[16px] lg:text-xl mb-5">{pet.missingLocation} </p>
+        <p className="text-[16px] lg:text-xl mb-5">{pet.missingLocation}</p>
         <p className="text-[16px] lg:text-xl mb-5">{pet.lostLocation}</p>
 
         <PetMap lat={pet.lat} lng={pet.lng} zoom={15} />d
@@ -581,9 +591,9 @@ const handleSubmitReport = async () => {
         <div className="inline-flex gap-8 sm:gap-12 xl:p-8 p-5 bg-[#AFDAFB] rounded-xl items-center sm:mb-20 mb-10 w-auto">
           <div className="flex justify-center items-start">
             <img
-              src="/all/owen.png"
-              alt="logo"
-              className="lg:w-32 lg:h-32 xl:w-36 xl:h-36 2xl:w-40 2xl:h-40 w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full object-cover"
+              src={pet.user?.image || '/all/owen.png'}
+              alt={pet.user?.name || 'user'}
+              className="rounded-full w-40 h-40 object-cover"
             />
           </div>
 

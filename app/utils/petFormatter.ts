@@ -6,10 +6,7 @@ type PetImage = {
   mainImage: boolean;
 };
 
-export const formatPetAge = (age?: number): string => {
-  if (!age) return "ไม่ระบุ";
-  return age === 1 ? "1 ปี" : `${age} ปี`;
-};
+
 
 export const formatNeuteredStatus = (isNeutered: number): string => {
   return isNeutered === 1 ? "ทำหมันแล้ว" : "ไม่ได้ทำหมัน";

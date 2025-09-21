@@ -212,10 +212,21 @@ const ManageAnnouncements: React.FC = () => {
 
   return (
     <div className="w-full font-sans p-6 lg:p-10 bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+      <title>จัดการประกาศ</title>
       <div className="max-w-7xl mx-auto">
         <h1 className="text-3xl lg:text-4xl font-bold mb-8 text-gray-800 flex items-center gap-3">
-          <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          <svg
+            className="w-8 h-8 text-blue-600"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+            />
           </svg>
           จัดการประกาศ
         </h1>
@@ -285,7 +296,9 @@ const ManageAnnouncements: React.FC = () => {
                     />
                   ) : (
                     <div className="w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center rounded-t-2xl">
-                      <span className="text-sm text-gray-500 font-medium">ไม่มีรูปภาพ</span>
+                      <span className="text-sm text-gray-500 font-medium">
+                        ไม่มีรูปภาพ
+                      </span>
                     </div>
                   )}
                   <div className="absolute top-3 right-3 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-md">
@@ -293,25 +306,67 @@ const ManageAnnouncements: React.FC = () => {
                   </div>
                 </div>
                 <div className="p-6">
-                  <h3 className="text-xl font-bold text-gray-800 mb-2 line-clamp-1">{pet.title}</h3>
-                  <p className="text-gray-600 text-sm mb-4 line-clamp-2">{pet.description}</p>
+                  <h3 className="text-xl font-bold text-gray-800 mb-2 line-clamp-1">
+                    {pet.title}
+                  </h3>
+                  <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                    {pet.description}
+                  </p>
                   <div className="space-y-2 mb-4">
                     <div className="flex items-center text-sm text-gray-700">
-                      <svg className="w-4 h-4 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <svg
+                        className="w-4 h-4 mr-2 text-blue-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
                       </svg>
                       <span className="truncate">{pet.location}</span>
                     </div>
                     <div className="flex items-center text-sm text-gray-700">
-                      <svg className="w-4 h-4 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <svg
+                        className="w-4 h-4 mr-2 text-blue-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
                       </svg>
-                      <span>วันที่หาย: {new Date(pet.lostDate).toLocaleDateString("th-TH")}</span>
+                      <span>
+                        วันที่หาย:{" "}
+                        {new Date(pet.lostDate).toLocaleDateString("th-TH")}
+                      </span>
                     </div>
                     <div className="flex items-center text-sm text-gray-700">
-                      <svg className="w-4 h-4 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      <svg
+                        className="w-4 h-4 mr-2 text-blue-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                        />
                       </svg>
                       <span>โดย: {pet.user.firstName}</span>
                     </div>
@@ -359,7 +414,9 @@ const ManageAnnouncements: React.FC = () => {
                     />
                   ) : (
                     <div className="w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center rounded-t-2xl">
-                      <span className="text-sm text-gray-500 font-medium">ไม่มีรูปภาพ</span>
+                      <span className="text-sm text-gray-500 font-medium">
+                        ไม่มีรูปภาพ
+                      </span>
                     </div>
                   )}
                   <div className="absolute top-3 right-3 bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-md">
@@ -367,25 +424,67 @@ const ManageAnnouncements: React.FC = () => {
                   </div>
                 </div>
                 <div className="p-6">
-                  <h3 className="text-xl font-bold text-gray-800 mb-2 line-clamp-1">{pet.species.name}</h3>
-                  <p className="text-gray-600 text-sm mb-4 line-clamp-2">{pet.description}</p>
+                  <h3 className="text-xl font-bold text-gray-800 mb-2 line-clamp-1">
+                    {pet.species.name}
+                  </h3>
+                  <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                    {pet.description}
+                  </p>
                   <div className="space-y-2 mb-4">
                     <div className="flex items-center text-sm text-gray-700">
-                      <svg className="w-4 h-4 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <svg
+                        className="w-4 h-4 mr-2 text-blue-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
                       </svg>
                       <span className="truncate">{pet.location}</span>
                     </div>
                     <div className="flex items-center text-sm text-gray-700">
-                      <svg className="w-4 h-4 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <svg
+                        className="w-4 h-4 mr-2 text-blue-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
                       </svg>
-                      <span>วันที่พบ: {new Date(pet.foundDate).toLocaleDateString("th-TH")}</span>
+                      <span>
+                        วันที่พบ:{" "}
+                        {new Date(pet.foundDate).toLocaleDateString("th-TH")}
+                      </span>
                     </div>
                     <div className="flex items-center text-sm text-gray-700">
-                      <svg className="w-4 h-4 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      <svg
+                        className="w-4 h-4 mr-2 text-blue-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                        />
                       </svg>
                       <span>โดย: {pet.user.firstName}</span>
                     </div>
@@ -417,8 +516,18 @@ const ManageAnnouncements: React.FC = () => {
             disabled={currentPage === 1}
             className="flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full p-3 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md"
           >
-            <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+            <svg
+              className="w-5 h-5 text-gray-700"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M15 19l-7-7 7-7"
+              />
             </svg>
           </button>
           <span className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-white rounded-full px-4 py-2 text-sm font-semibold shadow-md">
@@ -426,11 +535,25 @@ const ManageAnnouncements: React.FC = () => {
           </span>
           <button
             onClick={() => setCurrentPage((prev) => prev + 1)}
-            disabled={showLostPets ? lostPets.length < petsPerPage : foundPets.length < petsPerPage}
+            disabled={
+              showLostPets
+                ? lostPets.length < petsPerPage
+                : foundPets.length < petsPerPage
+            }
             className="flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full p-3 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md"
           >
-            <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+            <svg
+              className="w-5 h-5 text-gray-700"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M9 5l7 7-7 7"
+              />
             </svg>
           </button>
         </div>
@@ -441,10 +564,10 @@ const ManageAnnouncements: React.FC = () => {
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto relative p-6">
               <div className="relative z-10">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-semibold text-gray-800">รายละเอียดสัตว์เลี้ยงหาย</h2>
-                  <button
-                    className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
-                  >
+                  <h2 className="text-xl font-semibold text-gray-800">
+                    รายละเอียดสัตว์เลี้ยงหาย
+                  </h2>
+                  <button className="text-gray-500 hover:text-gray-700 text-2xl font-bold">
                     ✕
                   </button>
                 </div>
@@ -460,10 +583,10 @@ const ManageAnnouncements: React.FC = () => {
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto relative p-6">
               <div className="relative z-10">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-semibold text-gray-800">รายละเอียดสัตว์เลี้ยงที่พบ</h2>
-                  <button
-                    className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
-                  >
+                  <h2 className="text-xl font-semibold text-gray-800">
+                    รายละเอียดสัตว์เลี้ยงที่พบ
+                  </h2>
+                  <button className="text-gray-500 hover:text-gray-700 text-2xl font-bold">
                     ✕
                   </button>
                 </div>

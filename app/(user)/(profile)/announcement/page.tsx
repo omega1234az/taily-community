@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -139,7 +138,6 @@ export default function Announcement() {
 
   // Handle click for found pet details
 
-
   // Loading Card component
   const LoadingCard = () => (
     <div className="animate-pulse bg-gray-200 rounded-2xl shadow-lg w-full xl:h-[300px] lg:h-[275px] md:h-[250px] sm:h-[390px] h-[350px] 2xl:max-w-[200px] xl:max-w-[200px] lg:max-w-[170px] md:max-w-[160px] sm:max-w-[288px] max-w-[235px]">
@@ -192,7 +190,7 @@ export default function Announcement() {
                 id={lostPet.id}
                 imageSrc={lostPet.pet.images[0]?.url || "/placeholder.jpg"}
                 name={lostPet.pet.name}
-                age={`${lostPet.pet.age} ปี`}
+                age={`${lostPet.pet.age}`}
                 gender={lostPet.pet.gender}
                 breed={lostPet.pet.breed}
                 lostDate={formatThaiDate(lostPet.lostDate)}
@@ -201,7 +199,7 @@ export default function Announcement() {
                 status={lostPet.status}
                 ownerName={lostPet.ownerName}
                 species={lostPet.pet.species.name}
-                createdAt={(lostPet.createdAt)}
+                createdAt={lostPet.createdAt}
                 color={lostPet.pet.color}
                 pet={lostPet.pet}
               />
@@ -228,7 +226,7 @@ export default function Announcement() {
           </div>
         </div>
 
-        {open && <Registration  onClose={() => setOpen(false)} />}
+        {open && <Registration onClose={() => setOpen(false)} />}
       </div>
 
       {lostPets.length >= 6 && (
@@ -263,31 +261,29 @@ export default function Announcement() {
       </div>
 
       <div className="flex sm:flex-row sm:flex-wrap flex-col lg:pl-5 xl:gap-14 gap-10 py-5">
-        {loading ? (
-          Array.from({ length: 3 }).map((_, index) => (
-            <LoadingCard key={`found-${index}`} />
-          ))
-        ) : foundPets.length > 0 ? (
-          foundPets.map((foundPet) => (
-            <div
-              key={foundPet.id}
-              
-            >
-              <FoundPetCard
-                id={foundPet.id}
-                imageSrc={foundPet.images[0]?.url || "/placeholder.jpg"}
-                species={foundPet.species.name}
-                age={foundPet.age ? `${foundPet.age} ปี` : "ไม่ทราบ"}
-                gender={foundPet.gender || "ไม่ทราบ"}
-                breed={foundPet.breed || "ไม่ทราบสายพันธุ์"}
-                foundDate={formatThaiDate(foundPet.foundDate)}
-                foundLocation={foundPet.location}
-                finderName={foundPet.user.firstName}
-                status={foundPet.status}
-              />
-            </div>
-          ))
-        ) : null}
+        {loading
+          ? Array.from({ length: 3 }).map((_, index) => (
+              <LoadingCard key={`found-${index}`} />
+            ))
+          : foundPets.length > 0
+          ? foundPets.map((foundPet) => (
+              <div key={foundPet.id}>
+                <FoundPetCard
+                  id={foundPet.id}
+                  imageSrc={foundPet.images[0]?.url || "/placeholder.jpg"}
+                  species={foundPet.species.name}
+                  age={foundPet.age ? `${foundPet.age} ปี` : "ไม่ทราบ"}
+                  gender={foundPet.gender || "ไม่ทราบ"}
+                  breed={foundPet.breed || "ไม่ทราบสายพันธุ์"}
+                  foundDate={formatThaiDate(foundPet.foundDate)}
+                  foundLocation={foundPet.location}
+                  finderName={foundPet.user.firstName}
+                  createdAt={foundPet.createdAt}
+                  status={foundPet.status}
+                />
+              </div>
+            ))
+          : null}
 
         <Link
           href="/registerowner"

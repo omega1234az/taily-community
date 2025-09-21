@@ -51,6 +51,7 @@ const PetCard: React.FC<AnCardProps> = ({
   lostDate,
   lostLocation,
   reward,
+  status,
   createdAt,
   onDelete,
 }) => {
@@ -61,26 +62,22 @@ const PetCard: React.FC<AnCardProps> = ({
 
   // Select the image with mainImage: true, or fall back to the first image
   const imageSrc =
-    pet.images.find((image) => image.mainImage)?.url || pet.images[0]?.url || "/default-image.jpg";
+    pet.images.find((image) => image.mainImage)?.url ||
+    pet.images[0]?.url ||
+    "/default-image.jpg";
 
-  // Calculate if the post is within 7 days from createdAt
-  const isWithin7Days = () => {
-    if (!createdAt) return true;
-    const createdDate = new Date(createdAt);
-    if (isNaN(createdDate.getTime())) return true;
-    const now = new Date();
-    const diffTime = now.getTime() - createdDate.getTime();
-    const diffDays = diffTime / (1000 * 3600 * 24);
-    return diffDays > 7;
-  };
-
-  // Calculate days until expiration (assuming 7-day expiration)
+  // Calculate days until expiration (assuming 14-day expiration)
   const getDaysUntilExpiration = () => {
+    if (status === "expired") {
+      return "หมดอายุแล้ว";
+    }
     if (!createdAt) return "ไม่มีข้อมูลวันที่";
     const createdDate = new Date(createdAt);
     if (isNaN(createdDate.getTime())) return "วันที่ไม่ถูกต้อง";
     const now = new Date();
-    const expirationDate = new Date(createdDate.getTime() + 14 * 24 * 60 * 60 * 1000);
+    const expirationDate = new Date(
+      createdDate.getTime() + 14 * 24 * 60 * 60 * 1000
+    );
     const diffTime = expirationDate.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 3600 * 24));
     if (diffDays > 0) {
@@ -95,9 +92,12 @@ const PetCard: React.FC<AnCardProps> = ({
   const handleRenewPost = async () => {
     try {
       const res = await fetch(`/api/lostpet/${id}`, {
-        method: "PATCH",
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ createdAt: new Date().toISOString() }),
+        body: JSON.stringify({ 
+          createdAt: new Date().toISOString(),
+          status: "lost" // เปลี่ยนสถานะกลับเป็น lost เมื่อต่ออายุ
+        }),
       });
       const data = await res.json();
       alert(data.message || "ต่ออายุโพสต์สำเร็จ");
@@ -148,45 +148,83 @@ const PetCard: React.FC<AnCardProps> = ({
   };
 
   return (
-    <div className="flex flex-col sm:flex-row gap-4 p-4 rounded-xl shadow-lg bg-[#E5EEFF] min-w-[280px] max-w-[500px] w-full hover:bg-gray-200 transition-transform duration-200 transform hover:scale-105">
+    <div
+      className={`flex flex-col sm:flex-row gap-4 p-4 rounded-xl shadow-lg min-w-[280px] max-w-[500px] w-full transition-transform duration-200 transform hover:scale-105 ${
+        status === "expired"
+          ? "bg-gray-200 opacity-75" // สไตล์สำหรับโพสต์ที่หมดอายุ
+          : "bg-[#E5EEFF] hover:bg-gray-200"
+      }`}
+    >
       {/* รูปภาพ */}
-      <div className="w-full sm:w-1/2 h-48 sm:h-56 rounded-xl overflow-hidden">
+      <div className="w-full sm:w-1/2 h-48 sm:h-56 rounded-xl overflow-hidden relative">
         <img src={imageSrc} alt={name} className="w-full h-full object-cover" />
+        {status === "expired" && (
+          <div className="absolute top-2 left-2 bg-red-600 text-white text-xs px-2 py-1 rounded">
+            หมดอายุ
+          </div>
+        )}
       </div>
 
       {/* เนื้อหา */}
       <div className="flex flex-col justify-between w-full sm:w-1/2">
         <div className="space-y-1 text-[13px] sm:text-[14px] lg:text-[15px]">
-          <p><strong>ชื่อ:</strong> {name}</p>
-          <p><strong>อายุ:</strong> {age}</p>
-          <p><strong>เพศ:</strong> {gender}</p>
-          <p><strong>สายพันธุ์:</strong> {breed}</p>
-          <p><strong>หายวันที่:</strong> {lostDate}</p>
-          <p><strong>สถานที่หาย:</strong> {lostLocation}</p>
-          <p><strong>วันที่โพสต์:</strong> {createdAt ? formatThaiDate(createdAt) : '-'}</p>
-          
-          <p><strong>เงินรางวัล:</strong> {reward ? `${Number(reward).toLocaleString()} บาท` : "ไม่มีระบุ"}</p>
+          <p>
+            <strong>ชื่อ:</strong> {name}
+          </p>
+          <p>
+            <strong>อายุ:</strong>{" "}
+            {(() => {
+              const totalMonths = Number(age);
+              const years = Math.floor(totalMonths / 12);
+              const months = totalMonths % 12;
 
-          <p><strong>สถานะ:</strong> {getDaysUntilExpiration()}</p>
+              if (years > 0 && months > 0) return `${years} ปี ${months} เดือน`;
+              if (years > 0) return `${years} ปี`;
+              return `${months} เดือน`;
+            })()}
+          </p>
+          <p>
+            <strong>เพศ:</strong> {gender}
+          </p>
+          <p>
+            <strong>สายพันธุ์:</strong> {breed}
+          </p>
+          <p>
+            <strong>หายวันที่:</strong> {lostDate}
+          </p>
+          <p>
+            <strong>สถานที่หาย:</strong> {lostLocation}
+          </p>
+          <p>
+            <strong>วันที่โพสต์:</strong>{" "}
+            {createdAt ? formatThaiDate(createdAt) : "-"}
+          </p>
+          <p>
+            <strong>เงินรางวัล:</strong>{" "}
+            {reward ? `${Number(reward).toLocaleString()} บาท` : "ไม่มีระบุ"}
+          </p>
+          <p>
+            <strong>สถานะ:</strong> {getDaysUntilExpiration()}
+          </p>
         </div>
 
         {/* ปุ่ม */}
-        <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-3">
+        <div className="flex flex-wrap justify-center sm:justify-start gap-4 mt-3">
           <Link href={`/eggtunmissing/${id}`}>
-            <button className="rounded-xl shadow-md bg-[#EAD64D] text-black text-[13px] sm:text-[14px] px-4 py-1.5 hover:bg-yellow-200 transition duration-300">
+            <button className="rounded-xl shadow-md bg-[#EAD64D] text-black text-[13px] sm:text-[14px] px-4 py-1.5 hover:bg-yellow-200 transition duration-300 cursor-pointer">
               รายละเอียด
             </button>
           </Link>
-          {isWithin7Days() && (
+          {status === "expired" && (
             <button
-              className="rounded-xl shadow-md bg-green-500 text-white text-[13px] sm:text-[14px] px-4 py-1.5 hover:bg-green-400 transition duration-300"
+              className="rounded-xl shadow-md bg-blue-500 text-white text-[13px] sm:text-[14px] px-4 py-1.5 hover:bg-blue-400 transition duration-300 cursor-pointer"
               onClick={handleRenewPost}
             >
               ต่ออายุ
             </button>
           )}
           <button
-            className="rounded-xl shadow-md bg-red-500 text-white text-[13px] sm:text-[14px] px-4 py-1.5 hover:bg-red-400 transition duration-300"
+            className="rounded-xl shadow-md bg-red-500 text-white text-[13px] sm:text-[14px] px-6 py-1.5 hover:bg-red-400 transition duration-300 cursor-pointer"
             onClick={() => setIsReportOpen(true)}
           >
             ลบโพสต์

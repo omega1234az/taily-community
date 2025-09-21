@@ -11,7 +11,6 @@ export async function GET(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    // ✅ ต้อง await
     const { id } = await context.params;
     const foundPetId = parseInt(id);
 
@@ -46,6 +45,88 @@ export async function GET(
   }
 }
 
+export async function PUT(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    // Check authentication
+    const session = await getServerSession(options);
+    if (!session || !session.user?.id) {
+      return NextResponse.json({ message: "กรุณาเข้าสู่ระบบก่อน" }, { status: 401 });
+    }
+
+    // Get ID from params
+    const { id } = await context.params;
+    const foundPetId = parseInt(id);
+
+    if (isNaN(foundPetId)) {
+      return NextResponse.json({ message: "ID ไม่ถูกต้อง" }, { status: 400 });
+    }
+
+    // Parse request body
+    const body = await req.json();
+    const { status, createdAt } = body;
+
+    if (!status || !createdAt) {
+      return NextResponse.json({ message: "ต้องระบุ status และ createdAt" }, { status: 400 });
+    }
+
+    // Validate status
+    if (status !== 'finding') {
+      return NextResponse.json({ message: "สถานะต้องเป็น 'finding'" }, { status: 400 });
+    }
+
+    // Validate createdAt
+    const newCreatedAt = new Date(createdAt);
+    if (isNaN(newCreatedAt.getTime())) {
+      return NextResponse.json({ message: "createdAt ไม่ถูกต้อง" }, { status: 400 });
+    }
+
+    // Check if the foundPet exists and belongs to the user
+    const existingFoundPet = await prisma.foundPet.findUnique({
+      where: { id: foundPetId },
+      select: {
+        id: true,
+        userId: true,
+      },
+    });
+
+    if (!existingFoundPet) {
+      return NextResponse.json({ message: "ไม่พบข้อมูลสัตว์ที่ระบุ" }, { status: 404 });
+    }
+
+    if (existingFoundPet.userId !== session.user.id) {
+      return NextResponse.json({ message: "คุณไม่มีสิทธิ์อัปเดตข้อมูลนี้" }, { status: 403 });
+    }
+
+    // Update the foundPet record
+    const updatedFoundPet = await prisma.foundPet.update({
+      where: { id: foundPetId },
+      data: {
+        status,
+        createdAt: newCreatedAt,
+        updatedAt: new Date(), // Update the updatedAt field as well
+      },
+      include: {
+        images: true,
+        user: { select: { id: true, name: true, image: true } },
+        species: true,
+      },
+    });
+
+    return NextResponse.json(
+      { message: "ต่ออายุโพสต์สำเร็จ", data: updatedFoundPet },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Error updating found pet:", error);
+    return NextResponse.json({ message: "เกิดข้อผิดพลาดในการอัปเดตข้อมูลสัตว์" }, { status: 500 });
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
 export async function DELETE(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -56,7 +137,6 @@ export async function DELETE(
       return NextResponse.json({ message: "กรุณาเข้าสู่ระบบก่อน" }, { status: 401 });
     }
 
-    // ✅ ต้อง await
     const { id } = await context.params;
     const foundPetId = parseInt(id);
 
@@ -66,7 +146,7 @@ export async function DELETE(
 
     const existingFoundPet = await prisma.foundPet.findUnique({
       where: { id: foundPetId },
-      include: { 
+      include: {
         images: { select: { url: true } },
         user: { select: { id: true } },
       },

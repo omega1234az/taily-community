@@ -53,9 +53,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Validate facebook (optional, if provided)
-    if (facebook && !/^https?:\/\/(www\.)?facebook\.com\/.+$/.test(facebook)) {
-      return NextResponse.json({ message: "URL Facebook ไม่ถูกต้อง" }, { status: 400 });
-    }
+    
 
     // ตรวจสอบ color (ต้องเป็น array หรือ undefined)
     let color;
@@ -223,6 +221,22 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
+    // Step 1: Update expired posts (older than 14 days)
+    const now = new Date();
+    const expirationThreshold = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+    await prisma.foundPet.updateMany({
+      where: {
+        createdAt: { lt: expirationThreshold },
+        status: { notIn: ['expired', 'closed', 'fake'] },
+      },
+      data: {
+        status: 'expired',
+        updatedAt: new Date(),
+      },
+    });
+
+    // Step 2: Fetch paginated data
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') || '1', 10) || 1;
     const limit = parseInt(searchParams.get('limit') || '10', 10) || 10;
@@ -304,8 +318,8 @@ export async function GET(req: NextRequest) {
       age: foundPet.age,
       distinctive: foundPet.distinctive,
       status: foundPet.status,
-      phone: foundPet.phone, // Add phone field
-      facebook: foundPet.facebook, // Add facebook field
+      phone: foundPet.phone,
+      facebook: foundPet.facebook,
       species: foundPet.species,
       user: foundPet.user,
       images: foundPet.images,
@@ -328,5 +342,7 @@ export async function GET(req: NextRequest) {
       message: 'ไม่สามารถดึงข้อมูลได้',
       error: process.env.NODE_ENV === 'development' ? error : undefined 
     }, { status: 500 });
+  } finally {
+    await prisma.$disconnect();
   }
 }

@@ -17,9 +17,9 @@ const prisma = new PrismaClient();
     }
 
     // ตรวจสอบความถูกต้องของรหัสผ่าน
-    if (password.length < 6) {
+    if (password.length < 8) {
       return NextResponse.json(
-        { message: 'รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร' },
+        { message: 'รหัสผ่านต้องมีความยาวอย่างน้อย 8 ตัวอักษร' },
         { status: 400 }
       );
     }

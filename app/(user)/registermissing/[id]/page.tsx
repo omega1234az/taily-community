@@ -4,10 +4,11 @@ import React, { useRef, useState, useEffect, ChangeEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import L from "leaflet";
+
 // Type definition for pet data
 type PetData = {
   name: string;
-  age: string;
+  age: number; // Changed to number for calculation
   gender: string;
   breed: string;
   sterilized: string;
@@ -23,7 +24,6 @@ type PetData = {
 };
 
 // Dynamically import Leaflet components to avoid SSR issues
-
 import "leaflet/dist/leaflet.css";
 
 export default function RegisterMissing() {
@@ -33,7 +33,7 @@ export default function RegisterMissing() {
   // States
   const [pet, setPet] = useState<PetData>({
     name: "",
-    age: "",
+    age: 0, // Initialize as number
     gender: "",
     breed: "",
     sterilized: "",
@@ -90,7 +90,7 @@ export default function RegisterMissing() {
 
       setPet({
         name: data.name || "",
-        age: data.age?.toString() || "",
+        age: parseInt(data.age) || 0, // Parse age as number
         gender: data.gender || "",
         breed: data.breed || "",
         sterilized: data.isNeutered === 1 ? "ทำหมันแล้ว" : "ยังไม่ได้ทำหมัน",
@@ -149,7 +149,7 @@ export default function RegisterMissing() {
       reward: reward ? parseInt(reward) : 0,
       petId: parseInt(params.id),
       facebook: pet.facebook,
-      missingLocation : missingLocation,
+      missingLocation: missingLocation,
       ownerName: pet.ownerName,
       phone: pet.contactNumber,
     };
@@ -184,7 +184,7 @@ export default function RegisterMissing() {
     }
 
     if (mapContainerRef.current) {
-      mapContainerRef.current.innerHTML = '';
+      mapContainerRef.current.innerHTML = "";
     }
 
     navigator.geolocation.getCurrentPosition(
@@ -314,12 +314,22 @@ export default function RegisterMissing() {
           <div className="grid grid-cols-2 gap-4 mb-2">
             <div className="flex flex-col">
               <p className="sm:text-lg xl:text-xl">อายุ</p>
-              <input
-                type="text"
-                value={pet.age}
-                disabled
-                className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
-              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={Math.floor(pet.age / 12) +" ปี"} // Calculate years
+                  disabled
+                  className="w-1/2 mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
+                  placeholder="ปี"
+                />
+                <input
+                  type="text"
+                  value={pet.age % 12 +" เดือน"} // Calculate remaining months
+                  disabled
+                  className="w-1/2 mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
+                  placeholder="เดือน"
+                />
+              </div>
             </div>
             <div className="flex flex-col">
               <p className="sm:text-lg xl:text-xl">เพศ</p>
