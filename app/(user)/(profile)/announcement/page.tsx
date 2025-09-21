@@ -278,6 +278,7 @@ export default function Announcement() {
                   foundDate={formatThaiDate(foundPet.foundDate)}
                   foundLocation={foundPet.location}
                   finderName={foundPet.user.firstName}
+                  createdAt={foundPet.createdAt}
                   status={foundPet.status}
                 />
               </div>

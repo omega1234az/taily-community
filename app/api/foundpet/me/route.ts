@@ -7,13 +7,29 @@ const prisma = new PrismaClient();
 
 export async function GET(req: NextRequest) {
   try {
-    // ตรวจสอบ session
+    // Check session
     const session = await getServerSession(options);
     if (!session || !session.user?.id) {
       return NextResponse.json({ message: "กรุณาเข้าสู่ระบบก่อน" }, { status: 401 });
     }
 
-    // ดึง query parameters
+    // Step 1: Update expired posts (older than 14 days)
+    const now = new Date();
+    const expirationThreshold = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+    await prisma.foundPet.updateMany({
+      where: {
+        userId: session.user.id,
+        createdAt: { lt: expirationThreshold },
+        status: { notIn: ['expired', 'closed', 'fake'] },
+      },
+      data: {
+        status: 'expired',
+        updatedAt: new Date(),
+      },
+    });
+
+    // Step 2: Fetch paginated data
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') || '1', 10) || 1;
     const limit = parseInt(searchParams.get('limit') || '10', 10) || 10;
@@ -29,10 +45,10 @@ export async function GET(req: NextRequest) {
 
     // Build where clause
     const whereClause: any = {
-      userId: session.user.id, // เฉพาะ FoundPet ของผู้ใช้ที่ล็อกอิน
+      userId: session.user.id, // Only FoundPet records of the logged-in user
     };
 
-    // เพิ่มเงื่อนไขสำหรับ species และ status
+    // Add conditions for species and status
     if (species) {
       whereClause.species = { name: species };
     }
@@ -40,7 +56,7 @@ export async function GET(req: NextRequest) {
       whereClause.status = status;
     }
 
-    // ดึงข้อมูล FoundPet และนับจำนวนทั้งหมด
+    // Fetch FoundPet records and count total
     const [foundPets, total] = await Promise.all([
       prisma.foundPet.findMany({
         where: whereClause,
@@ -66,7 +82,7 @@ export async function GET(req: NextRequest) {
       prisma.foundPet.count({ where: whereClause }),
     ]);
 
-    // แปลงข้อมูลให้ปลอดภัย
+    // Map data to safe format
     const safeFoundPets = foundPets.map(foundPet => ({
       id: foundPet.id,
       description: foundPet.description,

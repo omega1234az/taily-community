@@ -65,22 +65,7 @@ export default function ProfilePage() {
     province: "",
   });
 
-  // โหลดข้อมูลจังหวัดจาก API
-  useEffect(() => {
-    const loadProvinceData = async () => {
-      try {
-        const response = await fetch(
-          "https://raw.githubusercontent.com/kongvut/thai-province-data/master/api_province_with_amphure_tambon.json"
-        );
-        const result = await response.json();
-        setProvinces(result);
-      } catch (error) {
-        console.error("Failed to fetch province data:", error);
-      }
-    };
 
-    loadProvinceData();
-  }, []);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -534,76 +519,9 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <div className="flex items-center gap-2 mt-6">
-        <svg
-          width="19"
-          height="15"
-          viewBox="0 0 19 15"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          className="w-2.5 h-2.5 sm:w-3 sm:h-3 xl:w-3.5 xl:h-3.5 2xl:w-6 2xl:h-10"
-        >
-          <ellipse cx="9.5" cy="7.5" rx="9.5" ry="7.5" fill="#7CBBEB" />
-        </svg>
-        <h1 className="sm:text-lg xl:text-2xl font-bold">ที่อยู่</h1>
-      </div>
-
-      <div className="ml-5 sm:ml-10 md:ml-10 lg:mr-10 xl:ml-14 2xl:ml-20 mt-6 flex flex-col gap-4 sm:text-md xl:text-xl">
-        <div className="lg:flex justify-between gap-6 md:w-full">
-          <InputField
-            label="บ้านเลขที่"
-            value={formData.houseNumber}
-            onChange={handleChange("houseNumber")}
-            disabled={!isEditing || isSaving}
-          />
-          <InputField
-            label="ถนน"
-            value={formData.street}
-            onChange={handleChange("street")}
-            disabled={!isEditing || isSaving}
-          />
-        </div>
-
-        <InputField
-          label="หมู่บ้าน/ชุมชน"
-          value={formData.village}
-          onChange={handleChange("village")}
-          disabled={!isEditing || isSaving}
-        />
-
-        <div className="lg:flex justify-between gap-6 md:w-full">
-          {/* Dropdown จังหวัด */}
-          <DropdownField
-            label="จังหวัด"
-            value={selectedIds.province_id}
-            onChange={handleProvinceChange}
-            options={provinces}
-            disabled={!isEditing || isSaving}
-            placeholder="เลือกจังหวัด"
-          />
-
-          {/* Dropdown อำเภอ */}
-          <DropdownField
-            label="อำเภอ"
-            value={selectedIds.amphure_id}
-            onChange={handleAmphureChange}
-            options={amphures}
-            disabled={!isEditing || isSaving || !selectedIds.province_id}
-            placeholder="เลือกอำเภอ"
-          />
-        </div>
-
-        {/* Dropdown ตำบล */}
-        <DropdownField
-          label="ตำบล"
-          value={selectedIds.tambon_id}
-          onChange={handleTambonChange}
-          options={tambons}
-          disabled={!isEditing || isSaving || !selectedIds.amphure_id}
-          placeholder="เลือกตำบล"
-        />
-      </div>
-
+      
+            
+     
       {/* ปุ่มแก้ไข/บันทึก/ยกเลิก */}
       <div className="flex  gap-3 mt-6 ml-5 sm:ml-10 md:ml-10 lg:mr-10 xl:ml-14 2xl:ml-20">
         {!isEditing ? (

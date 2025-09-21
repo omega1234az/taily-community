@@ -7,15 +7,13 @@ import TopNavbar from "@/app/component/TopNavbar";
 const PetLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="flex flex-col h-screen">
-      <TopNavbar />
+     
 
       <div className="flex flex-1 overflow-hidden">
-        <div className="md:w-64   xl:w-64 sm:w-56 w-32">
-          <SideNavbar />
-        </div>
+        
 
-        <main className="flex-1 xl:p-11 xl:pl-20  md:pt-16 sm:pt-9 pt-7 overflow-auto">
-          <title>สัตว์เลี้ยง</title>
+        <main className="flex-1  xl:p-11  md:pt-16 sm:pt-9 pt-7 overflow-auto">
+          <title>สัตว์เลี้ยงของฉัน</title>
           {children}
         </main>
       </div>

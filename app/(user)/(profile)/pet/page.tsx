@@ -57,12 +57,14 @@ export default function Pet() {
   const [activeSection, setActiveSection] = useState<
     "history" | "disease" | "vaccine" | "treatment"
   >("history");
+  const [isLoading, setIsLoading] = useState(true); // เพิ่ม state สำหรับ loading
   const router = useRouter();
   const [pets, setPets] = useState<Pet[]>([]);
 
   // โหลดข้อมูลสัตว์เลี้ยง
   const fetchPets = async () => {
     try {
+      setIsLoading(true); // เริ่มโหลด
       const res = await fetch("/api/pets/me");
       if (res.status === 401) {
         router.push("/login");
@@ -71,11 +73,12 @@ export default function Pet() {
       if (!res.ok) throw new Error("โหลดข้อมูลสัตว์เลี้ยงล้มเหลว");
       const data: Pet[] = await res.json();
       setPets(data);
-      console.log("Pets data:", data);
       setIsRegistered(data.length > 0);
     } catch (error) {
       console.error(error);
       setIsRegistered(false);
+    } finally {
+      setIsLoading(false); // สิ้นสุดการโหลด
     }
   };
 
@@ -86,6 +89,7 @@ export default function Pet() {
   // เพิ่มสัตว์เลี้ยงใหม่
   const createPet = async (pet: Omit<Pet, "id">) => {
     try {
+      setIsLoading(true);
       const res = await fetch("/api/pets/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -95,12 +99,15 @@ export default function Pet() {
       await fetchPets();
     } catch (error) {
       console.error(error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   // แก้ไขข้อมูลสัตว์เลี้ยง
   const updatePet = async (id: number, pet: Partial<Pet>) => {
     try {
+      setIsLoading(true);
       const res = await fetch(`/api/pets/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -110,17 +117,22 @@ export default function Pet() {
       await fetchPets();
     } catch (error) {
       console.error(error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   // ลบสัตว์เลี้ยง
   const deletePet = async (id: number) => {
     try {
+      setIsLoading(true);
       const res = await fetch(`/api/pets/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("ลบสัตว์เลี้ยงไม่สำเร็จ");
       await fetchPets();
     } catch (error) {
       console.error(error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -169,7 +181,7 @@ export default function Pet() {
   // เพิ่มวัคซีน
   const addVaccine = async (vaccine: Vaccine & { petId: number }) => {
     const res = await fetch(`/api/pets/vaccine-records`, {
-      method: "POST",
+      method: "Ask for confirmation before generating an imagePOST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(vaccine),
     });
@@ -198,6 +210,42 @@ export default function Pet() {
     setSelectedPet(pet);
     setShowModal(true);
   };
+
+  // Skeleton Component สำหรับ PetCard
+  const PetCardSkeleton = () => {
+    return (
+      <div className="animate-pulse w-full 2xl:max-w-[230px] xl:max-w-[225px] lg:max-w-[200px] md:max-w-[195px] sm:max-w-[176px] max-w-[128px] h-[315px] rounded-2xl shadow-lg bg-gray-200">
+        <div className="w-full h-[200px] bg-gray-300 rounded-t-2xl"></div>
+        <div className="p-4">
+          <div className="h-6 bg-gray-300 rounded w-3/4 mb-2"></div>
+          <div className="h-4 bg-gray-300 rounded w-1/2"></div>
+        </div>
+      </div>
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <div>
+        {/* Header Skeleton */}
+        <div className="flex items-center gap-2 animate-pulse">
+          <div className="w-6 h-6 bg-gray-300 rounded-full"></div>
+          <div className="h-6 bg-gray-300 rounded w-32"></div>
+        </div>
+
+        {/* Pet Cards Skeleton */}
+        <div className="flex flex-wrap py-5 2xl:gap-18 xl:gap-14 lg:gap-12 md:gap-12 sm:gap-8 gap-5">
+          {[...Array(4)].map((_, index) => (
+            <PetCardSkeleton key={index} />
+          ))}
+          {/* Register Button Skeleton */}
+          <div className="animate-pulse w-full 2xl:max-w-[230px] xl:max-w-[225px] lg:max-w-[200px] md:max-w-[195px] sm:max-w-[176px] max-w-[128px] h-[315px] rounded-2xl shadow-lg bg-gray-200 flex justify-center items-center">
+            <div className="bg-gray-300 rounded-full p-2 w-20 h-20"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!isRegistered) {
     return (
@@ -240,13 +288,12 @@ export default function Pet() {
         >
           <ellipse cx="9.5" cy="9" rx="9.5" ry="9" fill="#7CBBEB" />
         </svg>
-        <h1 className="sm:text-xl xl:text-2xl  font-bold">สัตว์เลี้ยง</h1>
+        <h1 className="sm:text-xl xl:text-2xl font-bold">สัตว์เลี้ยง</h1>
       </div>
 
       {/* Pet Cards */}
       <div className="flex flex-wrap py-5 2xl:gap-18 xl:gap-14 lg:gap-12 md:gap-12 sm:gap-8 gap-5">
         {pets.map((pet) => {
-          // เลือกภาพที่มี mainImage: true หรือภาพแรกถ้าไม่มี mainImage
           const mainImage =
             pet.images?.find((img) => img.mainImage) || pet.images?.[0];
           return (
@@ -264,7 +311,7 @@ export default function Pet() {
         })}
 
         {/* Register Button */}
-        <div className="group cursor-pointer hover:bg-gray-200 lg:mb-10 sm:mb-7 mb-5  flex justify-center items-center flex-col md:flex-row gap-6  rounded-2xl shadow-lg bg-[#E5EEFF] w-full  2xl:h-[315px] xl:h-[288px] lg:h-[257px] md:h-[248px] sm:h-[220px] h-[160px] 2xl:max-w-[230px] xl:max-w-[225px] lg:max-w-[200px] md:max-w-[195px] sm:max-w-[176px] max-w-[128px] transition-transform duration-200 transform hover:scale-105">
+        <div className="group cursor-pointer hover:bg-gray-200 lg:mb-10 sm:mb-7 mb-5 flex justify-center items-center flex-col md:flex-row gap-6 rounded-2xl shadow-lg bg-[#E5EEFF] w-full 2xl:h-[315px] xl:h-[288px] lg:h-[257px] md:h-[248px] sm:h-[220px] h-[160px] 2xl:max-w-[230px] xl:max-w-[225px] lg:max-w-[200px] md:max-w-[195px] sm:max-w-[176px] max-w-[128px] transition-transform duration-200 transform hover:scale-105">
           <Link
             href="/registerpet"
             className="w-full h-full flex justify-center items-center"

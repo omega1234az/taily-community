@@ -28,9 +28,9 @@ export async function GET(req: NextRequest) {
     const skip = (page - 1) * limit;
 
     const whereClause: any = {
-      status: 'lost',
-      userId: userId
-    };
+  status: { in: ['lost', 'expired'] }, // รวมทั้ง lost และ expired
+  userId: userId
+};
 
     if (species) {
       whereClause.pet = {
@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
         status: 'lost',
         createdAt: { lt: expiredDate }
       },
-      data: { status: 'closed' }
+      data: { status: 'expired' }
     });
 
     const [lostPets, total] = await Promise.all([
