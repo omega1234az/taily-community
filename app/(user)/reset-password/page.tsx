@@ -9,7 +9,7 @@ import { z } from 'zod';
 
 const resetPasswordSchema = z.object({
   password: z.string()
-    .min(6, { message: "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร" })
+    .min(8, { message: "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร" })
     .regex(/[0-9]/, { message: "รหัสผ่านต้องมีตัวเลขอย่างน้อย 1 ตัว" }),
   confirmPassword: z.string()
 }).refine(data => data.password === data.confirmPassword, {
@@ -71,7 +71,7 @@ export default function ResetPasswordForm() {
     const password = formData.password;
     
     // ตรวจสอบความยาวขั้นต่ำ
-    setHasMinLength(password.length >= 6);
+    setHasMinLength(password.length >= 8);
     
     // ตรวจสอบว่ามีตัวเลขหรือไม่
     setHasNumber(/[0-9]/.test(password));
@@ -314,7 +314,7 @@ export default function ResetPasswordForm() {
                         </svg>
                       )}
                     </span>
-                    <span className="ml-2 text-sm text-gray-700">อย่างน้อย 6 ตัวอักษร</span>
+                    <span className="ml-2 text-sm text-gray-700">อย่างน้อย 8 ตัวอักษร</span>
                   </li>
                   
                   <li className="flex items-center">
