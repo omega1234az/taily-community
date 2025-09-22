@@ -322,10 +322,10 @@ export default function PetSearchHome() {
               ประกาศตามหาสัตว์เลี้ยง
             </h1>
             <p className="2xl:text-2xl xl:text-xl lg:text-lg md:text-md sm:text-sm text-xs pb-2">
-              When a pet goes missing, every moment counts
+              เมื่อสัตว์เลี้ยงหายไป ทุกวินาทีล้วนมีค่า
             </p>
             <p className="2xl:text-2xl xl:text-xl lg:text-lg md:text-md sm:text-sm text-xs pb-2">
-              - our platform helps reunite lost pets with their loving families.
+              แพลตฟอร์มของเราช่วยให้สัตว์เลี้ยงที่หายได้กลับคืนสู่อ้อมกอดของครอบครัวที่รัก
             </p>
             <div className="flex gap-4 sm:mt-4 lg:mt-6 mt-2">
               <button 
