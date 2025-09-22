@@ -3,7 +3,16 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-
+import {
+  FacebookShareButton,
+  LineShareButton,
+  TwitterShareButton,
+  WhatsappShareButton,
+  FacebookIcon,
+  LineIcon,
+  TwitterIcon,
+  WhatsappIcon,
+} from "react-share";
 // Dynamic import for PetMap to avoid SSR issues
 const PetMap = dynamic(() => import("../../../component/PetMap"), {
   ssr: false,
@@ -67,6 +76,15 @@ export default function FoundPetPage() {
   const [reportMessage, setReportMessage] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [shareUrl, setShareUrl] = useState("");
+  
+    useEffect(() => {
+      if (typeof window !== "undefined") {
+        setShareUrl(window.location.href);
+      }
+    }, []);
+  
+    const title = "เจอสัตว์เลี้ยงหลุดมา! ช่วยหาบ้านให้เค้าด้วยนะ 🐾";
 
   useEffect(() => {
     async function fetchPet() {
@@ -363,28 +381,20 @@ export default function FoundPetPage() {
         </div>
 
         {/* Social Media Icons */}
-        <div className="flex row space-x-3 lg:mt-8 mt-2">
-          <img
-            src="/home/f.png"
-            alt="facebook"
-            className="lg:w-14 sm:w-12 w-10 h-auto object-cover"
-          />
-          <img
-            src="/home/l.png"
-            alt="line"
-            className="lg:w-14 sm:w-12 w-10 h-auto object-cover"
-          />
-          <img
-            src="/home/x.png"
-            alt="x"
-            className="lg:w-14 sm:w-12 w-10 h-auto object-cover"
-          />
-          <img
-            src="/home/ch.png"
-            alt="chat"
-            className="lg:w-14 sm:w-12 w-10 h-auto object-cover"
-          />
-        </div>
+       <div className="flex row space-x-3 lg:mt-8 mt-2">
+                 <FacebookShareButton url={shareUrl} hashtag={`#${title}`}>
+                   <FacebookIcon size={48} round />
+                 </FacebookShareButton>
+                 <LineShareButton url={shareUrl} title={title}>
+                   <LineIcon size={48} round />
+                 </LineShareButton>
+                 <TwitterShareButton url={shareUrl} title={title}>
+                   <TwitterIcon size={48} round />
+                 </TwitterShareButton>
+                 <WhatsappShareButton url={shareUrl} title={title}>
+                   <WhatsappIcon size={48} round />
+                 </WhatsappShareButton>
+               </div>
 
         {/* Location and Map */}
         <h2 className="text-lg lg:text-2xl lg:mt-8 mt-2">สถานที่พบ</h2>

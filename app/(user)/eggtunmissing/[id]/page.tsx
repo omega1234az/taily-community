@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useRef, useState, useEffect } from "react";
@@ -7,6 +6,7 @@ import dynamic from "next/dynamic";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import QRCode from "react-qr-code";
+import { Eye, X, Calendar, MapPin, Phone, User, Image as ImageIcon } from "lucide-react";
 
 // Dynamically import Leaflet to prevent SSR issues
 const DynamicMap = dynamic(() => import("./MapComponent"), {
@@ -68,6 +68,10 @@ type LostPetData = {
 export default function ViewLostPet() {
   const params = useParams<{ id: string }>();
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  // Image modal states
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [isImageModalOpen, setIsImageModalOpen] = useState<boolean>(false);
+  
   // State for form fields
   const [name, setName] = useState<string>("");
   const [year, setYear] = useState<string>(""); // เปลี่ยนจาก age เป็น year
@@ -139,6 +143,17 @@ export default function ViewLostPet() {
     reunited: "รวมตัวแล้ว",
     reported: "ถูกรายงาน",
     fake: "ปลอม",
+  };
+
+  // Image modal functions
+  const openImageModal = (imageUrl: string) => {
+    setSelectedImage(imageUrl);
+    setIsImageModalOpen(true);
+  };
+
+  const closeImageModal = () => {
+    setSelectedImage(null);
+    setIsImageModalOpen(false);
   };
 
   // Fetch LostPet data
@@ -254,6 +269,27 @@ export default function ViewLostPet() {
   return (
     <div>
       <title>สัตว์เลี้ยงหาย</title>
+      
+      {/* Image Modal */}
+      {isImageModalOpen && selectedImage && (
+  <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+    <div className="relative max-w-4xl max-h-full p-4">
+      <button
+        onClick={closeImageModal}
+        className="absolute top-2 right-2 bg-white rounded-full p-2 hover:bg-gray-100 z-10"
+      >
+        <X size={24} />
+      </button>
+      <img
+        src={selectedImage}
+        alt="Enlarged view"
+        className="max-w-full max-h-full object-contain rounded-lg"
+      />
+    </div>
+  </div>
+)}
+
+
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">
           <span className="bg-[#EAD64D] py-5 pl-3 sm:py-7 sm:pl-5 xl:py-9 xl:pl-7 rounded-full">
@@ -490,8 +526,6 @@ export default function ViewLostPet() {
             className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
           />
 
-          
-
           <div className="grid grid-cols-2 gap-4 mb-2">
             <div className="flex flex-col">
               <p className="sm:text-lg xl:text-xl">อายุ (ปี)</p>
@@ -681,73 +715,142 @@ export default function ViewLostPet() {
           </div>
         </div>
 
+        {/* Enhanced Clues Section */}
         <div className="mt-10 mb-5">
-          <p className="sm:text-lg xl:text-xl">เบาะแส</p>
+          <div className="flex items-center gap-3">
+            <Eye className="text-blue-600" size={24} />
+            <p className="sm:text-xl xl:text-2xl font-bold text-gray-800">เบาะแส</p>
+            <div className="h-1 flex-1 bg-gradient-to-r from-blue-600 to-transparent rounded"></div>
+          </div>
         </div>
 
-        <div className="flex flex-col w-full xl:max-w-xl md:max-w-md sm:max-w-sm max-w-xs mb-10">
+        <div className="flex flex-col w-full mb-10">
           {clues.length > 0 ? (
-            clues.map((clue) => (
-              <div
-                key={clue.id}
-                className="mb-6 p-4 border border-gray-300 rounded-md bg-gray-50"
-              >
-                <p className="sm:text-lg xl:text-xl font-semibold">
-                  ชื่อผู้พบเห็น:{" "}
-                  {clue.witnessName || clue.user?.name || "ไม่ระบุ"}
-                </p>
-                <p className="mt-2">
-                  <span className="font-medium">รายละเอียดการติดต่อ:</span>{" "}
-                  {clue.contactDetails || "ไม่ระบุ"}
-                </p>
-                <p className="mt-2">
-                  <span className="font-medium">รายละเอียดการพบเห็น:</span>{" "}
-                  {clue.content}
-                </p>
-                {clue.location && (
-                  <p className="mt-1">
-                    <span className="font-medium">สถานที่:</span>{" "}
-                    {clue.location}
-                  </p>
-                )}
-                {clue.lat != null &&
-                  clue.lng != null &&
-                  typeof clue.lat === "number" &&
-                  typeof clue.lng === "number" && (
-                    <p className="mt-1">
-                      <span className="font-medium">พิกัด:</span> Lat:{" "}
-                      {clue.lat.toFixed(6)}, Lng: {clue.lng.toFixed(6)}
-                    </p>
-                  )}
-                <p className="mt-1">
-                  <span className="font-medium">วันที่รายงาน:</span>{" "}
-                  {new Date(clue.createdAt).toLocaleDateString("th-TH", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </p>
-                {clue.images.length > 0 && (
-                  <div className="mt-2">
-                    <p className="font-medium">รูปภาพ:</p>
-                    <div className="flex gap-2 mt-1">
-                      {clue.images.map((image, index) => (
-                        <img
-                          key={index}
-                          src={image.url}
-                          alt={`clue-image-${index}`}
-                          className="w-20 h-20 object-cover rounded-md"
-                        />
-                      ))}
+            <div className="space-y-6">
+              {clues.map((clue, index) => (
+                <div
+                  key={clue.id}
+                  className="bg-white border-l-4 border-blue-500 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden"
+                >
+                  {/* Header */}
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 border-b border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-blue-100 p-2 rounded-full">
+                          <User className="text-blue-600" size={20} />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-lg text-gray-800">
+                            เบาะแสที่ {index + 1}
+                          </h3>
+                          <p className="text-sm text-gray-600">
+                            โดย: {clue.witnessName || clue.user?.name || "ไม่ระบุชื่อ"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="flex items-center gap-1 text-gray-500 text-sm">
+                          <Calendar size={16} />
+                          <span>
+                            {new Date(clue.createdAt).toLocaleDateString("th-TH", {
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric",
+                            })}
+                          </span>
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          {new Date(clue.createdAt).toLocaleTimeString("th-TH", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                )}
-              </div>
-            ))
+
+                  {/* Content */}
+                  <div className="p-6">
+                    {/* Contact Details */}
+                    {clue.contactDetails && (
+                      <div className="mb-4 p-3 bg-green-50 rounded-lg border border-green-200">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Phone className="text-green-600" size={16} />
+                          <span className="font-medium text-green-800">ข้อมูลติดต่อ</span>
+                        </div>
+                        <p className="text-green-700 ml-6">{clue.contactDetails}</p>
+                      </div>
+                    )}
+
+                    {/* Clue Content */}
+                    <div className="mb-4">
+                      <h4 className="font-medium text-gray-800 mb-2">รายละเอียดการพบเห็น:</h4>
+                      <div className="bg-gray-50 p-4 rounded-lg border-l-4 border-yellow-400">
+                        <p className="text-gray-700 leading-relaxed">{clue.content}</p>
+                      </div>
+                    </div>
+
+                    {/* Location */}
+                    {clue.location && (
+                      <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                        <div className="flex items-center gap-2 mb-1">
+                          <MapPin className="text-blue-600" size={16} />
+                          <span className="font-medium text-blue-800">สถานที่พบเห็น</span>
+                        </div>
+                        <p className="text-blue-700 ml-6">{clue.location}</p>
+                        {clue.lat != null && clue.lng != null && (
+                          <p className="text-xs text-blue-600 ml-6 mt-1">
+                            พิกัด: {clue.lat.toFixed(6)}, {clue.lng.toFixed(6)}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Images */}
+                    {clue.images.length > 0 && (
+                      <div className="mt-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <ImageIcon className="text-purple-600" size={16} />
+                          <span className="font-medium text-purple-800">รูปภาพประกอบ</span>
+                          <span className="text-sm text-gray-500">({clue.images.length} รูป)</span>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                          {clue.images.map((image, imageIndex) => (
+                            <div
+                              key={imageIndex}
+                              className="relative group cursor-pointer"
+                              onClick={() => openImageModal(image.url)}
+                            >
+                              <img
+                                src={image.url}
+                                alt={`clue-image-${imageIndex}`}
+                                className="w-full h-24 object-cover rounded-lg border border-gray-200 transition-transform duration-200 group-hover:scale-105"
+                              />
+                              <div className="absolute inset-0  bg-opacity-0 group-hover:bg-opacity-30 transition-opacity duration-200 rounded-lg flex items-center justify-center">
+                                <Eye className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200" size={20} />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">
+                          คลิกที่รูปภาพเพื่อดูขนาดใหญ่
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : (
-            <p className="text-gray-500">ยังไม่มีเบาะแสสำหรับสัตว์เลี้ยงนี้</p>
+            <div className="text-center py-12">
+              <div className="bg-gray-100 rounded-full p-6 w-24 h-24 mx-auto mb-4 flex items-center justify-center">
+                <Eye className="text-gray-400" size={32} />
+              </div>
+              <p className="text-gray-500 text-lg font-medium">ยังไม่มีเบาะแสสำหรับสัตว์เลี้ยงนี้</p>
+              <p className="text-gray-400 text-sm mt-2">
+                หากท่านพบเห็นสัตว์เลี้ยงตัวนี้ กรุณาติดต่อเจ้าของ
+              </p>
+            </div>
           )}
         </div>
       </div>

@@ -2,29 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
-import dynamic from 'next/dynamic'
 import Image from 'next/image'
-import { Suspense } from 'react'
-import "leaflet/dist/leaflet.css";
-
-// Dynamic imports for react-leaflet components
-const MapContainer = dynamic(() => import('react-leaflet').then((mod) => mod.MapContainer), { 
-  ssr: false,
-  loading: () => <div className="h-full w-full bg-gray-100 animate-pulse rounded-3xl" />
-})
-const TileLayer = dynamic(() => import('react-leaflet').then((mod) => mod.TileLayer), { ssr: false })
-const Marker = dynamic(() => import('react-leaflet').then((mod) => mod.Marker), { ssr: false })
-const Popup = dynamic(() => import('react-leaflet').then((mod) => mod.Popup), { ssr: false })
-const ZoomControl = dynamic(() => import('react-leaflet').then((mod) => mod.ZoomControl), { ssr: false })
-
-// Import Leaflet with error handling
-let L: any = null
-if (typeof window !== 'undefined') {
-  import('leaflet').then((leaflet) => {
-    L = leaflet.default
-   
-  })
-}
 
 // Types
 interface PetImage {
@@ -105,26 +83,6 @@ interface Species {
   updatedAt: string
 }
 
-// Custom hook for geolocation
-const useGeolocation = () => {
-  const [location, setLocation] = useState<[number, number] | null>(null)
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !navigator.geolocation) {
-      setLocation([16.4707, 99.5367]) // Default location
-      return
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      ({ coords: { latitude, longitude } }) => setLocation([latitude, longitude]),
-      () => setLocation([16.4707, 99.5367]), // Fallback location
-      { enableHighAccuracy: true, timeout: 10000 }
-    )
-  }, [])
-
-  return location
-}
-
 // Custom hook for API calls
 const useApi = () => {
   const fetchData = useCallback(async <T,>(url: string): Promise<T> => {
@@ -136,36 +94,6 @@ const useApi = () => {
   }, [])
 
   return { fetchData }
-}
-
-// Custom marker icon creation
-const createCustomIcon = (imageUrl?: string, isLostPet = true) => {
-  if (typeof window === 'undefined' || !L) {
-    return null
-  }
-
-  const html = `
-    <div style="position: relative; width: 64px; height: 64px; border-radius: 50%; border: 4px solid ${
-      isLostPet ? '#ef4444' : '#3b82f6'
-    }; background: white; box-shadow: 0 10px 25px rgba(0,0,0,0.25); overflow: hidden; transform: translate(-50%, -50%); transition: transform 0.3s ease;">
-      <img src="${imageUrl || '/images/default_pet.png'}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" onerror="this.src='/images/default_pet.png'" />
-      <div style="position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-top: 14px solid ${
-        isLostPet ? '#ef4444' : '#3b82f6'
-      }; filter: drop-shadow(0 3px 5px rgba(0,0,0,0.2));"></div>
-      <div style="position: absolute; top: -10px; right: -10px; width: 24px; height: 24px; background: ${
-        isLostPet ? '#ef4444' : '#3b82f6'
-      }; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; font-size: 14px; color: white; font-weight: bold; box-shadow: 0 3px 10px rgba(0,0,0,0.25);">${
-    isLostPet ? '!' : '✓'
-  }</div>
-    </div>`
-
-  return L.divIcon({
-    html,
-    iconSize: [64, 64],
-    iconAnchor: [32, 64],
-    popupAnchor: [0, -64],
-    className: 'custom-pet-marker'
-  })
 }
 
 // Loading component
@@ -278,33 +206,19 @@ export default function PetSearchHome() {
   const [lostPets, setLostPets] = useState<LostPet[]>([])
   const [foundPets, setFoundPets] = useState<FoundPet[]>([])
   const [totalPages, setTotalPages] = useState(1)
+  const [totalPets, setTotalPets] = useState(0) // เพิ่ม state สำหรับจำนวนรวม
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [speciesList, setSpeciesList] = useState<Species[]>([])
 
   // Refs
-  const mapRef = useRef<any>(null)
   const friendSectionRef = useRef<HTMLDivElement>(null)
 
   // Custom hooks
-  const userLocation = useGeolocation()
   const { fetchData } = useApi()
 
   // Constants
   const petsPerPage = 10
-  const mapCenter = userLocation || [16.4707, 99.5367]
-
-  // Configure Leaflet icons
-  useEffect(() => {
-    if (typeof window === 'undefined' || !L) return
-
-    delete (L.Icon.Default.prototype as any)._getIconUrl
-    L.Icon.Default.mergeOptions({
-      iconRetinaUrl: '/leaflet/marker-icon-2x.png',
-      iconUrl: '/leaflet/marker-icon.png',
-      shadowUrl: '/leaflet/marker-shadow.png'
-    })
-  }, [])
 
   // Fetch species data
   useEffect(() => {
@@ -321,7 +235,7 @@ export default function PetSearchHome() {
     fetchSpecies()
   }, [fetchData])
 
-  // Fetch pets
+  // Fetch pets - แก้ไขส่วนนี้
   useEffect(() => {
     const fetchPets = async (endpoint: string, setPets: (pets: any[]) => void, status: string) => {
       setLoading(true)
@@ -350,10 +264,17 @@ export default function PetSearchHome() {
           setPets(data.data)
         }
         
+        // อัพเดท pagination จาก API response
         setTotalPages(data.pagination.totalPages)
+        setTotalPets(data.pagination.total)
+        
       } catch (err) {
         setError(`ไม่สามารถดึงข้อมูล${status === 'lost' ? 'สัตว์เลี้ยงหาย' : 'สัตว์เลี้ยงที่พบ'}ได้`)
         console.error(`Failed to fetch ${status} pets:`, err)
+        // รีเซ็ตข้อมูลเมื่อเกิดข้อผิดพลาด
+        setPets([])
+        setTotalPages(1)
+        setTotalPets(0)
       } finally {
         setLoading(false)
       }
@@ -375,36 +296,21 @@ export default function PetSearchHome() {
   const handleSelectType = useCallback((type: string) => {
     setSelectedType(type)
     setIsDropdownVisible(false)
-    setCurrentPage(1)
+    setCurrentPage(1) // รีเซ็ตหน้าเมื่อเปลี่ยนประเภท
   }, [])
 
   const handleScrollToFriends = useCallback(() => {
     friendSectionRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [])
 
-  const handleGoToMyLocation = useCallback(() => {
-    if (mapRef.current && userLocation) {
-      mapRef.current.setView(userLocation, 12)
-    }
-  }, [userLocation])
-
   const handlePageChange = useCallback((newPage: number) => {
-    setCurrentPage(Math.max(1, Math.min(totalPages, newPage)))
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage)
+    }
   }, [totalPages])
 
-  // Computed values
-  const filteredPets = (showLostPets ? lostPets : foundPets).filter((pet) => {
-    const petDate = showLostPets ? (pet as LostPet).lostDate : (pet as FoundPet).foundDate
-    const petSpecies = showLostPets ? (pet as LostPet).pet.species.name : (pet as FoundPet).species.name
-    
-    const matchDate = !filterDate || petDate.includes(filterDate)
-    const matchLocation = !filterLocation || pet.location.toLowerCase().includes(filterLocation.toLowerCase())
-    const matchType = !selectedType || selectedType === 'ทั้งหมด' || petSpecies === selectedType
-    
-    return matchDate && matchLocation && matchType
-  })
-
-  const currentPets = filteredPets.slice((currentPage - 1) * petsPerPage, currentPage * petsPerPage)
+  // ใช้ข้อมูลจาก API โดยตรง ไม่ต้อง filter อีกครั้ง
+  const currentPets = showLostPets ? lostPets : foundPets
 
   return (
     <div className="w-full font-sans">
@@ -527,12 +433,14 @@ export default function PetSearchHome() {
                   <span className="text-center lg:text-sm sm:text-xs text-[10px] font-medium">ข้อมูล</span>
                 </button>
                 
-                <button
-                  onClick={() => setDisplayMode('map')}
+                <a
+                  href="/map"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className={`flex flex-col justify-center items-center border-2 border-[#777777] rounded-2xl lg:px-6 lg:py-2 sm:px-5 sm:py-2 px-3.5 py-1 cursor-pointer hover:shadow-md transition-all ${
                     displayMode === 'map' ? 'bg-[#B3B3B3]' : 'bg-white'
                   }`}
-                  aria-label="แสดงข้อมูลแบบแผนที่"
+                  aria-label="เปิดแผนที่ในแท็บใหม่"
                 >
                   <Image
                     src="/home/map1.png"
@@ -542,7 +450,7 @@ export default function PetSearchHome() {
                     className="2xl:w-10 xl:w-9 lg:w-8 md:w-7 sm:w-6 w-5 object-contain mb-0.5"
                   />
                   <span className="text-center lg:text-sm sm:text-xs text-[10px] font-medium">แผนที่</span>
-                </button>
+                </a>
               </div>
             </div>
           </div>
@@ -623,10 +531,10 @@ export default function PetSearchHome() {
       {loading && <LoadingSpinner />}
       {error && <ErrorMessage message={error} />}
 
-      {/* Pet Count */}
+      {/* Pet Count - ใช้ totalPets จาก API */}
       {!loading && !error && (
         <div className="ml-16 2xl:text-xl lg:text-lg sm:text-md text-sm mb-4">
-          <p>ทั้งหมด: {filteredPets.length} ตัว</p>
+          <p>ทั้งหมด: {totalPets} ตัว</p>
         </div>
       )}
 
@@ -651,158 +559,41 @@ export default function PetSearchHome() {
           )}
         </main>
       ) : (
-        /* Map View */
+        /* Map Button */
         <main className="w-full flex justify-center mt-8">
-          <div className="relative flex flex-col mb-10 mt-5 2xl:ml-20 xl:mr-20 lg:mr-20 lg:ml-10 md:mr-20 sm:mr-10 mr-auto w-full max-w-7xl px-4">
+          <div className="flex flex-col items-center mb-10 mt-5 max-w-7xl px-4">
             <h2 className="sm:text-xl xl:text-lg mb-4 font-semibold text-gray-800">
-              สถานที่{showLostPets ? 'หาย' : 'พบ'}
+              ดูสถานที่{showLostPets ? 'หาย' : 'พบ'}ในแผนที่
             </h2>
-            
-            {/* Map Controls */}
-            <div className="relative flex flex-col sm:flex-row sm:items-center sm:gap-4 z-10 mb-6">
-              <div className="relative flex-1">
-                <input 
-                  type="text" 
-                  value={filterLocation}
-                  onChange={(e) => setFilterLocation(e.target.value)}
-                  placeholder="ค้นหาตามสถานที่..."
-                  className="w-full text-sm sm:text-base py-3 px-4 pr-10 border-2 border-gray-200 rounded-lg shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all bg-white/90"
-                />
-                <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-4.35-4.35m0 0a7 7 0 111.414-1.414L21 21z" />
-                </svg>
-              </div>
-              
-              <button 
-                onClick={handleGoToMyLocation}
-                className="w-full sm:w-auto bg-[#EAD64D] text-black text-sm sm:text-base py-3 px-6 rounded-lg hover:bg-yellow-200 transition duration-300 shadow-md flex items-center justify-center gap-2"
-                disabled={!userLocation}
-              >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                </svg>
-                ตำแหน่งของฉัน
-              </button>
-            </div>
-
-            {/* Map Container */}
-            <div className="relative h-[500px] sm:h-[600px] md:h-[700px] w-full rounded-3xl overflow-hidden shadow-xl border-2 border-gradient-to-r from-blue-200 to-amber-200 bg-white/80">
-              <Suspense fallback={<div className="h-full w-full bg-gray-100 animate-pulse rounded-3xl flex items-center justify-center">
-                <div className="text-gray-500">กำลังโหลดแผนที่...</div>
-              </div>}>
-                {typeof window !== 'undefined' && (
-                  <MapContainer 
-                    center={mapCenter} 
-                    zoom={12} 
-                    style={{ height: '100%', width: '100%' }} 
-                    ref={mapRef} 
-                    zoomControl={false}
-                    className="rounded-3xl"
-                  >
-                    <TileLayer
-                      url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                    />
-                    <ZoomControl position="topright" />
-                    
-                    {filteredPets.map((pet) => 
-                      pet.lat && pet.lng ? (
-                        <Marker
-                          key={pet.id}
-                          position={[pet.lat, pet.lng]}
-                          icon={createCustomIcon(
-                            showLostPets 
-                              ? (pet as LostPet).pet.images.find((img) => img.mainImage)?.url || (pet as LostPet).pet.images[0]?.url
-                              : (pet as FoundPet).images.find((img) => img.mainImage)?.url || (pet as FoundPet).images[0]?.url,
-                            showLostPets
-                          )}
-                        >
-                          <Popup className="rounded-xl shadow-2xl bg-white/95 max-w-[340px]">
-                            <div className="p-5">
-                              <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-xl font-semibold text-gray-900 flex-1 mr-3">
-                                  {showLostPets ? (pet as LostPet).title : (pet as FoundPet).species.name}
-                                </h3>
-                                <span className={`px-4 py-1.5 rounded-full text-sm font-medium text-white flex-shrink-0 ${
-                                  showLostPets ? 'bg-red-500' : 'bg-blue-500'
-                                }`}>
-                                  {showLostPets ? 'หาย' : 'พบแล้ว'}
-                                </span>
-                              </div>
-                              
-                              {(showLostPets ? (pet as LostPet).pet.images : (pet as FoundPet).images).length > 0 && (
-                                <div className="mb-4">
-                                  <Image
-                                    src={(showLostPets ? (pet as LostPet).pet.images : (pet as FoundPet).images)
-                                      .find((img) => img.mainImage)?.url || 
-                                      (showLostPets ? (pet as LostPet).pet.images[0]?.url : (pet as FoundPet).images[0]?.url) || 
-                                      '/images/default_pet.png'}
-                                    alt={showLostPets ? (pet as LostPet).title : (pet as FoundPet).species.name}
-                                    width={300}
-                                    height={160}
-                                    className="w-full h-40 object-cover rounded-lg shadow-md hover:scale-105 transition-transform duration-300"
-                                  />
-                                </div>
-                              )}
-                              
-                              <div className="space-y-3">
-                                <div className="flex items-center text-sm text-gray-700">
-                                  <svg className="w-5 h-5 mr-2.5 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                                  </svg>
-                                  <span>{pet.location}</span>
-                                </div>
-                                
-                                <div className="flex items-center text-sm text-gray-700">
-                                  <svg className="w-5 h-5 mr-2.5 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                                  </svg>
-                                  <span>
-                                    {showLostPets 
-                                      ? `วันที่หาย: ${new Date((pet as LostPet).lostDate).toLocaleDateString('th-TH')}` 
-                                      : `วันที่พบ: ${new Date((pet as FoundPet).foundDate).toLocaleDateString('th-TH')}`
-                                    }
-                                  </span>
-                                </div>
-                                
-                                {showLostPets && (pet as LostPet).reward && (
-                                  <div className="bg-amber-400 text-white px-4 py-2 rounded-lg text-center text-sm font-semibold mt-4 shadow-sm">
-                                    💰 รางวัล: {(pet as LostPet).reward?.toLocaleString()} บาท
-                                  </div>
-                                )}
-                                
-                                {!showLostPets && (
-                                  <div className="flex items-center text-sm text-gray-700">
-                                    <svg className="w-5 h-5 mr-2.5 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                      <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
-                                    </svg>
-                                    <span>ประเภท: {(pet as FoundPet).species.name}</span>
-                                  </div>
-                                )}
-                                
-                                <Link 
-                                  href={showLostPets ? `/lostpet/${pet.id}` : `/foundpet/${pet.id}`}
-                                  className="block bg-blue-500 text-white px-4 py-2.5 rounded-lg text-center text-sm font-semibold mt-4 transition-all duration-300 shadow-md hover:shadow-lg hover:bg-blue-600"
-                                >
-                                  ดูรายละเอียด
-                                </Link>
-                              </div>
-                            </div>
-                          </Popup>
-                        </Marker>
-                      ) : null
-                    )}
-                  </MapContainer>
-                )}
-              </Suspense>
-            </div>
+            <a
+              href="/map"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-[#EAD64D] text-black text-sm sm:text-base py-3 px-6 rounded-lg hover:bg-yellow-200 transition duration-300 shadow-md flex items-center justify-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+              </svg>
+              เปิดแผนที่ในแท็บใหม่
+            </a>
           </div>
         </main>
       )}
 
-      {/* Pagination */}
+      {/* Enhanced Pagination */}
       {displayMode === 'info' && totalPages > 1 && (
-        <nav className="flex justify-center items-center space-x-5 sm:p-7 lg:p-10 py-5" aria-label="Pagination Navigation">
+        <nav className="flex justify-center items-center space-x-2 sm:space-x-5 sm:p-7 lg:p-10 py-5" aria-label="Pagination Navigation">
+          {/* ปุ่มไปหน้าแรก */}
+          <button 
+            onClick={() => handlePageChange(1)}
+            disabled={currentPage === 1}
+            className="flex items-center justify-center bg-[#D9D9D9] hover:bg-[#C0C0C0] rounded-lg px-2 py-1 sm:px-3 sm:py-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs sm:text-sm"
+            aria-label="หน้าแรก"
+          >
+            หน้าแรก
+          </button>
+
+          {/* ปุ่มหน้าก่อนหน้า */}
           <button 
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
@@ -818,18 +609,61 @@ export default function PetSearchHome() {
             />
           </button>
           
-          <span className="bg-[#D9D9D9] rounded-xl sm:px-4 py-2 sm:p-2 px-2.5 py-1 2xl:text-xl xl:text-lg md:text-sm sm:text-xs text-[10px] text-center font-semibold">
-            {currentPage}
-          </span>
-          
-          <span className="text-center px-2 2xl:text-xl xl:text-lg md:text-sm sm:text-xs text-[11px] font-medium">
-            ถึง
-          </span>
-          
-          <span className="bg-[#D9D9D9] rounded-xl sm:px-4 sm:py-2 px-2.5 py-1 2xl:text-xl xl:text-lg md:text-sm sm:text-xs text-[10px] font-semibold">
-            {totalPages}
-          </span>
-          
+          {/* แสดงหมายเลขหน้า */}
+          <div className="flex items-center space-x-1">
+            {/* หน้าก่อนหน้า (ถ้ามี) */}
+            {currentPage > 2 && (
+              <>
+                <button
+                  onClick={() => handlePageChange(1)}
+                  className="bg-white hover:bg-gray-100 rounded-lg px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm border transition-colors"
+                >
+                  1
+                </button>
+                {currentPage > 3 && <span className="text-gray-500">...</span>}
+              </>
+            )}
+
+            {/* หน้าก่อนหน้า 1 หน้า */}
+            {currentPage > 1 && (
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                className="bg-white hover:bg-gray-100 rounded-lg px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm border transition-colors"
+              >
+                {currentPage - 1}
+              </button>
+            )}
+
+            {/* หน้าปัจจุบัน */}
+            <span className="bg-[#EAD64D] rounded-lg px-3 py-2 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold border-2 border-yellow-400">
+              {currentPage}
+            </span>
+
+            {/* หน้าถัดไป 1 หน้า */}
+            {currentPage < totalPages && (
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                className="bg-white hover:bg-gray-100 rounded-lg px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm border transition-colors"
+              >
+                {currentPage + 1}
+              </button>
+            )}
+
+            {/* หน้าสุดท้าย (ถ้ามี) */}
+            {currentPage < totalPages - 1 && (
+              <>
+                {currentPage < totalPages - 2 && <span className="text-gray-500">...</span>}
+                <button
+                  onClick={() => handlePageChange(totalPages)}
+                  className="bg-white hover:bg-gray-100 rounded-lg px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm border transition-colors"
+                >
+                  {totalPages}
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* ปุ่มหน้าถัดไป */}
           <button 
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage >= totalPages}
@@ -844,52 +678,30 @@ export default function PetSearchHome() {
               className="w-2 sm:w-3 md:w-4 lg:w-5 xl:w-6 object-contain"
             />
           </button>
+
+          {/* ปุ่มไปหน้าสุดท้าย */}
+          <button 
+            onClick={() => handlePageChange(totalPages)}
+            disabled={currentPage === totalPages}
+            className="flex items-center justify-center bg-[#D9D9D9] hover:bg-[#C0C0C0] rounded-lg px-2 py-1 sm:px-3 sm:py-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs sm:text-sm"
+            aria-label="หน้าสุดท้าย"
+          >
+            หน้าสุดท้าย
+          </button>
         </nav>
+      )}
+
+      {/* Page Info */}
+      {displayMode === 'info' && totalPages > 1 && (
+        <div className="flex justify-center mb-8">
+          <div className="text-sm text-gray-600 bg-gray-100 rounded-lg px-4 py-2">
+            หน้า {currentPage} จาก {totalPages} | แสดง {currentPets.length} จาก {totalPets} รายการ
+          </div>
+        </div>
       )}
 
       {/* Custom Styles */}
       <style jsx global>{`
-        .custom-pet-marker {
-          background: transparent !important;
-          border: none !important;
-        }
-        
-        .custom-pet-marker:hover div {
-          transform: translate(-50%, -55%) scale(1.1);
-        }
-        
-        .leaflet-popup-content-wrapper {
-          border-radius: 12px !important;
-          box-shadow: 0 10px 25px rgba(0,0,0,0.15) !important;
-        }
-        
-        .leaflet-popup-tip {
-          background: white !important;
-        }
-        
-        .leaflet-container {
-          background: #f8fafc !important;
-          border-radius: 16px;
-        }
-        
-        .leaflet-control-zoom {
-          border: none !important;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
-          border-radius: 8px !important;
-          background: white !important;
-        }
-        
-        .leaflet-control-zoom a {
-          color: #1f2937 !important;
-          font-size: 16px !important;
-          line-height: 28px !important;
-          transition: all 0.2s ease !important;
-        }
-        
-        .leaflet-control-zoom a:hover {
-          background: #f1f5f9 !important;
-        }
-        
         .line-clamp-2 {
           display: -webkit-box;
           -webkit-line-clamp: 2;

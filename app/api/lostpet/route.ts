@@ -1,26 +1,27 @@
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { options } from '../auth/[...nextauth]/option';
+import { options } from '../auth/[...nextauth]/option'
 import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(options);
+    const session = await getServerSession(options)
     if (!session || !session.user?.email) {
-      return NextResponse.json({ message: "กรุณาเข้าสู่ระบบก่อน" }, { status: 401 });
+      return NextResponse.json({ message: "กรุณาเข้าสู่ระบบก่อน" }, { status: 401 })
     }
 
     // หา userId จาก email
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
-    });
+    })
     if (!user) {
-      return NextResponse.json({ message: "ไม่พบผู้ใช้งานในระบบ" }, { status: 404 });
+      return NextResponse.json({ message: "ไม่พบผู้ใช้งานในระบบ" }, { status: 404 })
     }
 
-    const body = await req.json();
+    const body = await req.json()
     const {
       description,
       lat,
@@ -33,34 +34,34 @@ export async function POST(req: NextRequest) {
       missingLocation,
       phone,
       facebook,
-    } = body;
+    } = body
 
     // Validate input data
     if (!description || !lostDate || !petId) {
-      return NextResponse.json({ message: "ข้อมูลไม่ครบถ้วน" }, { status: 400 });
+      return NextResponse.json({ message: "ข้อมูลไม่ครบถ้วน" }, { status: 400 })
     }
 
     if (lat && (lat < -90 || lat > 90)) {
-      return NextResponse.json({ message: "ค่าละติจูดไม่ถูกต้อง" }, { status: 400 });
+      return NextResponse.json({ message: "ค่าละติจูดไม่ถูกต้อง" }, { status: 400 })
     }
     if (lng && (lng < -180 || lng > 180)) {
-      return NextResponse.json({ message: "ค่าลองจิจูดไม่ถูกต้อง" }, { status: 400 });
+      return NextResponse.json({ message: "ค่าลองจิจูดไม่ถูกต้อง" }, { status: 400 })
     }
 
     if (phone && !/^[0-9]{9,10}$/.test(phone.replace(/[-\s]/g, ""))) {
-      return NextResponse.json({ message: "รูปแบบเบอร์โทรศัพท์ไม่ถูกต้อง" }, { status: 400 });
+      return NextResponse.json({ message: "รูปแบบเบอร์โทรศัพท์ไม่ถูกต้อง" }, { status: 400 })
     }
 
     // เช็คว่า petId นี้เป็นของ user นี้หรือไม่
-    const pet = await prisma.pet.findUnique({ where: { id: petId } });
+    const pet = await prisma.pet.findUnique({ where: { id: petId } })
     if (!pet) {
-      return NextResponse.json({ message: "ไม่พบสัตว์เลี้ยงนี้" }, { status: 404 });
+      return NextResponse.json({ message: "ไม่พบสัตว์เลี้ยงนี้" }, { status: 404 })
     }
     if (pet.userId !== user.id) {
-      return NextResponse.json({ message: "สัตว์เลี้ยงนี้ไม่ใช่ของคุณ" }, { status: 403 });
+      return NextResponse.json({ message: "สัตว์เลี้ยงนี้ไม่ใช่ของคุณ" }, { status: 403 })
     }
 
-    // เช็คว่ามีประกาศที่ยังใช้งานอยู่หรือไม่ (สถานะที่ยังไม่จบ)
+    // เช็คว่ามีประกาศที่ยังใช้งานอยู่หรือไม่
     const existsActive = await prisma.lostPet.findFirst({
       where: { 
         petId: petId, 
@@ -69,32 +70,31 @@ export async function POST(req: NextRequest) {
           { status: "pending" },
         ]
       },
-    });
+    })
     if (existsActive) {
       return NextResponse.json({ 
         message: `สัตว์เลี้ยงตัวนี้มีประกาศที่ยังใช้งานอยู่` 
-      }, { status: 400 });
+      }, { status: 400 })
     }
 
-    // -------------------
     // เรียก Longdo API แปลง lat/lng -> location
-    // -------------------
-    let location = "ไม่ระบุ";
-
+    let location = missingLocation || "ไม่ระบุ"
     if (lat && lng) {
       try {
         const res = await fetch(
           `https://api.longdo.com/map/services/address?lon=${lng}&lat=${lat}&key=50965cbe89a74a5d1e45c7add11d5b39`
-        );
-        const data = await res.json();
+        )
+        const data = await res.json()
         if (data && data.subdistrict) {
-          location = `${data.subdistrict} ${data.district} ${data.province}`.trim();
-        } else {
-          location = "ไม่พบที่อยู่";
+          location = `${data.subdistrict} ${data.district} ${data.province}`.trim()
+        } else if (!missingLocation) {
+          location = "ไม่พบที่อยู่"
         }
       } catch (err) {
-        console.error("Longdo API Error:", err);
-        location = "ไม่พบที่อยู่";
+        console.error("Longdo API Error:", err)
+        if (!missingLocation) {
+          location = "ไม่พบที่อยู่"
+        }
       }
     }
 
@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
         phone,
         facebook,
       },
-    });
+    })
 
     const safeResponse = {
       id: lostPet.id,
@@ -126,68 +126,91 @@ export async function POST(req: NextRequest) {
       status: lostPet.status,
       petId: lostPet.petId,
       createdAt: lostPet.createdAt,
-    };
+    }
 
-    return NextResponse.json(safeResponse, { status: 201 });
+    return NextResponse.json(safeResponse, { status: 201 })
   } catch (error) {
-    console.error("Error creating lost pet:", error);
-    return NextResponse.json({ message: "เกิดข้อผิดพลาดในการประกาศสัตว์หาย" }, { status: 500 });
+    console.error("Error creating lost pet:", error)
+    return NextResponse.json({ message: "เกิดข้อผิดพลาดในการประกาศสัตว์หาย" }, { status: 500 })
   }
 }
 
-// GET - ปลอดภัยแล้ว ไม่เปิดเผยข้อมูลส่วนตัว
 export async function GET(req: NextRequest) {
   try {
-    
-    const { searchParams } = new URL(req.url);
-    // จัดการกรณีที่ไม่มี page หรือ limit โดยกำหนดค่า default
-    const page = parseInt(searchParams.get('page') || '1', 10) || 1;
-    const limit = parseInt(searchParams.get('limit') || '10', 10) || 10;
-    const species = searchParams.get('species') || undefined;
-    const province = searchParams.get('province') || undefined;
-    const status = searchParams.get('status') || 'lost';
+    const { searchParams } = new URL(req.url)
+    const page = parseInt(searchParams.get('page') || '1', 10) || 1
+    const limit = parseInt(searchParams.get('limit') || '10', 10) || 10
+    const species = searchParams.get('species') || undefined
+    const location = searchParams.get('location') || undefined
+    const lostDate = searchParams.get('lostDate') || undefined
+    const minReward = parseFloat(searchParams.get('minReward') || '0') || 0
+    const maxReward = parseFloat(searchParams.get('maxReward') || '100000') || 100000
+    const status = searchParams.get('status') || 'lost'
 
     // Validate pagination
     if (page < 1 || limit < 1 || limit > 50) {
-      return NextResponse.json({ message: "ค่า pagination ไม่ถูกต้อง" }, { status: 400 });
+      return NextResponse.json({ message: "ค่า pagination ไม่ถูกต้อง" }, { status: 400 })
     }
 
-    const skip = (page - 1) * limit;
+    // Validate reward
+    if (minReward < 0 || maxReward < minReward) {
+      return NextResponse.json({ message: "ช่วงรางวัลไม่ถูกต้อง" }, { status: 400 })
+    }
 
-    // Build where clause - แก้ไขการสร้าง whereClause
+    const skip = (page - 1) * limit
+
+    // Build where clause
     const whereClause: any = {
-      status: status as any, // Cast เป็น LostPetStatus enum
-    };
+      status,
+    }
 
-    // เพิ่มเงื่อนไขสำหรับ species และ province พร้อมกัน
-    if (species && province) {
-      whereClause.AND = [
-        {
+    // เพิ่มเงื่อนไขสำหรับตัวกรอง
+    if (species || location || lostDate || minReward > 0 || maxReward < 100000) {
+      whereClause.AND = []
+
+      if (species && species !== 'ทั้งหมด') {
+        whereClause.AND.push({
           pet: {
             species: {
               name: species,
             },
           },
-        },
-        {
-          user: {
-            province,
+        })
+      }
+
+      if (location) {
+        whereClause.AND.push({
+          OR: [
+            { location: { contains: location, mode: 'insensitive' } },
+            { missingLocation: { contains: location, mode: 'insensitive' } },
+          ],
+        })
+      }
+
+      if (lostDate) {
+        const date = new Date(lostDate)
+        if (!isNaN(date.getTime())) {
+          whereClause.AND.push({
+            lostDate: {
+              gte: new Date(date.setHours(0, 0, 0, 0)),
+              lte: new Date(date.setHours(23, 59, 59, 999)),
+            },
+          })
+        }
+      }
+
+      if (minReward > 0 || maxReward < 100000) {
+        whereClause.AND.push({
+          reward: {
+            gte: minReward,
+            lte: maxReward,
           },
-        },
-      ];
-    } else if (species) {
-      // เพิ่มเงื่อนไขเฉพาะเมื่อมีค่า species
-      whereClause.pet = {
-        species: {
-          name: species,
-        },
-      };
-    } else if (province) {
-      // เพิ่มเงื่อนไขเฉพาะเมื่อมีค่า province
-      whereClause.user = {
-        province,
-      };
+        })
+      }
     }
+
+    console.log('Query parameters:', { species, location, lostDate, minReward, maxReward, status }) // Debug query
+    console.log('Where clause:', JSON.stringify(whereClause, null, 2)) // Debug whereClause
 
     const [lostPets, total] = await Promise.all([
       prisma.lostPet.findMany({
@@ -207,7 +230,7 @@ export async function GET(req: NextRequest) {
               images: { 
                 select: { 
                   url: true,
-                  mainImage: true // เพิ่ม mainImage field
+                  mainImage: true
                 } 
               },
             },
@@ -237,7 +260,7 @@ export async function GET(req: NextRequest) {
                 select: { url: true },
               },
             },
-            orderBy: { createdAt: 'desc' }, // เรียงลำดับ clues ตามวันที่สร้าง
+            orderBy: { createdAt: 'desc' },
           },
         },
         skip,
@@ -245,27 +268,44 @@ export async function GET(req: NextRequest) {
         orderBy: { createdAt: 'desc' },
       }),
       prisma.lostPet.count({ where: whereClause }),
-    ]);
+    ])
 
-    // แปลงข้อมูลให้ปลอดภัย
+    // แปลงข้อมูลให้ตรงกับ frontend
     const safeLostPets = lostPets.map(lostPet => ({
       id: lostPet.id,
+      title: lostPet.pet.name, // Map pet.name to title
       description: lostPet.description,
       location: lostPet.location,
-      lat: lostPet.lat, // เพิ่ม lat
-      lng: lostPet.lng, // เพิ่ม lng
-      lostDate: lostPet.lostDate,
+      missingLocation: lostPet.missingLocation,
+      lat: lostPet.lat,
+      lng: lostPet.lng,
+      lostDate: lostPet.lostDate.toISOString(), // แปลงเป็น string
       reward: lostPet.reward,
       status: lostPet.status,
-      facebook: lostPet.facebook, // เพิ่ม facebook
-      ownerName: lostPet.ownerName,
-      phone: lostPet.phone, // เพิ่ม phone
-      pet: lostPet.pet,
-      user: lostPet.user,
-      images: lostPet.images,
+      userId: lostPet.userId,
+      createdAt: lostPet.createdAt.toISOString(), // แปลงเป็น string
+      images: lostPet.pet.images, // ใช้ pet.images เพื่อให้สอดคล้องกับ frontend
+      pet: {
+        id: lostPet.pet.id,
+        name: lostPet.pet.name,
+        species: lostPet.pet.species,
+        breed: lostPet.pet.breed,
+        gender: lostPet.pet.gender,
+        age: lostPet.pet.age,
+        color: lostPet.pet.color,
+        description: lostPet.pet.description,
+        markings: lostPet.pet.markings,
+        images: lostPet.pet.images,
+      },
+      user: {
+        id: lostPet.user.id,
+        firstName: lostPet.user.firstName,
+        province: lostPet.user.province,
+      },
       clues: lostPet.clues,
-      createdAt: lostPet.createdAt,
-    }));
+    }))
+
+    console.log('Returning lost pets:', safeLostPets.length) // Debug response
 
     return NextResponse.json({
       data: safeLostPets,
@@ -275,12 +315,12 @@ export async function GET(req: NextRequest) {
         total,
         totalPages: Math.ceil(total / limit),
       },
-    });
+    })
   } catch (error) {
-    console.error("Error fetching lost pets:", error);
+    console.error("Error fetching lost pets:", error)
     return NextResponse.json({ 
       message: 'ไม่สามารถดึงข้อมูลได้',
       error: process.env.NODE_ENV === 'development' ? error : undefined 
-    }, { status: 500 });
+    }, { status: 500 })
   }
 }
