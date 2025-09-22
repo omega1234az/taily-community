@@ -50,15 +50,33 @@ const keyProvinces: { name: string; lat: number; lng: number }[] = [
 // Hooks
 const useGeolocation = () => {
     const [loc, setLoc] = useState<[number, number] | null>(null)
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
+
     useEffect(() => {
-        if (!navigator.geolocation) { setLoc([13.7563, 100.5018]); return }
+        if (!navigator.geolocation) {
+            setError('Geolocation ไม่รองรับในเบราว์เซอร์นี้')
+            setLoc([13.7563, 100.5018])
+            setLoading(false)
+            return
+        }
+
         navigator.geolocation.getCurrentPosition(
-            ({ coords }) => setLoc([coords.latitude, coords.longitude]),
-            () => setLoc([13.7563, 100.5018]),
+            ({ coords }) => {
+                setLoc([coords.latitude, coords.longitude])
+                setLoading(false)
+            },
+            (err) => {
+                console.error('Geolocation error:', err)
+                setError('ไม่สามารถดึงตำแหน่งได้')
+                setLoc([13.7563, 100.5018])
+                setLoading(false)
+            },
             { enableHighAccuracy: true, timeout: 10000 }
         )
     }, [])
-    return loc
+
+    return { loc, loading, error }
 }
 
 const useApi = () => {
@@ -167,7 +185,7 @@ const FilterModal = ({
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
-                <span className="font-semibold text-sm">ตัวกรอง</span>
+                <span className=" cursor-pointer font-semibold text-sm">ตัวกรอง</span>
             </button>
 
             {isModalOpen && (
@@ -398,20 +416,33 @@ export default function PetSearchMap() {
     const [filterSpecies, setFilterSpecies] = useState('')
     const [filterReward, setFilterReward] = useState<[number, number]>([0, 100000])
     const [isSpeciesDropdownVisible, setIsSpeciesDropdownVisible] = useState(false)
-    const userLocation = useGeolocation()
-
-    // ใช้ fixed initial center เพื่อป้องกัน re-render
-    const [initialCenter] = useState<[number, number]>([13.7563, 100.5018])
+    const { loc: userLocation, loading: geoLoading, error: geoError } = useGeolocation()
+    const [center, setCenter] = useState<[number, number]>([13.7563, 100.5018])
     const mapRef = useRef<LeafletMap | null>(null)
     const { fetchData } = useApi()
 
-    // Set initial map position to user location once only
+    // Set map center when userLocation is available
     useEffect(() => {
-        if (userLocation && mapRef.current) {
-            console.log('Setting initial map view to user location:', userLocation)
-            mapRef.current.setView(userLocation, 12)
+        if (userLocation) {
+            setCenter(userLocation)
+            if (mapRef.current) {
+                console.log('Setting map view to user location:', userLocation)
+                mapRef.current.setView(userLocation, 12)
+            }
         }
     }, [userLocation])
+
+    // Ensure map is ready before setting view
+    useEffect(() => {
+        if (!mapRef.current) return
+        const map = mapRef.current
+        map.whenReady(() => {
+            if (userLocation) {
+                console.log('Map ready, setting view to user location:', userLocation)
+                map.setView(userLocation, 12)
+            }
+        })
+    }, [mapRef, userLocation])
 
     useEffect(() => {
         const fetchSpecies = async () => {
@@ -430,7 +461,6 @@ export default function PetSearchMap() {
     }, [fetchData])
 
     useEffect(() => {
-        // Load pets on initial mount or when showLostPets changes
         loadPets()
     }, [showLostPets])
 
@@ -459,6 +489,7 @@ export default function PetSearchMap() {
             }
         } catch (e: any) {
             console.error('Error loading pets:', e)
+            setError('เกิดข้อผิดพลาดในการโหลดข้อมูลสัตว์เลี้ยง')
             if (showLostPets) {
                 setLostPets([])
             } else {
@@ -471,18 +502,22 @@ export default function PetSearchMap() {
 
     const filteredPets = showLostPets ? lostPets : foundPets
 
-    const handleGoToMyLocation = () => {
+    const handleGoToMyLocation = useCallback(() => {
         if (mapRef.current && userLocation) {
             console.log('Going to user location:', userLocation)
             mapRef.current.setView(userLocation, 12)
         }
-    }
+    }, [userLocation])
 
     const handleGoToProvince = (province: { name: string; lat: number; lng: number }) => {
         if (mapRef.current) {
             console.log('Going to province:', province)
             mapRef.current.setView([province.lat, province.lng], 10)
         }
+    }
+
+    if (geoLoading) {
+        return <LoadingSpinner />
     }
 
     return (
@@ -496,13 +531,32 @@ export default function PetSearchMap() {
             <span className="absolute top-[580px] left-0 w-10 h-10 bg-[#7CBBEB] rounded-full z-0 -translate-x-1/2"></span>
             <span className="absolute top-[328px] left-12 w-7 h-7 bg-[#EAD64D] rounded-full z-0 -translate-x-1/2"></span>
 
+            {/* Error Message for Geolocation */}
+            {geoError && (
+                <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-[1000] bg-white rounded-lg p-4 shadow-xl">
+                    <p className="text-red-500">{geoError}</p>
+                    <p className="text-sm text-gray-600 mt-2">เลือกจังหวัด:</p>
+                    <div className="flex gap-2 mt-2">
+                        {keyProvinces.map(province => (
+                            <button
+                                key={province.name}
+                                onClick={() => handleGoToProvince(province)}
+                                className="bg-[#7CBBEB]  text-white px-3 py-1 rounded-md text-sm hover:bg-sky-600 transition-all duration-300"
+                            >
+                                {province.name}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* ปุ่มจังหวัดสำคัญ */}
             <div className="fixed top-16 left-4 z-[1000] flex flex-col gap-2">
                 {keyProvinces.map(province => (
                     <button
                         key={province.name}
                         onClick={() => handleGoToProvince(province)}
-                        className="bg-[#7CBBEB] border-[#5b9bd5] hover:bg-sky-600 hover:border-[#4682b4] text-white px-4 py-2 rounded-xl shadow-md transition-all duration-300 flex items-center gap-2"
+                        className="cursor-pointer bg-[#7CBBEB] border-[#5b9bd5] hover:bg-sky-600 hover:border-[#4682b4] text-white px-4 py-2 rounded-xl shadow-md transition-all duration-300 flex items-center gap-2"
                     >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -540,7 +594,7 @@ export default function PetSearchMap() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                <span className="font-semibold text-sm">ตำแหน่งฉัน</span>
+                <span className="font-semibold text-sm cursor-pointer">ตำแหน่งฉัน</span>
             </button>
 
             <Link
@@ -553,7 +607,6 @@ export default function PetSearchMap() {
                 <span className="font-semibold text-sm">ลงประกาศ</span>
             </Link>
 
-            {/* แสดงการโหลดเฉพาะตอนค้นหา */}
             {loading && (
                 <div className="fixed inset-0 z-[999] bg-black/20 flex justify-center items-center">
                     <div className="bg-white rounded-lg p-4 shadow-xl">
@@ -565,11 +618,10 @@ export default function PetSearchMap() {
 
             {error && <ErrorMessage message={error} />}
 
-            {/* แสดงแผนที่เสมอ แม้ตอนโหลด */}
             <Suspense fallback={<div className="flex items-center justify-center h-full">กำลังโหลดแผนที่...</div>}>
                 <ErrorBoundary FallbackComponent={MapErrorFallback}>
                     <MapContainer
-                        center={initialCenter}
+                        center={center}
                         zoom={12}
                         className="h-screen w-screen rounded-xl border-2 border-gray-300 bg-white/80"
                         ref={mapRef as MutableRefObject<LeafletMap>}
@@ -581,15 +633,12 @@ export default function PetSearchMap() {
                             <Marker key={p.id} position={[p.lat, p.lng]} icon={createCustomIcon(showLostPets ? (p as LostPet).pet.images[0]?.url : (p as FoundPet).images[0]?.url, showLostPets)}>
                                 <Popup>
                                     <div className="relative bg-white rounded-xl shadow-xl w-[300px] max-h-[400px] overflow-y-auto border border-gray-200">
-                                        {/* Decorative Elements */}
                                         <span className="absolute top-[-20px] left-[-10px] w-20 h-16 bg-[#7CBBEB] rounded-b-full z-0"></span>
                                         <span className="absolute top-2 left-2 w-4 h-4 bg-[#EAD64D] rounded-full z-0"></span>
                                         <span className="absolute bottom-2 right-2 w-4 h-4 bg-[#7CBBEB] rounded-full z-0"></span>
-                                        {/* Header */}
                                         <div className="px-4 py-2 bg-[#7CBBEB] text-white rounded-t-xl relative z-10">
                                             <h3 className="text-sm font-bold">{showLostPets ? (p as LostPet).title : (p as FoundPet).species.name}</h3>
                                         </div>
-                                        {/* Content */}
                                         <div className="p-4 space-y-2 relative z-10">
                                             <div className="flex gap-3">
                                                 <div className="flex-shrink-0">
@@ -606,7 +655,7 @@ export default function PetSearchMap() {
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                                         </svg>
-                                                        สถานที่: <span className="font-normal">{(p as any).missingLocation}{p.description} {p.location}</span>
+                                                        สถานที่: <span className="font-normal">{(p as any).missingLocation || p.location}</span>
                                                     </p>
                                                     <p className="text-xs font-semibold text-gray-700 flex items-center gap-1">
                                                         <svg className="w-4 h-4 text-[#7CBBEB]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -736,7 +785,6 @@ export default function PetSearchMap() {
           overflow: hidden;
         }
 
-        /* Accessibility improvements */
         @media (prefers-reduced-motion: reduce) {
           * {
             animation-duration: 0.01ms !important;
@@ -745,7 +793,6 @@ export default function PetSearchMap() {
           }
         }
 
-        /* Focus styles for keyboard navigation */
         button:focus-visible,
         input:focus-visible,
         a:focus-visible,
