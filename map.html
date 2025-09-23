@@ -1,49 +1,80 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <title>Map Center Pin</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <style>
-    #map { height: 500px; width: 100%; position: relative; }
-    #pin {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -100%); /* ให้ปลายหมุดชี้ตรงกลาง */
-      z-index: 999;
-      pointer-events: none; /* ให้ map ยังรับคลิกได้ */
-    }
-    #coords { margin-top: 10px; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Marker Map</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        #map { height: 600px; width: 100%; }
+
+        /* จุดฟุ้ง */
+        .light-dot {
+            width: 12px;
+            height: 12px;
+            background-color: rgba(255, 0, 0, 0.8);
+            border-radius: 50%;
+            box-shadow: 0 0 12px 6px rgba(255, 0, 0, 0.6);
+        }
+    </style>
 </head>
 <body>
+    <div id="map"></div>
 
-<div id="map"></div>
-<img id="pin" src="https://cdn-icons-png.flaticon.com/512/684/684908.png" width="40" />
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        var map = L.map('map').setView([13.7563, 100.5018], 10);
 
-<div id="coords">Lat: -, Lng: -</div>
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-  // สร้าง map
-  const map = L.map('map').setView([13.736717, 100.523186], 13);
+        var markersData = [
+            { lat: 13.7563, lng: 100.5018, title: "จุดที่ 1" },
+            { lat: 13.7367, lng: 100.5231, title: "จุดที่ 2" },
+            { lat: 13.7763, lng: 100.4818, title: "จุดที่ 3" }
+        ];
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-  }).addTo(map);
+        var markers = [];
 
-  const coordsDiv = document.getElementById('coords');
+        var defaultIcon = L.icon({
+            iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34]
+        });
 
-  // ฟังก์ชันอัปเดตค่า lat/lng ของตำแหน่งตรงกลาง
-  function updateCenterCoords() {
-    const center = map.getCenter();
-    coordsDiv.textContent = `Lat: ${center.lat.toFixed(6)}, Lng: ${center.lng.toFixed(6)}`;
-  }
+        var lightDotIcon = L.divIcon({
+            className: 'light-dot',
+            iconSize: [12, 12]
+        });
 
-  map.on('move', updateCenterCoords);
-  updateCenterCoords(); // เริ่มต้น
-</script>
+        function updateMarkers() {
+            var zoom = map.getZoom();
+            markers.forEach(function(marker) {
+                if (zoom >= 10) {
+                    marker.setIcon(defaultIcon);
+                } else {
+                    marker.setIcon(lightDotIcon);
+                }
+            });
+        }
 
+        markersData.forEach(function(data) {
+            var marker = L.marker([data.lat, data.lng], { icon: defaultIcon })
+                .bindPopup(data.title)
+                .addTo(map);
+            markers.push(marker);
+        });
+
+        updateMarkers();
+
+        map.on('zoomend', function() {
+            updateMarkers();
+        });
+    </script>
 </body>
 </html>

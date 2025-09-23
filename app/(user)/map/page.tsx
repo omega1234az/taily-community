@@ -11,6 +11,7 @@ import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
 import 'dayjs/locale/th'
 
+
 dayjs.extend(utc)
 dayjs.extend(timezone)
 dayjs.locale('th')
@@ -93,17 +94,45 @@ const useApi = () => {
 const createCustomIcon = (imageUrl?: string, isLostPet = true): DivIcon => {
     const L = require('leaflet')
     const html = `
-    <div style="position: relative; width: 64px; height: 64px; border-radius: 50%; border: 4px solid ${isLostPet ? 'rgb(239, 68, 68)' : '#7CBBEB'
-        }; background: white; box-shadow: 0 10px 25px rgba(0,0,0,0.25); overflow: hidden; transform: translate(-50%, -50%); transition: transform 0.3s ease;">
-      <img src="${imageUrl || '/images/default_pet.png'}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" onerror="this.src='/images/default_pet.png'" />
-      <div style="position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-top: 14px solid ${isLostPet ? 'rgb(239, 68, 68)' : '#7CBBEB'
-        }; filter: drop-shadow(0 3px 5px rgba(0,0,0,0.2));"></div>
-      <div style="position: absolute; top: -10px; right: -10px; width: 24px; height: 24px; background: ${isLostPet ? 'rgb(239, 68, 68)' : '#7CBBEB'
-        }; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; font-size: 14px; color: white; font-weight: bold; box-shadow: 0 3px 10px rgba(0,0,0,0.25);">${isLostPet ? '!' : '✓'
-        }</div>
+    <div style="
+        position: relative; 
+        width: 48px; 
+        height: 48px; 
+        border-radius: 50%; 
+        border: 3px solid ${isLostPet ? 'rgb(239, 68, 68)' : '#7CBBEB'};
+        background: white; 
+        box-shadow: 0 8px 20px rgba(0,0,0,0.25); 
+        transform: translate(-50%, -50%);
+        transition: transform 0.3s ease;
+        overflow: hidden; /* ลบจุดแดงแล้วใช้ hidden ได้ตามเดิม */
+    ">
+      <img src="${imageUrl || '/images/default_pet.png'}" style="
+        width: 100%; 
+        height: 100%; 
+        object-fit: cover; 
+        border-radius: 50%; 
+        display: block;
+      " onerror="this.src='/images/default_pet.png'" />
+
+      <!-- จุดสามเหลี่ยมยังอยู่ -->
+      <div style="
+        position: absolute; 
+        bottom: -8px; 
+        left: 50%; 
+        transform: translateX(-50%); 
+        width: 0; 
+        height: 0; 
+        border-left: 8px solid transparent; 
+        border-right: 8px solid transparent; 
+        border-top: 11px solid ${isLostPet ? 'rgb(239, 68, 68)' : '#7CBBEB'}; 
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); 
+        z-index: 1;
+      "></div>
     </div>`
-    return L.divIcon({ html, iconSize: [64, 64], iconAnchor: [32, 64], popupAnchor: [0, -64], className: 'custom-pet-marker' })
+    
+    return L.divIcon({ html, iconSize: [50, 50], iconAnchor: [24, 48], popupAnchor: [0, -50], className: 'custom-pet-marker' })
 }
+
 
 // UI Components
 const LoadingSpinner = () => (
@@ -505,7 +534,7 @@ export default function PetSearchMap() {
     const handleGoToMyLocation = useCallback(() => {
         if (mapRef.current && userLocation) {
             console.log('Going to user location:', userLocation)
-            mapRef.current.setView(userLocation, 12)
+            mapRef.current.setView(userLocation, 14)
         }
     }, [userLocation])
 
@@ -653,6 +682,7 @@ export default function PetSearchMap() {
                         <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" attribution="&copy; OpenStreetMap & CARTO" />
                         <ZoomControl position="bottomleft" />
                         {filteredPets.map(p => p.lat && p.lng && (
+                          
                             <Marker key={p.id} position={[p.lat, p.lng]} icon={createCustomIcon(showLostPets ? (p as LostPet).pet.images[0]?.url : (p as FoundPet).images[0]?.url, showLostPets)}>
                                 <Popup>
                                     <div className="relative bg-white rounded-xl shadow-xl w-[300px] max-h-[400px] overflow-y-auto border border-gray-200">
@@ -729,6 +759,7 @@ export default function PetSearchMap() {
                                     </div>
                                 </Popup>
                             </Marker>
+                          
                         ))}
                     </MapContainer>
                 </ErrorBoundary>
