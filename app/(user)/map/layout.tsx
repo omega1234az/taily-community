@@ -7,8 +7,9 @@ import TopNavbar from '@/app/component/TopNavbar';
 const MissingPetLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     
-   
+      
       <div className=''>
+        <title>TailyMap</title>
         {children}
       </div>
         
