@@ -54,6 +54,7 @@ export default function RegisterMissing() {
   const [missingDetail, setMissingDetail] = useState("");
   const [reward, setReward] = useState("");
   const [coords, setCoords] = useState({ lat: 13.736717, lng: 100.523186 });
+  const [isSubmitting, setIsSubmitting] = useState(false); // New state for submit button
 
   // Refs
   const mapRef = useRef<L.Map | null>(null);
@@ -199,6 +200,7 @@ export default function RegisterMissing() {
   // Submit form
   const handleSubmit = async () => {
     if (!validateForm()) return;
+    setIsSubmitting(true); // Disable button
 
     const payload = {
       description: missingDetail,
@@ -245,6 +247,8 @@ export default function RegisterMissing() {
         title: "ข้อผิดพลาด",
         text: "เกิดข้อผิดพลาดในการเชื่อมต่อ API",
       });
+    } finally {
+      setIsSubmitting(false); // Re-enable button
     }
   };
 
@@ -616,9 +620,12 @@ export default function RegisterMissing() {
           </button>
           <button
             onClick={handleSubmit}
-            className="bg-[#7CBBEB] text-white hover:bg-sky-600 shadow-md rounded-xl px-6 py-1 sm:text-lg xl:text-xl cursor-pointer"
+            disabled={isSubmitting}
+            className={`bg-[#7CBBEB] text-white shadow-md rounded-xl px-6 py-1 sm:text-lg xl:text-xl cursor-pointer ${
+              isSubmitting ? "opacity-50 cursor-not-allowed" : "hover:bg-sky-600"
+            }`}
           >
-            ตกลง
+            {isSubmitting ? "กำลังบันทึก..." : "ตกลง"}
           </button>
         </div>
       </div>

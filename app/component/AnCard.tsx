@@ -234,7 +234,7 @@ const PetCard: React.FC<AnCardProps> = ({
 
       {/* Popup ลบโพสต์ */}
       {isReportOpen && (
-        <div className="fixed inset-0 flex justify-center items-center z-50 bg-black bg-opacity-50 overflow-y-auto">
+        <div className="fixed inset-0 flex justify-center items-center z-50  bg-opacity-50 overflow-y-auto">
           <div className="bg-white w-full max-w-md sm:max-w-lg rounded-md shadow-lg p-4 m-4 relative">
             <button
               onClick={() => setIsReportOpen(false)}

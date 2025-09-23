@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import LostPetDetails from "@/app/component/LostPetDetails";
 import {
-  
   formatNeuteredStatus,
   formatReward,
   formatDate,
@@ -76,18 +75,26 @@ type LostPet = {
   images: LostPetImage[];
 };
 
+type Species = {
+  id: number;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 // ---------------- Component ----------------
 export default function Id() {
   const params = useParams();
   const petId = params?.id;
   const [lostPet, setLostPet] = useState<LostPet | null>(null);
+  const [speciesList, setSpeciesList] = useState<Species[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const numericPetId = petId ? parseInt(petId as string) : null;
 
   useEffect(() => {
-    const fetchLostPetData = async () => {
+    const fetchData = async () => {
       if (!numericPetId) {
         setError("ไม่พบ ID สัตว์");
         setLoading(false);
@@ -98,22 +105,36 @@ export default function Id() {
         setLoading(true);
         setError(null);
 
-        const response = await fetch(`/api/lostpet/${numericPetId}`, {
+        // Fetch lost pet data
+        const lostPetResponse = await fetch(`/api/lostpet/${numericPetId}`, {
           cache: 'no-store',
         });
 
-        if (!response.ok) {
-          if (response.status === 404) {
+        if (!lostPetResponse.ok) {
+          if (lostPetResponse.status === 404) {
             setError("ไม่พบข้อมูลสัตว์หาย");
           } else {
-            setError("เกิดข้อผิดพลาดในการดึงข้อมูล");
+            setError("เกิดข้อผิดพลาดในการดึงข้อมูลสัตว์");
           }
           setLoading(false);
           return;
         }
 
-        const data = await response.json();
-        setLostPet(data);
+        const lostPetData = await lostPetResponse.json();
+        setLostPet(lostPetData);
+
+        // Fetch species data
+        const speciesResponse = await fetch("/api/pets/species", {
+          cache: 'no-store',
+        });
+
+        if (!speciesResponse.ok) {
+          console.error("เกิดข้อผิดพลาดในการดึงข้อมูล species");
+          setSpeciesList([]);
+        } else {
+          const speciesData = await speciesResponse.json();
+          setSpeciesList(speciesData);
+        }
       } catch (err) {
         console.error("เกิดข้อผิดพลาดในการดึงข้อมูล:", err);
         setError("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
@@ -122,7 +143,7 @@ export default function Id() {
       }
     };
 
-    fetchLostPetData();
+    fetchData();
   }, [numericPetId]);
 
   if (!numericPetId) {
@@ -166,7 +187,7 @@ export default function Id() {
   }
 
   if (lostPet) {
-    const petForComponent = convertLostPetForComponent(lostPet);
+    const petForComponent = convertLostPetForComponent(lostPet, speciesList);
     return <LostPetDetails pet={petForComponent} />;
   }
 
@@ -211,13 +232,17 @@ type LostPetForComponent = {
   };
 };
 
-const convertLostPetForComponent = (lostPet: LostPet): LostPetForComponent => {
+const convertLostPetForComponent = (lostPet: LostPet, speciesList: Species[]): LostPetForComponent => {
+  // Map speciesId to species name
+  const species = speciesList.find((s) => s.id === lostPet.pet.speciesId);
+  const speciesName = species ? species.name : "ไม่ระบุ";
+
   return {
     id: lostPet.id.toString(),
     name: lostPet.pet.name || "ไม่ระบุ",
     age: lostPet.pet.age ? String(lostPet.pet.age) : "ไม่ระบุ",
     gender: lostPet.pet.gender || "ไม่ระบุ",
-    type: lostPet.pet.speciesId === 1 ? "แมว" : "ไม่ระบุ", // ปรับตาม speciesId
+    type: speciesName, // Use the mapped species name
     breed: lostPet.pet.breed || "ไม่ระบุ",
     sterilized: formatNeuteredStatus(lostPet.pet.isNeutered) || "ไม่ระบุ",
     color: formatColors(lostPet.pet.color) || "ไม่ระบุ",

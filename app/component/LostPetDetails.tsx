@@ -57,7 +57,7 @@ export const transformToLostPet = (data: any): LostPet => ({
   name: data.pet?.name || 'ไม่ระบุ',
   age: String(data.pet?.age || 'ไม่ระบุ'),
   gender: data.pet?.gender || 'ไม่ระบุ',
-  type: data.pet?.speciesId ? 'แมว' : 'ไม่ระบุ', // ปรับตาม speciesId
+  type: data.pet?.speciesId ? 'แมว' : 'ไม่ระบุ',
   breed: data.pet?.breed || 'ไม่ระบุ',
   sterilized: data.pet?.isNeutered ? 'ทำหมันแล้ว' : 'ยังไม่ทำหมัน',
   color: Array.isArray(data.pet?.color) ? data.pet.color.join(', ') : 'ไม่ระบุ',
@@ -74,7 +74,7 @@ export const transformToLostPet = (data: any): LostPet => ({
   user: {
     id: data.user?.id || '',
     name: data.user?.name || 'ไม่ระบุ',
-    image: data.user?.image || '/all/owen.png', // รูปสำรอง
+    image: data.user?.image || '/all/owen.png',
   },
   facebook: data.facebook || 'ไม่ระบุ',
   missingLocation: data.missingLocation || 'ไม่ระบุ',
@@ -83,9 +83,9 @@ export const transformToLostPet = (data: any): LostPet => ({
 });
 
 export default function LostPetDetails({ pet }: Props) {
-  const [mainImage, setMainImage] = useState(pet.mainImage || pet.images?.[0] || '/fallback-image.png');
-  const images = [pet.mainImage, ...(pet.images || [])].filter(Boolean);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  // ใช้ mainImage และกรอง mainImage ออกจาก images เพื่อป้องกันการซ้ำ
+  const [mainImage] = useState(pet.mainImage);
+  const displayImages = [pet.mainImage, ...(pet.images.filter(img => img !== pet.mainImage))].slice(0, 4);
   const [isClueOpen, setIsClueOpen] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
 
@@ -494,9 +494,9 @@ export default function LostPetDetails({ pet }: Props) {
       <div className="flex flex-col sm:gap-6 gap-4 lg:pt-14 pt-8">
         <div className="flex overflow-x-auto scrollbar-hide pl-6">
           <div className="flex gap-6">
-            {images.slice(0, 4).map((img, idx) => (
+            {displayImages.map((img, idx) => (
               <img
-                key={idx}
+                key={img}
                 src={img}
                 alt={`${pet.name}-${idx}`}
                 className="2xl:w-[600px] 2xl:h-[420px] xl:w-[500px] xl:h-[350px] lg:w-[400px] lg:h-[300px] sm:w-[300px] sm:h-[200px] w-[287px] h-[180px] object-cover flex-shrink-0"
@@ -510,20 +510,19 @@ export default function LostPetDetails({ pet }: Props) {
         <div className="mt-10 flex flex-col sm:grid grid-cols-3 gap-5 md:gap-10 lg:gap-28 xl:gap-40 2xl:gap-52">
           <div className="mt-2 xl:mt-5 text-lg lg:text-2xl space-y-6">
             <p>
-  <span className="text-lg lg:text-2xl">อายุ:</span>{" "}
-  <span className="text-[16px] lg:text-xl">
-    {(() => {
-      const totalMonths = Number(pet.age);
-      console.log(pet.age) // แปลงจาก string → number
-      const years = Math.floor(totalMonths / 12);
-      const months = totalMonths % 12;
+              <span className="text-lg lg:text-2xl">อายุ:</span>{" "}
+              <span className="text-[16px] lg:text-xl">
+                {(() => {
+                  const totalMonths = Number(pet.age);
+                  const years = Math.floor(totalMonths / 12);
+                  const months = totalMonths % 12;
 
-      if (years > 0 && months > 0) return `${years} ปี ${months} เดือน`;
-      if (years > 0) return `${years} ปี`;
-      return `${months} เดือน`;
-    })()}
-  </span>
-</p>
+                  if (years > 0 && months > 0) return `${years} ปี ${months} เดือน`;
+                  if (years > 0) return `${years} ปี`;
+                  return `${months} เดือน`;
+                })()}
+              </span>
+            </p>
 
             <p>
               <span className="text-lg lg:text-2xl">เพศ:</span>{" "}
@@ -583,7 +582,7 @@ export default function LostPetDetails({ pet }: Props) {
         <p className="text-[16px] lg:text-xl mb-5">{pet.missingLocation}</p>
         <p className="text-[16px] lg:text-xl mb-5">{pet.lostLocation}</p>
 
-        <PetMap lat={pet.lat} lng={pet.lng} zoom={15} />d
+        <PetMap lat={pet.lat} lng={pet.lng} zoom={15} />
 
         <p className="text-lg lg:text-2xl lg:my-8 my-5 sm:my-5">
           ช่องทางการติดต่อ
