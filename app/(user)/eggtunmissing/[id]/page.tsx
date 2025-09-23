@@ -7,6 +7,7 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import QRCode from "react-qr-code";
 import { Eye, X, Calendar, MapPin, Phone, User, Image as ImageIcon } from "lucide-react";
+import Swal from "sweetalert2";
 
 // Dynamically import Leaflet to prevent SSR issues
 const DynamicMap = dynamic(() => import("./MapComponent"), {
@@ -74,8 +75,8 @@ export default function ViewLostPet() {
   
   // State for form fields
   const [name, setName] = useState<string>("");
-  const [year, setYear] = useState<string>(""); // เปลี่ยนจาก age เป็น year
-  const [month, setMonth] = useState<string>(""); // เพิ่ม month
+  const [year, setYear] = useState<string>("");
+  const [month, setMonth] = useState<string>("");
   const [gender, setGender] = useState<string>("");
   const [breed, setBreed] = useState<string>("");
   const [sterilized, setSterilized] = useState<string>("");
@@ -224,7 +225,11 @@ export default function ViewLostPet() {
         ]);
       } catch (error) {
         console.error("Error fetching LostPet data:", error);
-        alert("เกิดข้อผิดพลาดในการดึงข้อมูล");
+        Swal.fire({
+          icon: "error",
+          title: "ข้อผิดพลาด",
+          text: "เกิดข้อผิดพลาดในการดึงข้อมูลสัตว์เลี้ยง",
+        });
       } finally {
         setIsLoading(false);
       }
@@ -238,23 +243,47 @@ export default function ViewLostPet() {
   const pdfRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = async () => {
-    if (!pdfRef.current) return;
+    if (!pdfRef.current) {
+      Swal.fire({
+        icon: "error",
+        title: "ข้อผิดพลาด",
+        text: "ไม่สามารถสร้างเอกสาร PDF ได้",
+      });
+      return;
+    }
 
-    const canvas = await html2canvas(pdfRef.current, {
-      scale: 2,
-      allowTaint: true,
-      useCORS: true,
-    });
+    try {
+      const canvas = await html2canvas(pdfRef.current, {
+        scale: 2,
+        allowTaint: true,
+        useCORS: true,
+      });
 
-    const imgData = canvas.toDataURL("image/png");
-    const pdf = new jsPDF("p", "mm", "a4");
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
-    pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
 
-    const fileName = `ประกาศ-${name || "pet"}.pdf`;
-    pdf.save(fileName);
+      const fileName = `ประกาศ-${name || "pet"}.pdf`;
+      pdf.save(fileName);
+
+      Swal.fire({
+        icon: "success",
+        title: "สำเร็จ",
+        text: "บันทึกเอกสาร PDF เรียบร้อยแล้ว",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      Swal.fire({
+        icon: "error",
+        title: "ข้อผิดพลาด",
+        text: "เกิดข้อผิดพลาดในการสร้างเอกสาร PDF",
+      });
+    }
   };
 
   if (isLoading) {
@@ -272,23 +301,22 @@ export default function ViewLostPet() {
       
       {/* Image Modal */}
       {isImageModalOpen && selectedImage && (
-  <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-    <div className="relative max-w-4xl max-h-full p-4">
-      <button
-        onClick={closeImageModal}
-        className="absolute top-2 right-2 bg-white rounded-full p-2 hover:bg-gray-100 z-10"
-      >
-        <X size={24} />
-      </button>
-      <img
-        src={selectedImage}
-        alt="Enlarged view"
-        className="max-w-full max-h-full object-contain rounded-lg"
-      />
-    </div>
-  </div>
-)}
-
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+          <div className="relative max-w-4xl max-h-full p-4">
+            <button
+              onClick={closeImageModal}
+              className="absolute top-2 right-2 bg-white rounded-full p-2 hover:bg-gray-100 z-10"
+            >
+              <X size={24} />
+            </button>
+            <img
+              src={selectedImage}
+              alt="Enlarged view"
+              className="max-w-full max-h-full object-contain rounded-lg"
+            />
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">
@@ -524,6 +552,7 @@ export default function ViewLostPet() {
             value={name}
             disabled
             className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
+            placeholder="ชื่อสัตว์เลี้ยง"
           />
 
           <div className="grid grid-cols-2 gap-4 mb-2">
@@ -534,7 +563,7 @@ export default function ViewLostPet() {
                 value={year}
                 disabled
                 className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
-                placeholder="ปี"
+                placeholder="กรอกอายุ (ปี)"
               />
             </div>
             <div className="flex flex-col">
@@ -544,7 +573,7 @@ export default function ViewLostPet() {
                 value={month}
                 disabled
                 className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
-                placeholder="เดือน"
+                placeholder="กรอกอายุ (เดือน)"
               />
             </div>
           </div>
@@ -556,6 +585,7 @@ export default function ViewLostPet() {
                 value={gender}
                 disabled
                 className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
+                placeholder="เพศ"
               />
             </div>
             <div className="flex flex-col">
@@ -564,6 +594,7 @@ export default function ViewLostPet() {
                 value={selectedType}
                 disabled
                 className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
+                placeholder="ประเภทสัตว์"
               />
             </div>
           </div>
@@ -575,6 +606,7 @@ export default function ViewLostPet() {
                 value={breed}
                 disabled
                 className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
+                placeholder="สายพันธุ์"
               />
             </div>
             <div className="flex flex-col">
@@ -583,6 +615,7 @@ export default function ViewLostPet() {
                 value={sterilized}
                 disabled
                 className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
+                placeholder="สถานะการทำหมัน"
               />
             </div>
           </div>
@@ -614,6 +647,7 @@ export default function ViewLostPet() {
               value={markings}
               disabled
               className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
+              placeholder="ลักษณะเด่นหรือรอยตำหนิ"
             />
           </div>
 
@@ -623,6 +657,7 @@ export default function ViewLostPet() {
               value={description}
               disabled
               className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
+              placeholder="รายละเอียดสัตว์เลี้ยง"
             />
           </div>
 
@@ -634,6 +669,7 @@ export default function ViewLostPet() {
                 value={missingDate}
                 disabled
                 className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
+                placeholder="วันที่หาย"
               />
             </div>
             <div className="flex flex-col">
@@ -642,6 +678,7 @@ export default function ViewLostPet() {
                 value={missingLocation}
                 disabled
                 className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
+                placeholder="สถานที่หาย"
               />
             </div>
           </div>
@@ -652,6 +689,7 @@ export default function ViewLostPet() {
               value={missingDetail}
               disabled
               className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
+              placeholder="รายละเอียดการหาย"
             />
           </div>
 
@@ -661,6 +699,7 @@ export default function ViewLostPet() {
               value={reward.toLocaleString()}
               disabled
               className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
+              placeholder="จำนวนเงินรางวัล (ถ้ามี)"
             />
           </div>
 
@@ -670,6 +709,7 @@ export default function ViewLostPet() {
               value={statusLabels[status] || status}
               disabled
               className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
+              placeholder="สถานะปัจจุบัน"
             />
           </div>
         </div>
@@ -694,6 +734,7 @@ export default function ViewLostPet() {
             value={ownerName}
             disabled
             className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
+            placeholder="ชื่อเจ้าของ"
           />
 
           <div className="flex flex-col my-3">
@@ -702,6 +743,7 @@ export default function ViewLostPet() {
               value={contactNumber}
               disabled
               className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
+              placeholder="เบอร์โทรศัพท์"
             />
           </div>
 
@@ -711,6 +753,7 @@ export default function ViewLostPet() {
               value={facebook}
               disabled
               className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
+              placeholder="ลิงก์ Facebook"
             />
           </div>
         </div>
@@ -826,7 +869,7 @@ export default function ViewLostPet() {
                                 alt={`clue-image-${imageIndex}`}
                                 className="w-full h-24 object-cover rounded-lg border border-gray-200 transition-transform duration-200 group-hover:scale-105"
                               />
-                              <div className="absolute inset-0  bg-opacity-0 group-hover:bg-opacity-30 transition-opacity duration-200 rounded-lg flex items-center justify-center">
+                              <div className="absolute inset-0 bg-opacity-0 group-hover:bg-opacity-30 transition-opacity duration-200 rounded-lg flex items-center justify-center">
                                 <Eye className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200" size={20} />
                               </div>
                             </div>

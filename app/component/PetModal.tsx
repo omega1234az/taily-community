@@ -4,7 +4,7 @@
 import React, { useEffect, useState, useRef, ChangeEvent } from "react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
-
+import Swal from "sweetalert2";
 interface PetImage {
   id: number;
   url: string;
@@ -236,12 +236,20 @@ export default function PetDetailsModal({
         updatedImages[0];
       setMainImage(newMain.url ? newMain : null);
       setMainImageFile(null);
-      alert("อัปโหลดภาพหลักสำเร็จ");
+      Swal.fire({
+  icon: 'success',
+  title: 'อัปโหลดภาพหลักสำเร็จ',
+  showConfirmButton: false,
+  timer: 1500
+})
     } catch (error) {
       console.error("Error uploading main image:", error);
-      alert(
-        error instanceof Error ? error.message : "ไม่สามารถอัปโหลดภาพหลักได้"
-      );
+     Swal.fire({
+  icon: 'error',
+  title: 'เกิดข้อผิดพลาด',
+  text: error instanceof Error ? error.message : 'ไม่สามารถอัปโหลดภาพหลักได้',
+  confirmButtonText: 'ตกลง'
+})
     }
   };
 
@@ -304,14 +312,22 @@ export default function PetDetailsModal({
         newFiles[index - 1] = null;
         return newFiles;
       });
-      alert(`อัปโหลดภาพแกลเลอรี่ ${index} สำเร็จ`);
+      Swal.fire({
+  icon: 'success',
+  title: `อัปโหลดภาพแกลเลอรี่ ${index} สำเร็จ`,
+  showConfirmButton: false, // ถ้าอยากให้หายเอง
+  timer: 1500
+})
     } catch (error) {
       console.error(`Error uploading gallery image ${index}:`, error);
-      alert(
-        error instanceof Error
-          ? error.message
-          : `ไม่สามารถอัปโหลดภาพแกลเลอรี่ ${index} ได้`
-      );
+      Swal.fire({
+  icon: 'error',
+  title: 'เกิดข้อผิดพลาด',
+  text: error instanceof Error
+    ? error.message
+    : `ไม่สามารถอัปโหลดภาพแกลเลอรี่ ${index} ได้`,
+  confirmButtonText: 'ตกลง'
+})
     }
   };
 
@@ -330,14 +346,24 @@ export default function PetDetailsModal({
         throw new Error(errorData.message || "Failed to delete pet");
       }
 
-      alert("ลบสัตว์เลี้ยงสำเร็จ");
+     Swal.fire({
+  icon: 'success',
+  title: 'ลบสัตว์เลี้ยงสำเร็จ',
+  showConfirmButton: false,
+  timer: 1500
+})
       setShowModal(false);
       window.location.reload();
     } catch (error) {
       console.error("Error deleting pet:", error);
-      alert(
-        error instanceof Error ? error.message : "ไม่สามารถลบสัตว์เลี้ยงได้"
-      );
+      Swal.fire({
+  icon: 'error',
+  title: 'เกิดข้อผิดพลาด',
+  text: error instanceof Error
+    ? error.message
+    : 'ไม่สามารถลบสัตว์เลี้ยงได้',
+  confirmButtonText: 'ตกลง'
+})
     } finally {
       setConfirming(false);
     }
@@ -388,10 +414,22 @@ export default function PetDetailsModal({
         updatedImages.find((img: PetImage) => img.mainImage) ||
         updatedImages[0];
       setMainImage(newMain.url ? newMain : null);
-      alert("ตั้งภาพหลักสำเร็จ");
+      Swal.fire({
+  icon: 'success',
+  title: 'ตั้งภาพหลักสำเร็จ',
+  showConfirmButton: false,
+  timer: 1500
+})
     } catch (error) {
       console.error("Error setting main image:", error);
-      alert(error instanceof Error ? error.message : "ไม่สามารถตั้งภาพหลักได้");
+      Swal.fire({
+  icon: 'error',
+  title: 'เกิดข้อผิดพลาด',
+  text: error instanceof Error
+    ? error.message
+    : 'ไม่สามารถตั้งภาพหลักได้',
+  confirmButtonText: 'ตกลง'
+})
     }
   };
 
@@ -445,10 +483,22 @@ export default function PetDetailsModal({
         newFiles[index - 1] = null;
         return newFiles;
       });
-      alert("ลบภาพสำเร็จ");
+     Swal.fire({
+  icon: 'success',
+  title: 'ลบภาพสำเร็จ',
+  showConfirmButton: false,
+  timer: 1500
+})
     } catch (error) {
       console.error("Error deleting image:", error);
-      alert(error instanceof Error ? error.message : "ไม่สามารถลบภาพได้");
+      Swal.fire({
+  icon: 'error',
+  title: error instanceof Error
+    ? error.message
+    : 'ไม่สามารถลบภาพได้',
+  showConfirmButton: false,
+  timer: 2000
+})
     }
   };
 
@@ -561,14 +611,24 @@ export default function PetDetailsModal({
         const errorData = await response.json();
         throw new Error(errorData.message || "Failed to update pet");
       }
-      alert("บันทึกข้อมูลสำเร็จ");
+      Swal.fire({
+  icon: 'success',
+  title: 'บันทึกข้อมูลสำเร็จ',
+  showConfirmButton: false,
+  timer: 1500
+})
       window.location.reload();
       setIsEditing(false);
       setIsDropdownVisible(false);
       setShowModal(false);
     } catch (error) {
       console.error("Save error:", error);
-      alert("ไม่สามารถบันทึกข้อมูลได้");
+      Swal.fire({
+  icon: 'error',
+  title: 'เกิดข้อผิดพลาด',
+  text: 'ไม่สามารถบันทึกข้อมูลได้',
+  confirmButtonText: 'ตกลง'
+})
     }
   };
 
@@ -611,7 +671,12 @@ export default function PetDetailsModal({
       })
       .catch((err) => {
         console.error("PDF error:", err);
-        alert("เกิดข้อผิดพลาดในการพิมพ์");
+        Swal.fire({
+  icon: 'error',
+  title: 'เกิดข้อผิดพลาด',
+  text: 'เกิดข้อผิดพลาดขณะสร้าง PDF',
+  confirmButtonText: 'ตกลง'
+})
       });
   };
 

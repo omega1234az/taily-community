@@ -191,7 +191,7 @@ const FilterModal = ({
             {isModalOpen && (
                 <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 backdrop-blur-sm">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto relative">
-                        <span className="absolute top-[-36px] left-[-14px] w-56 h-40 bg-[#7CBBEB] rounded-b-full z-0"></span>
+                        
                         <span className="absolute top-35 left-50 w-7 h-7 bg-[#EAD64D] rounded-full z-0 -translate-x-1/2"></span>
                         <span className="absolute top-40 right-0 w-28 h-56 bg-[#7CBBEB] rounded-l-full z-0"></span>
                         <span className="absolute top-[460px] right-0 w-10 h-10 bg-[#7CBBEB] rounded-full z-0 -translate-x-1/2"></span>
@@ -512,7 +512,7 @@ export default function PetSearchMap() {
     const handleGoToProvince = (province: { name: string; lat: number; lng: number }) => {
         if (mapRef.current) {
             console.log('Going to province:', province)
-            mapRef.current.setView([province.lat, province.lng], 10)
+            mapRef.current.setView([province.lat, province.lng], 12)
         }
     }
 
@@ -530,7 +530,11 @@ export default function PetSearchMap() {
             <span className="absolute top-[660px] right-4 w-7 h-7 bg-[#7CBBEB] rounded-full z-0 -translate-x-1/2"></span>
             <span className="absolute top-[580px] left-0 w-10 h-10 bg-[#7CBBEB] rounded-full z-0 -translate-x-1/2"></span>
             <span className="absolute top-[328px] left-12 w-7 h-7 bg-[#EAD64D] rounded-full z-0 -translate-x-1/2"></span>
-
+            <img
+                src="/all/logo1.png" // Replace with your logo's path
+                alt="Logo"
+                className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-[1000] max-w-[150px] w-24 h-auto"
+            />
             {/* Error Message for Geolocation */}
             {geoError && (
                 <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-[1000] bg-white rounded-lg p-4 shadow-xl">
@@ -606,6 +610,25 @@ export default function PetSearchMap() {
                 </svg>
                 <span className="font-semibold text-sm">ลงประกาศ</span>
             </Link>
+            <Link
+  href="/home"
+  className="fixed bottom-6 right-4 z-[1000] 
+             bg-red-600 hover:bg-red-700 
+             text-white px-4 py-2 rounded-xl 
+             shadow-md transition-all duration-300 
+             flex items-center gap-2"
+>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M3 12l2-2m0 0l7-7 7 7m-1 2v9a2 2 0 01-2 2H7a2 2 0 01-2-2v-9m5 4h4"
+                    />
+                </svg>
+                <span className="font-semibold text-sm">กลับหน้าแรก</span>
+            </Link>
+
 
             {loading && (
                 <div className="fixed inset-0 z-[999] bg-black/20 flex justify-center items-center">
@@ -622,20 +645,20 @@ export default function PetSearchMap() {
                 <ErrorBoundary FallbackComponent={MapErrorFallback}>
                     <MapContainer
                         center={center}
-                        zoom={12}
+                        zoom={16}
                         className="h-screen w-screen rounded-xl border-2 border-gray-300 bg-white/80"
                         ref={mapRef as MutableRefObject<LeafletMap>}
                         zoomControl={false}
                     >
                         <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" attribution="&copy; OpenStreetMap & CARTO" />
-                        <ZoomControl position="bottomright" />
+                        <ZoomControl position="bottomleft" />
                         {filteredPets.map(p => p.lat && p.lng && (
                             <Marker key={p.id} position={[p.lat, p.lng]} icon={createCustomIcon(showLostPets ? (p as LostPet).pet.images[0]?.url : (p as FoundPet).images[0]?.url, showLostPets)}>
                                 <Popup>
                                     <div className="relative bg-white rounded-xl shadow-xl w-[300px] max-h-[400px] overflow-y-auto border border-gray-200">
-                                        <span className="absolute top-[-20px] left-[-10px] w-20 h-16 bg-[#7CBBEB] rounded-b-full z-0"></span>
+
                                         <span className="absolute top-2 left-2 w-4 h-4 bg-[#EAD64D] rounded-full z-0"></span>
-                                        <span className="absolute bottom-2 right-2 w-4 h-4 bg-[#7CBBEB] rounded-full z-0"></span>
+                                        <span className="absolute bottom-20 right-2 w-4 h-4 bg-[#7CBBEB] rounded-full z-0"></span>
                                         <div className="px-4 py-2 bg-[#7CBBEB] text-white rounded-t-xl relative z-10">
                                             <h3 className="text-sm font-bold">{showLostPets ? (p as LostPet).title : (p as FoundPet).species.name}</h3>
                                         </div>
@@ -651,7 +674,7 @@ export default function PetSearchMap() {
                                                 </div>
                                                 <div className="flex-1 space-y-1">
                                                     <p className="text-xs font-semibold text-gray-700 flex items-center gap-1">
-                                                        <svg className="w-4 h-4 text-[#7CBBEB]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <svg className="w-4 h-4 text-[#eb7cc1]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                                         </svg>
@@ -679,7 +702,7 @@ export default function PetSearchMap() {
                                                     </p>
                                                     {showLostPets && (p as LostPet).reward !== undefined && (
                                                         <p className="text-xs font-semibold text-gray-700 flex items-center gap-1">
-                                                            <svg className="w-4 h-4 text-[#7CBBEB]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <svg className="w-4 h-4 text-[#deec18]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                                                             </svg>
                                                             รางวัล: <span className="font-normal">{(p as LostPet).reward?.toLocaleString()} บาท</span>

@@ -18,8 +18,8 @@ type ChartData = {
   ownerSearch: number;
   newUsers: number;
   cluesReported: number;
-  lostPetViews: number; // ยอดวิว LostPet (แบบเก่า)
-  ownerSearchViews: number; // ยอดวิว FoundPet (แบบเก่า)
+  lostPetViews: number;
+  ownerSearchViews: number;
 };
 
 type ApiResponse = ChartData[];
@@ -45,12 +45,21 @@ const CustomTooltip = ({ active, payload, label, metric }: any) => {
         {payload.map((p: any, index: number) => (
           <p key={index} className="text-sm" style={{ color: p.fill }}>
             {`${p.name}: ${p.value || 0} ${
-              metric === "views" ? "ครั้ง" : "โพสต์"
+              metric === "views"
+                ? "ครั้ง"
+                : p.name === "ผู้ใช้ใหม่"
+                ? "คน"
+                : "โพสต์"
             }`}
           </p>
         ))}
         <p className="font-bold mt-2 text-gray-800">
-          รวม: {total} {metric === "views" ? "ครั้ง" : "โพสต์"}
+          รวม: {total}{" "}
+          {metric === "views"
+            ? "ครั้ง"
+            : payload.some((p: any) => p.name === "ผู้ใช้ใหม่")
+            ? "คน"
+            : "โพสต์"}
         </p>
       </div>
     );
@@ -190,7 +199,6 @@ const Dashboard = () => {
     { label: "ยอดวิว", value: "views" },
   ];
 
-  // เลือก dataKey และชื่อตาม metric
   const getDataKeyAndName = (type: "lost" | "found") => {
     if (selectedMetric === "posts") {
       return type === "lost"
@@ -367,10 +375,10 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Chart Section */}
-      <div>
+      {/* Chart Section: Posts and Clues */}
+      <div className="mb-10">
         <h2 className="text-xl font-semibold text-gray-700 mb-4">
-          กราฟสถิติรายปี
+          กราฟสถิติโพสต์และเบาะแส
         </h2>
         <ResponsiveContainer width="100%" height={400}>
           <BarChart
@@ -423,16 +431,53 @@ const Dashboard = () => {
               />
             )}
             <Bar
-              dataKey="newUsers"
-              name="ผู้ใช้ใหม่"
-              fill="#34D399"
-              barSize={chartData.length > 12 ? 20 : 40}
-              radius={[4, 4, 0, 0]}
-            />
-            <Bar
               dataKey="cluesReported"
               name="เบาะแสที่แจ้ง"
               fill="#C084FC"
+              barSize={chartData.length > 12 ? 20 : 40}
+              radius={[4, 4, 0, 0]}
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Chart Section: New Users */}
+      <div>
+        <h2 className="text-xl font-semibold text-gray-700 mb-4">
+          กราฟสถิติผู้ใช้ใหม่
+        </h2>
+        <ResponsiveContainer width="100%" height={400}>
+          <BarChart
+            data={chartData}
+            margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+            barCategoryGap={
+              chartData.length > 12 ? 8 : chartData.length > 6 ? 15 : 30
+            }
+          >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis
+              dataKey="year"
+              angle={-45}
+              textAnchor="end"
+              height={70}
+              interval={0}
+              className="text-sm text-gray-600"
+            />
+            <YAxis
+              label={{
+                value: "จำนวนผู้ใช้ใหม่ (คน)",
+                angle: -90,
+                position: "insideLeft",
+                className: "text-sm text-gray-600",
+              }}
+              className="text-sm text-gray-600"
+            />
+            <Tooltip content={<CustomTooltip metric="users" />} />
+            <Legend wrapperStyle={{ paddingTop: 20 }} />
+            <Bar
+              dataKey="newUsers"
+              name="ผู้ใช้ใหม่"
+              fill="#34D399"
               barSize={chartData.length > 12 ? 20 : 40}
               radius={[4, 4, 0, 0]}
             />

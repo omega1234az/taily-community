@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, ChangeEvent, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Swal from "sweetalert2";
 
 export default function RegisterPet() {
   const router = useRouter();
@@ -72,7 +73,11 @@ export default function RegisterPet() {
         setSpeciesList(data);
       } catch (err) {
         console.error("เกิดข้อผิดพลาดในการดึงข้อมูลประเภท:", err);
-        alert("ไม่สามารถดึงข้อมูลประเภทสัตว์เลี้ยงได้");
+        Swal.fire({
+          icon: "error",
+          title: "ข้อผิดพลาด",
+          text: "ไม่สามารถดึงข้อมูลประเภทสัตว์เลี้ยงได้",
+        });
       }
     };
 
@@ -157,6 +162,7 @@ export default function RegisterPet() {
   const fieldLabels: Record<string, string> = {
     name: "ชื่อ",
     year: "อายุ (ปี)",
+    month: "อายุ (เดือน)",
     gender: "เพศ",
     type: "ประเภท",
     breed: "สายพันธุ์",
@@ -179,18 +185,30 @@ export default function RegisterPet() {
     for (const field of requiredFields) {
       const value = formData[field as keyof typeof formData];
       if (!value || value.trim() === "") {
-        alert(`กรุณากรอกข้อมูล: ${fieldLabels[field]}`);
+        Swal.fire({
+          icon: "warning",
+          title: "ข้อมูลไม่ครบถ้วน",
+          text: `กรุณากรอกข้อมูล: ${fieldLabels[field]}`,
+        });
         return false;
       }
     }
 
     if (selectedColors.length === 0) {
-      alert("กรุณาเลือกสีของสัตว์เลี้ยงอย่างน้อย 1 สี");
+      Swal.fire({
+        icon: "warning",
+        title: "ข้อมูลไม่ครบถ้วน",
+        text: "กรุณาเลือกสีของสัตว์เลี้ยงอย่างน้อย 1 สี",
+      });
       return false;
     }
 
     if (!mainInputRef.current?.files?.[0]) {
-      alert("กรุณาเลือกรูปภาพหลักของสัตว์เลี้ยง");
+      Swal.fire({
+        icon: "warning",
+        title: "ข้อมูลไม่ครบถ้วน",
+        text: "กรุณาเลือกรูปภาพหลักของสัตว์เลี้ยง",
+      });
       return false;
     }
 
@@ -221,7 +239,11 @@ export default function RegisterPet() {
         (species) => species.name === formData.type
       );
       if (!selectedSpecies) {
-        alert("ไม่พบประเภทสัตว์เลี้ยงที่เลือก");
+        Swal.fire({
+          icon: "error",
+          title: "ข้อผิดพลาด",
+          text: "ไม่พบประเภทสัตว์เลี้ยงที่เลือก",
+        });
         setIsSubmitting(false);
         return;
       }
@@ -245,37 +267,64 @@ export default function RegisterPet() {
 
       if (!res.ok) {
         const err = await res.json();
-        alert("เกิดข้อผิดพลาด: " + err.message);
+        Swal.fire({
+          icon: "error",
+          title: "ข้อผิดพลาด",
+          text: "เกิดข้อผิดพลาด: " + err.message,
+        });
         setIsSubmitting(false);
         return;
       }
 
       const savedPet = await res.json();
-      const encoded = encodeURIComponent(JSON.stringify(savedPet));
-      router.push("/pet");
+      Swal.fire({
+        icon: "success",
+        title: "สำเร็จ",
+        text: "ลงทะเบียนสัตว์เลี้ยงเรียบร้อยแล้ว",
+        timer: 1500,
+        showConfirmButton: false,
+      }).then(() => {
+        const encoded = encodeURIComponent(JSON.stringify(savedPet));
+        router.push("/pet");
+      });
     } catch (err) {
       console.error(err);
-      alert("เกิดข้อผิดพลาดในการส่งข้อมูล");
+      Swal.fire({
+        icon: "error",
+        title: "ข้อผิดพลาด",
+        text: "เกิดข้อผิดพลาดในการส่งข้อมูล",
+      });
       setIsSubmitting(false);
     }
   };
 
   const handleCancel = () => {
-    setIsEditing(false);
-    setSelectedColors([]);
-    setFormData({
-      name: "",
-      year: "",
-      month: "",
-      gender: "",
-      type: "",
-      breed: "",
-      neutered: "",
-      color: "",
-      mark: "",
-      details: "",
+    Swal.fire({
+      icon: "warning",
+      title: "ยกเลิกการลงทะเบียน",
+      text: "คุณแน่ใจหรือไม่ว่าต้องการยกเลิก?",
+      showCancelButton: true,
+      confirmButtonText: "ใช่, ยกเลิก",
+      cancelButtonText: "ไม่, กลับไปแก้ไข",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        setIsEditing(false);
+        setSelectedColors([]);
+        setFormData({
+          name: "",
+          year: "",
+          month: "",
+          gender: "",
+          type: "",
+          breed: "",
+          neutered: "",
+          color: "",
+          mark: "",
+          details: "",
+        });
+        router.push("/pet");
+      }
     });
-    router.push("/pet");
   };
 
   return (
@@ -339,6 +388,7 @@ export default function RegisterPet() {
             onChange={handleChange}
             className="w-full mt-1 sm:text-md xl:text-lg text-sm p-2 px-3 border border-gray-300 rounded-md mb-3 disabled:bg-gray-100"
             disabled={!isEditing}
+            placeholder="กรอกชื่อสัตว์เลี้ยง"
           />
 
           <div className="grid grid-cols-2 gap-4 mb-2">
@@ -351,7 +401,7 @@ export default function RegisterPet() {
                 value={formData.year}
                 onChange={handleChange}
                 name="year"
-                placeholder="ปี"
+                placeholder="กรอกอายุ (ปี)"
               />
             </div>
             <div className="flex flex-col">
@@ -363,7 +413,7 @@ export default function RegisterPet() {
                 value={formData.month}
                 onChange={handleChange}
                 name="month"
-                placeholder="เดือน"
+                placeholder="กรอกอายุ (เดือน)"
               />
             </div>
           </div>
@@ -382,6 +432,7 @@ export default function RegisterPet() {
                     setGenderDropdownVisible(!isGenderDropdownVisible);
                 }}
                 readOnly
+                placeholder="เลือกเพศ"
               />
               <svg
                 className={`absolute right-2 top-8 w-8 h-8 sm:w-10 sm:h-10 text-gray-500 cursor-pointer ${
@@ -425,6 +476,7 @@ export default function RegisterPet() {
                   onClick={toggleDropdown}
                   className="w-full mt-1 sm:text-md xl:text-lg text-sm p-2 px-3 pr-10 border border-gray-300 rounded-md mb-3 disabled:bg-gray-100"
                   disabled={!isEditing}
+                  placeholder="เลือกประเภท"
                 />
                 <svg
                   className={`absolute right-2 top-1 w-8 h-8 sm:w-10 sm:h-10 text-gray-500 cursor-pointer ${
@@ -475,6 +527,7 @@ export default function RegisterPet() {
                 onChange={handleChange}
                 className="w-full mt-1 sm:text-md xl:text-lg text-sm p-2 px-3 border border-gray-300 rounded-md mb-3 disabled:bg-gray-100"
                 disabled={!isEditing}
+                placeholder="กรอกสายพันธุ์"
               />
             </div>
 
@@ -497,6 +550,7 @@ export default function RegisterPet() {
                     setNeuteredDropdownVisible(!isNeuteredDropdownVisible);
                 }}
                 readOnly
+                placeholder="เลือกสถานะการทำหมัน"
               />
               <svg
                 className={`absolute right-2 top-8 w-8 h-8 sm:w-10 sm:h-10 text-gray-500 cursor-pointer ${
@@ -571,6 +625,7 @@ export default function RegisterPet() {
             onChange={handleChange}
             className="w-full mt-1 sm:text-md xl:text-lg text-sm p-2 px-3 border border-gray-300 rounded-md mb-3 disabled:bg-gray-100"
             disabled={!isEditing}
+            placeholder="กรอกลักษณะเด่น"
           />
 
           <p className="sm:text-lg xl:text-xl text-md">รายละเอียด</p>
@@ -580,6 +635,7 @@ export default function RegisterPet() {
             onChange={handleChange}
             className="w-full mt-1 p-2 border border-gray-300 rounded-md resize-none min-h-[110px] disabled:bg-gray-100"
             disabled={!isEditing}
+            placeholder="กรอกรายละเอียดเพิ่มเติมเกี่ยวกับสัตว์เลี้ยง"
           />
 
           <div className="flex justify-end ml-20 mt-5 mb-10">

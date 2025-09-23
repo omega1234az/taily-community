@@ -1,9 +1,10 @@
+
 "use client";
 
 import React, { useState, useRef, ChangeEvent, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Swal from "sweetalert2";
 import "leaflet/dist/leaflet.css";
-// Remove the direct Leaflet imports and CSS import from the top
 
 interface Species {
   id: number;
@@ -32,7 +33,7 @@ export default function FoundPetRegistration() {
     useRef<HTMLInputElement | null>(null),
   ];
   const router = useRouter();
-  const mapRef = useRef<any>(null); // Changed from L.Map to any
+  const mapRef = useRef<any>(null);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
 
   const [loading, setLoading] = useState(false);
@@ -80,9 +81,16 @@ export default function FoundPetRegistration() {
       if (response.ok) {
         const data = await response.json();
         setSpecies(data);
+      } else {
+        throw new Error("Failed to fetch species");
       }
     } catch (error) {
       console.error("Error fetching species:", error);
+      Swal.fire({
+        icon: "error",
+        title: "ข้อผิดพลาด",
+        text: "เกิดข้อผิดพลาดในการดึงข้อมูลประเภทสัตว์",
+      });
     }
   };
 
@@ -94,8 +102,6 @@ export default function FoundPetRegistration() {
     try {
       // Dynamic import of Leaflet to ensure it only runs on client side
       const L = (await import("leaflet")).default;
-
-      // Import Leaflet CSS dynamically
 
       // Clean up existing map instance before creating a new one
       if (mapRef.current) {
@@ -242,21 +248,31 @@ export default function FoundPetRegistration() {
 
       // Validation
       if (!formData.description || !formData.speciesId || !formData.phone) {
-        alert("กรุณากรอกข้อมูลให้ครบถ้วน (รายละเอียด, ประเภท, เบอร์ติดต่อ)");
+        Swal.fire({
+          icon: "warning",
+          title: "ข้อมูลไม่ครบถ้วน",
+          text: "กรุณากรอก รายละเอียด, ประเภท และเบอร์ติดต่อ",
+        });
         return;
       }
 
       if (!mainImage) {
-        alert("กรุณาเลือกรูปภาพอย่างน้อย 1 รูป");
+        Swal.fire({
+          icon: "warning",
+          title: "ข้อมูลไม่ครบถ้วน",
+          text: "กรุณาเลือกรูปภาพอย่างน้อย 1 รูป",
+        });
         return;
       }
 
       if (formData.foundDate && new Date(formData.foundDate) > new Date()) {
-        alert("วันที่พบต้องไม่เป็นวันในอนาคต");
+        Swal.fire({
+          icon: "warning",
+          title: "วันที่ไม่ถูกต้อง",
+          text: "วันที่พบต้องไม่เป็นวันในอนาคต",
+        });
         return;
       }
-
-      
 
       const formDataToSend = new FormData();
 
@@ -302,35 +318,49 @@ export default function FoundPetRegistration() {
 
       if (response.ok) {
         const result = await response.json();
-        alert("ลงทะเบียนสัตว์พบเจอสำเร็จ!");
+        Swal.fire({
+          icon: "success",
+          title: "บันทึกสำเร็จ",
+          text: "ลงทะเบียนสัตว์พบเจอสำเร็จ!",
+          timer: 1500,
+          showConfirmButton: false,
+        }).then(() => {
+          // Reset form
+          setFormData({
+            description: "",
+            speciesId: "",
+            breed: "",
+            gender: "",
+            color: [],
+            phone: "",
+            facebook: "",
+            finderName: "",
+            distinctive: "",
+            status: "finding",
+            foundDate: "",
+          });
 
-        // Reset form
-        setFormData({
-          description: "",
-          speciesId: "",
-          breed: "",
-          gender: "",
-          color: [],
-          phone: "",
-          facebook: "",
-          finderName: "",
-          distinctive: "",
-          status: "finding",
-          foundDate: "",
+          setMainImage(null);
+          setMainImagePreview(null);
+          setGalleryImages([null, null, null]);
+          setGalleryPreviews([null, null, null]);
+          router.push(`/announcement`);
         });
-
-        setMainImage(null);
-        setMainImagePreview(null);
-        setGalleryImages([null, null, null]);
-        setGalleryPreviews([null, null, null]);
-        router.push(`/announcement`);
       } else {
         const error = await response.json();
-        alert(`เกิดข้อผิดพลาด: ${error.message}`);
+        Swal.fire({
+          icon: "error",
+          title: "เกิดข้อผิดพลาด",
+          text: error.message || "ไม่สามารถบันทึกข้อมูลได้",
+        });
       }
     } catch (error) {
       console.error("Error submitting form:", error);
-      alert("เกิดข้อผิดพลาดในการส่งข้อมูล");
+      Swal.fire({
+        icon: "error",
+        title: "เกิดข้อผิดพลาด",
+        text: "เกิดข้อผิดพลาดในการส่งข้อมูล",
+      });
     } finally {
       setLoading(false);
     }
@@ -403,6 +433,7 @@ export default function FoundPetRegistration() {
                     setSpeciesDropdownVisible(!isSpeciesDropdownVisible)
                   }
                   readOnly
+                  placeholder="เลือกประเภทสัตว์"
                   className="w-full mt-1 p-2 pr-10 border border-gray-300 rounded-md mb-3 cursor-pointer"
                 />
                 <svg
@@ -443,6 +474,7 @@ export default function FoundPetRegistration() {
                 name="breed"
                 value={formData.breed}
                 onChange={handleChange}
+                placeholder="เช่น พุดเดิ้ล, ไทย"
                 className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3"
               />
             </div>
@@ -459,6 +491,7 @@ export default function FoundPetRegistration() {
                   onClick={() =>
                     setGenderDropdownVisible(!isGenderDropdownVisible)
                   }
+                  placeholder="เลือกเพศ"
                   className="w-full mt-1 p-2 pr-10 border border-gray-300 rounded-md cursor-pointer"
                 />
                 <svg
@@ -534,6 +567,7 @@ export default function FoundPetRegistration() {
               name="distinctive"
               value={formData.distinctive}
               onChange={handleChange}
+              placeholder="เช่น มีปลอกคอสีแดง, หูแหว่ง"
               className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3"
             />
           </div>
@@ -545,6 +579,7 @@ export default function FoundPetRegistration() {
               name="description"
               value={formData.description}
               onChange={handleChange}
+              placeholder="รายละเอียดเพิ่มเติม เช่น สถานที่พบ, เวลา"
               className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3"
               rows={3}
             />
@@ -559,6 +594,7 @@ export default function FoundPetRegistration() {
                 name="foundDate"
                 value={formData.foundDate}
                 onChange={handleChange}
+                placeholder="เลือกวันที่พบ"
                 className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3"
               />
             </div>
@@ -596,14 +632,13 @@ export default function FoundPetRegistration() {
         </div>
 
         <div className="flex flex-col w-full xl:max-w-xl md:max-w-md sm:max-w-sm max-w-xs mb-2">
-          
-
           <div className="flex flex-col my-3">
             <p className="sm:text-lg xl:text-xl">เบอร์ติดต่อ</p>
             <input
               name="phone"
               value={formData.phone}
               onChange={handleChange}
+              placeholder="เช่น 0812345678"
               className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3"
             />
           </div>
@@ -614,6 +649,7 @@ export default function FoundPetRegistration() {
               name="facebook"
               value={formData.facebook}
               onChange={handleChange}
+              placeholder="ลิงก์โปรไฟล์ หรือชื่อ"
               className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3"
             />
           </div>

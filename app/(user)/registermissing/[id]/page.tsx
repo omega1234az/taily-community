@@ -4,6 +4,7 @@ import React, { useRef, useState, useEffect, ChangeEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import L from "leaflet";
+import Swal from "sweetalert2";
 
 // Type definition for pet data
 type PetData = {
@@ -33,7 +34,7 @@ export default function RegisterMissing() {
   // States
   const [pet, setPet] = useState<PetData>({
     name: "",
-    age: 0, // Initialize as number
+    age: 0,
     gender: "",
     breed: "",
     sterilized: "",
@@ -86,11 +87,14 @@ export default function RegisterMissing() {
     if (!params.id) return;
     try {
       const response = await fetch(`/api/pets/${params.id}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       const data = await response.json();
 
       setPet({
         name: data.name || "",
-        age: parseInt(data.age) || 0, // Parse age as number
+        age: parseInt(data.age) || 0,
         gender: data.gender || "",
         breed: data.breed || "",
         sterilized: data.isNeutered === 1 ? "ทำหมันแล้ว" : "ยังไม่ได้ทำหมัน",
@@ -113,6 +117,11 @@ export default function RegisterMissing() {
       });
     } catch (error) {
       console.error("Error fetching pet data:", error);
+      Swal.fire({
+        icon: "error",
+        title: "ข้อผิดพลาด",
+        text: "เกิดข้อผิดพลาดในการดึงข้อมูลสัตว์เลี้ยง",
+      });
     }
   };
 
@@ -134,12 +143,62 @@ export default function RegisterMissing() {
     }
   };
 
+  // Validate form
+  const validateForm = () => {
+    if (!missingDate) {
+      Swal.fire({
+        icon: "warning",
+        title: "ข้อมูลไม่ครบถ้วน",
+        text: "กรุณาระบุวันที่หาย",
+      });
+      return false;
+    }
+    if (new Date(missingDate) > new Date()) {
+      Swal.fire({
+        icon: "warning",
+        title: "วันที่ไม่ถูกต้อง",
+        text: "วันที่หายต้องไม่เป็นวันในอนาคต",
+      });
+      return false;
+    }
+    if (!missingLocation) {
+      Swal.fire({
+        icon: "warning",
+        title: "ข้อมูลไม่ครบถ้วน",
+        text: "กรุณาระบุสถานที่หาย",
+      });
+      return false;
+    }
+    if (!missingDetail) {
+      Swal.fire({
+        icon: "warning",
+        title: "ข้อมูลไม่ครบถ้วน",
+        text: "กรุณาระบุรายละเอียดการหาย",
+      });
+      return false;
+    }
+    if (!pet.ownerName) {
+      Swal.fire({
+        icon: "warning",
+        title: "ข้อมูลไม่ครบถ้วน",
+        text: "กรุณาระบุชื่อเจ้าของ",
+      });
+      return false;
+    }
+    if (!pet.contactNumber) {
+      Swal.fire({
+        icon: "warning",
+        title: "ข้อมูลไม่ครบถ้วน",
+        text: "กรุณาระบุเบอร์ติดต่อ",
+      });
+      return false;
+    }
+    return true;
+  };
+
   // Submit form
   const handleSubmit = async () => {
-    if (new Date(missingDate) > new Date()) {
-      alert("วันที่หายต้องไม่เป็นวันในอนาคต");
-      return;
-    }
+    if (!validateForm()) return;
 
     const payload = {
       description: missingDetail,
@@ -162,16 +221,47 @@ export default function RegisterMissing() {
       });
 
       if (response.ok) {
-        alert("ลงทะเบียนสัตว์เลี้ยงหายสำเร็จ!");
-        router.push("/announcement");
+        Swal.fire({
+          icon: "success",
+          title: "สำเร็จ",
+          text: "ลงทะเบียนสัตว์เลี้ยงหายสำเร็จ!",
+          timer: 1500,
+          showConfirmButton: false,
+        }).then(() => {
+          router.push("/announcement");
+        });
       } else {
         const errorData = await response.json();
-        alert(`เกิดข้อผิดพลาด: ${errorData.message || "ไม่ทราบสาเหตุ"}`);
+        Swal.fire({
+          icon: "error",
+          title: "ข้อผิดพลาด",
+          text: `เกิดข้อผิดพลาด: ${errorData.message || "ไม่ทราบสาเหตุ"}`,
+        });
       }
     } catch (error) {
       console.error("Error submitting:", error);
-      alert("เกิดข้อผิดพลาดในการเชื่อมต่อ API");
+      Swal.fire({
+        icon: "error",
+        title: "ข้อผิดพลาด",
+        text: "เกิดข้อผิดพลาดในการเชื่อมต่อ API",
+      });
     }
+  };
+
+  // Handle cancel
+  const handleCancel = () => {
+    Swal.fire({
+      icon: "warning",
+      title: "ยกเลิกการลงทะเบียน",
+      text: "คุณแน่ใจหรือไม่ว่าต้องการยกเลิก?",
+      showCancelButton: true,
+      confirmButtonText: "ใช่, ยกเลิก",
+      cancelButtonText: "ไม่, กลับไปแก้ไข",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        router.push("/announcement");
+      }
+    });
   };
 
   // Initialize map
@@ -202,7 +292,6 @@ export default function RegisterMissing() {
     if (!mapContainerRef.current) return;
 
     try {
-      // Ensure Leaflet is loaded
       const L = (await import("leaflet")).default;
 
       mapRef.current = L.map(mapContainerRef.current, {
@@ -233,6 +322,11 @@ export default function RegisterMissing() {
       });
     } catch (error) {
       console.error("Error creating map:", error);
+      Swal.fire({
+        icon: "error",
+        title: "ข้อผิดพลาด",
+        text: "เกิดข้อผิดพลาดในการโหลดแผนที่",
+      });
     }
   };
 
@@ -258,6 +352,7 @@ export default function RegisterMissing() {
 
   return (
     <div>
+      <title>ลงทะเบียนสัตว์เลี้ยงหาย</title>
       <h1 className="text-xl font-semibold">
         <span className="bg-[#EAD64D] py-5 pl-3 sm:py-7 sm:pl-5 xl:py-9 xl:pl-7 rounded-full">
           ลง
@@ -309,6 +404,7 @@ export default function RegisterMissing() {
             value={pet.name}
             disabled
             className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
+            placeholder="ชื่อสัตว์เลี้ยง"
           />
 
           <div className="grid grid-cols-2 gap-4 mb-2">
@@ -317,17 +413,17 @@ export default function RegisterMissing() {
               <div className="flex gap-2">
                 <input
                   type="text"
-                  value={Math.floor(pet.age / 12) +" ปี"} // Calculate years
+                  value={Math.floor(pet.age / 12) + " ปี"}
                   disabled
                   className="w-1/2 mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
-                  placeholder="ปี"
+                  placeholder="กรอกอายุ (ปี)"
                 />
                 <input
                   type="text"
-                  value={pet.age % 12 +" เดือน"} // Calculate remaining months
+                  value={pet.age % 12 + " เดือน"}
                   disabled
                   className="w-1/2 mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
-                  placeholder="เดือน"
+                  placeholder="กรอกอายุ (เดือน)"
                 />
               </div>
             </div>
@@ -337,6 +433,7 @@ export default function RegisterMissing() {
                 value={pet.gender}
                 disabled
                 className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
+                placeholder="เพศ"
               />
             </div>
           </div>
@@ -348,6 +445,7 @@ export default function RegisterMissing() {
                 value={pet.species}
                 disabled
                 className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
+                placeholder="ประเภทสัตว์"
               />
             </div>
             <div className="flex flex-col">
@@ -356,6 +454,7 @@ export default function RegisterMissing() {
                 value={pet.breed}
                 disabled
                 className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
+                placeholder="สายพันธุ์"
               />
             </div>
           </div>
@@ -367,6 +466,7 @@ export default function RegisterMissing() {
                 value={pet.sterilized}
                 disabled
                 className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
+                placeholder="สถานะการทำหมัน"
               />
             </div>
 
@@ -396,6 +496,7 @@ export default function RegisterMissing() {
               value={pet.markings}
               disabled
               className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
+              placeholder="ลักษณะเด่นหรือรอยตำหนิ"
             />
           </div>
 
@@ -405,6 +506,7 @@ export default function RegisterMissing() {
               value={pet.description}
               disabled
               className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
+              placeholder="รายละเอียดสัตว์เลี้ยง"
             />
           </div>
 
@@ -416,14 +518,16 @@ export default function RegisterMissing() {
                 value={missingDate}
                 onChange={(e) => setMissingDate(e.target.value)}
                 className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3"
+                placeholder="วันที่หาย"
               />
             </div>
             <div className="flex flex-col">
-              <p className="sm:text-lg xl:text-xl">สถานที่หาย</p>
+              <p className="sm:text-lg xl:text-xl">สถานที่หาย(ไกล้เคียง)</p>
               <input
                 value={missingLocation}
                 onChange={(e) => setMissingLocation(e.target.value)}
                 className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3"
+                placeholder="สถานที่หาย"
               />
             </div>
           </div>
@@ -434,6 +538,7 @@ export default function RegisterMissing() {
               value={missingDetail}
               onChange={(e) => setMissingDetail(e.target.value)}
               className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3"
+              placeholder="รายละเอียดการหาย"
             />
           </div>
 
@@ -443,6 +548,7 @@ export default function RegisterMissing() {
               value={reward}
               onChange={(e) => setReward(e.target.value)}
               className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3"
+              placeholder="จำนวนเงินรางวัล (ถ้ามี)"
             />
           </div>
         </div>
@@ -477,6 +583,7 @@ export default function RegisterMissing() {
             value={pet.ownerName}
             onChange={(e) => setPet({ ...pet, ownerName: e.target.value })}
             className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3"
+            placeholder="ชื่อเจ้าของ"
           />
 
           <div className="flex flex-col my-3">
@@ -485,6 +592,7 @@ export default function RegisterMissing() {
               value={pet.contactNumber}
               onChange={(e) => setPet({ ...pet, contactNumber: e.target.value })}
               className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3"
+              placeholder="เบอร์โทรศัพท์"
             />
           </div>
 
@@ -494,11 +602,18 @@ export default function RegisterMissing() {
               value={pet.facebook}
               onChange={(e) => setPet({ ...pet, facebook: e.target.value })}
               className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3"
+              placeholder="ลิงก์ Facebook"
             />
           </div>
         </div>
 
         <div className="flex justify-end ml-20 mt-5 lg:mb-8 mb-5">
+          <button
+            onClick={handleCancel}
+            className="bg-gray-400 text-white hover:bg-gray-600 shadow-md rounded-xl px-6 py-1 sm:text-lg xl:text-xl cursor-pointer mr-4"
+          >
+            ยกเลิก
+          </button>
           <button
             onClick={handleSubmit}
             className="bg-[#7CBBEB] text-white hover:bg-sky-600 shadow-md rounded-xl px-6 py-1 sm:text-lg xl:text-xl cursor-pointer"
