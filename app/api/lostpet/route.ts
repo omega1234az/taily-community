@@ -146,6 +146,8 @@ export async function GET(req: NextRequest) {
     const minReward = parseFloat(searchParams.get('minReward') || '0') || 0
     const maxReward = parseFloat(searchParams.get('maxReward') || '100000') || 100000
     const status = searchParams.get('status') || 'lost'
+    const color = searchParams.get('color') || undefined
+    const colors = color ? color.split(',').map(c => c.trim()) : undefined
 
     // Validate pagination
     if (page < 1 || limit < 1 || limit > 50) {
@@ -164,8 +166,8 @@ export async function GET(req: NextRequest) {
       status,
     }
 
-    // เพิ่มเงื่อนไขสำหรับตัวกรอง
-    if (species || location || lostDate || minReward > 0 || maxReward < 100000) {
+    // Add conditions for filters
+    if (species || location || lostDate || minReward > 0 || maxReward < 100000 || colors) {
       whereClause.AND = []
 
       if (species && species !== 'ทั้งหมด') {
@@ -207,9 +209,24 @@ export async function GET(req: NextRequest) {
           },
         })
       }
+
+      // Add multiple color filter for JSON array
+      if (colors && colors.length > 0) {
+        whereClause.AND.push({
+          pet: {
+            OR: colors.map(c => ({
+              color: {
+                path: [],
+                array_contains: c,
+                mode: 'insensitive', // Case-insensitive matching
+              },
+            })),
+          },
+        })
+      }
     }
 
-    console.log('Query parameters:', { species, location, lostDate, minReward, maxReward, status }) // Debug query
+    console.log('Query parameters:', { species, location, lostDate, minReward, maxReward, status, colors }) // Debug query
     console.log('Where clause:', JSON.stringify(whereClause, null, 2)) // Debug whereClause
 
     const [lostPets, total] = await Promise.all([
@@ -270,21 +287,21 @@ export async function GET(req: NextRequest) {
       prisma.lostPet.count({ where: whereClause }),
     ])
 
-    // แปลงข้อมูลให้ตรงกับ frontend
+    // Transform data to match frontend
     const safeLostPets = lostPets.map(lostPet => ({
       id: lostPet.id,
-      title: lostPet.pet.name, // Map pet.name to title
+      title: lostPet.pet.name,
       description: lostPet.description,
       location: lostPet.location,
       missingLocation: lostPet.missingLocation,
       lat: lostPet.lat,
       lng: lostPet.lng,
-      lostDate: lostPet.lostDate.toISOString(), // แปลงเป็น string
+      lostDate: lostPet.lostDate.toISOString(),
       reward: lostPet.reward,
       status: lostPet.status,
       userId: lostPet.userId,
-      createdAt: lostPet.createdAt.toISOString(), // แปลงเป็น string
-      images: lostPet.pet.images, // ใช้ pet.images เพื่อให้สอดคล้องกับ frontend
+      createdAt: lostPet.createdAt.toISOString(),
+      images: lostPet.pet.images,
       pet: {
         id: lostPet.pet.id,
         name: lostPet.pet.name,
@@ -304,6 +321,15 @@ export async function GET(req: NextRequest) {
       },
       clues: lostPet.clues,
     }))
+
+    // Handle empty results
+    if (safeLostPets.length === 0) {
+      return NextResponse.json({
+        message: 'ไม่พบสัตว์เลี้ยงที่ตรงกับเงื่อนไข',
+        data: [],
+        pagination: { page, limit, total: 0, totalPages: 0 },
+      })
+    }
 
     console.log('Returning lost pets:', safeLostPets.length) // Debug response
 

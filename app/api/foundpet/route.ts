@@ -242,40 +242,71 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10', 10) || 10;
     const species = searchParams.get('species') || undefined;
     const province = searchParams.get('province') || undefined;
+    const foundDate = searchParams.get('foundDate') || undefined;
     const status = searchParams.get('status') || 'finding';
+    const color = searchParams.get('color') || undefined;
+    const colors = color ? color.split(',').map(c => c.trim()) : undefined;
 
+    // Validate pagination
     if (page < 1 || limit < 1 || limit > 50) {
       return NextResponse.json({ message: "ค่า pagination ไม่ถูกต้อง" }, { status: 400 });
     }
 
     const skip = (page - 1) * limit;
 
+    // Build where clause
     const whereClause: any = {
-      status: status,
+      status,
     };
 
-    if (species && province) {
-      whereClause.AND = [
-        {
+    // Add conditions for filters
+    if (species || province || foundDate || colors) {
+      whereClause.AND = [];
+
+      if (species && species !== 'ทั้งหมด') {
+        whereClause.AND.push({
           species: {
             name: species,
           },
-        },
-        {
+        });
+      }
+
+      if (province) {
+        whereClause.AND.push({
           user: {
             province,
           },
-        },
-      ];
-    } else if (species) {
-      whereClause.species = {
-        name: species,
-      };
-    } else if (province) {
-      whereClause.user = {
-        province,
-      };
+        });
+      }
+
+      if (foundDate) {
+        const date = new Date(foundDate);
+        if (!isNaN(date.getTime())) {
+          whereClause.AND.push({
+            foundDate: {
+              gte: new Date(date.setHours(0, 0, 0, 0)),
+              lte: new Date(date.setHours(23, 59, 59, 999)),
+            },
+          });
+        }
+      }
+
+      // Add multiple color filter for JSON array
+      if (colors && colors.length > 0) {
+        whereClause.AND.push({
+          OR: colors.map(c => ({
+            color: {
+              path: [],
+              array_contains: c,
+              mode: 'insensitive',
+            },
+          })),
+        });
+      }
     }
+
+    console.log('Query parameters:', { species, province, foundDate, status, colors });
+    console.log('Where clause:', JSON.stringify(whereClause, null, 2));
 
     const [foundPets, total] = await Promise.all([
       prisma.foundPet.findMany({
@@ -305,13 +336,22 @@ export async function GET(req: NextRequest) {
       prisma.foundPet.count({ where: whereClause }),
     ]);
 
+    // Handle empty results
+    if (foundPets.length === 0) {
+      return NextResponse.json({
+        message: 'ไม่พบสัตว์เลี้ยงที่ตรงกับเงื่อนไข',
+        data: [],
+        pagination: { page, limit, total: 0, totalPages: 0 },
+      });
+    }
+
     const safeFoundPets = foundPets.map(foundPet => ({
       id: foundPet.id,
       description: foundPet.description,
       location: foundPet.location,
       lat: foundPet.lat,
       lng: foundPet.lng,
-      foundDate: foundPet.foundDate,
+      foundDate: foundPet.foundDate.toISOString(),
       breed: foundPet.breed,
       gender: foundPet.gender,
       color: foundPet.color,
@@ -323,8 +363,8 @@ export async function GET(req: NextRequest) {
       species: foundPet.species,
       user: foundPet.user,
       images: foundPet.images,
-      createdAt: foundPet.createdAt,
-      updatedAt: foundPet.updatedAt,
+      createdAt: foundPet.createdAt.toISOString(),
+      updatedAt: foundPet.updatedAt.toISOString(),
     }));
 
     return NextResponse.json({
