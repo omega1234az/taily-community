@@ -8,7 +8,16 @@ import jsPDF from "jspdf";
 import QRCode from "react-qr-code";
 import { Eye, X, Calendar, MapPin, Phone, User, Image as ImageIcon } from "lucide-react";
 import Swal from "sweetalert2";
+import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
+import timezone from 'dayjs/plugin/timezone'
+import 'dayjs/locale/th'
 
+
+
+dayjs.extend(utc)
+dayjs.extend(timezone)
+dayjs.locale('th')
 // Dynamically import Leaflet to prevent SSR issues
 const DynamicMap = dynamic(() => import("./MapComponent"), {
   ssr: false,
@@ -67,6 +76,7 @@ type LostPetData = {
 };
 
 export default function ViewLostPet() {
+  
   const params = useParams<{ id: string }>();
   const [isLoading, setIsLoading] = useState<boolean>(true);
   // Image modal states
@@ -179,7 +189,7 @@ export default function ViewLostPet() {
         setBreed(data.pet.breed || "");
         setSterilized(data.pet.isNeutered ? "ทำหมันแล้ว" : "ยังไม่ได้ทำหมัน");
         setMarkings(data.pet.markings || "");
-        setDescription(data.pet.description || "");
+        setDescription(data.description || "");
         setSelectedType(
           data.pet.speciesId === 1
             ? "แมว"
@@ -447,9 +457,14 @@ export default function ViewLostPet() {
               <p style={{ display: "flex", gap: "8px", marginBottom: "20px" }}>
                 <strong>วันที่หาย:</strong> {missingDate || "-"}
               </p>
-              <p style={{ display: "flex", gap: "8px", marginBottom: "20px" }}>
-                <strong>สถานที่หาย:</strong> {missingLocation || "ไม่ระบุ"} {location}
-              </p>
+             <div style={{ marginBottom: "20px" }}>
+  <p style={{ margin: "0", paddingBottom: "8px" }}>
+    <strong>สถานที่หาย:</strong> {missingLocation || "ไม่ระบุ"}
+  </p>
+  <p style={{ margin: "0" }}>
+    <strong>ที่ตั้ง:</strong> {location || "ไม่ระบุ"}
+  </p>
+</div>
             </div>
           </div>
 
@@ -651,15 +666,7 @@ export default function ViewLostPet() {
             />
           </div>
 
-          <div className="flex flex-col mb-2">
-            <p className="sm:text-lg xl:text-xl">รายละเอียด (สัตว์เลี้ยง)</p>
-            <input
-              value={description}
-              disabled
-              className="w-full mt-1 p-2 border border-gray-300 rounded-md mb-3 bg-gray-100 opacity-50 cursor-not-allowed"
-              placeholder="รายละเอียดสัตว์เลี้ยง"
-            />
-          </div>
+         
 
           <div className="grid grid-cols-2 gap-4 mb-2">
             <div className="flex flex-col">
