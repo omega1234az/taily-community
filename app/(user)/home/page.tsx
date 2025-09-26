@@ -405,7 +405,7 @@ export default function PetSearchHome() {
             onClick={handleShowLostPetsChange}
             aria-label="แสดงสัตว์เลี้ยงหาย"
           >
-            <div className="bg-[#E5EEFF] border-black border-1 hover:bg-[#b7ccf5] p-3 rounded-2xl 2xl:w-28 xl:w-24 lg:w-20 md:w-16 sm:w-14 w-12 transition-colors">
+            <div className="bg-[#E5EEFF] border-gray-400 border-2 hover:bg-[#b7ccf5] p-3 rounded-2xl 2xl:w-28 xl:w-24 lg:w-20 md:w-16 sm:w-14 w-12 transition-colors">
               <Image
                 src="/all/lostpets.png"
                 alt="lost pets"
@@ -424,7 +424,7 @@ export default function PetSearchHome() {
             onClick={handleShowLostPetsChange}
             aria-label="แสดงหาเจ้าของ"
           >
-            <div className="bg-[#E5EEFF] border-black border-1 hover:bg-[#b7ccf5] p-3 rounded-2xl 2xl:w-28 xl:w-24 lg:w-20 md:w-16 sm:w-14 w-12 transition-colors">
+            <div className="bg-[#E5EEFF] border-gray-400 border-2 hover:bg-[#b7ccf5] p-3 rounded-2xl 2xl:w-28 xl:w-24 lg:w-20 md:w-16 sm:w-14 w-12 transition-colors">
               <Image
                 src="/all/owner.png"
                 alt="find owner"

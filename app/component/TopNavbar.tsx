@@ -23,6 +23,7 @@ export default function TopNavbar() {
 
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const profileRef = useRef<HTMLDivElement | null>(null);
+  const notificationRef = useRef<HTMLDivElement | null>(null);
 
   // ปิด dropdown เมื่อคลิกข้างนอก
   useEffect(() => {
@@ -39,13 +40,27 @@ export default function TopNavbar() {
       ) {
         setProfileOpen(false);
       }
+      if (
+        notificationRef.current &&
+        !notificationRef.current.contains(event.target as Node)
+      ) {
+        setNotificationOpen(false);
+      }
     }
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // ดึงข้อมูลโปรไฟล์เมื่อ session พร้อม
+  // ฟังก์ชันดึง notifications
+  const fetchNotifications = () => {
+    fetch("/api/notifications")
+      .then((res) => res.json())
+      .then((data) => setNotifications(data.data || []))
+      .catch((err) => console.error("Failed to fetch notifications", err));
+  };
+
+  // โหลดโปรไฟล์
   useEffect(() => {
     if (status === "authenticated") {
       setLoadingProfile(true);
@@ -62,29 +77,62 @@ export default function TopNavbar() {
           setLoadingProfile(false);
         });
 
-      // ดึง notifications
-      fetch("/api/notifications")
-        .then((res) => res.json())
-        .then((data) => setNotifications(data.data || []))
-        .catch((err) => console.error("Failed to fetch notifications", err));
+      // ✅ โหลด noti ครั้งแรกทันที
+      fetchNotifications();
     } else {
       setUserProfile(null);
       setNotifications([]);
     }
   }, [status]);
 
+  // ✅ ดึง noti ทุก 30 วิ ตลอดเวลา
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+
+    if (status === "authenticated") {
+      interval = setInterval(fetchNotifications, 20000);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [status]);
+
+  // ป้องกัน body scroll เมื่อเปิด notification modal (mobile only)
+  useEffect(() => {
+    if (notificationOpen) {
+      // เช็คว่าเป็น mobile หรือไม่
+      const isMobile = window.innerWidth < 640; // sm breakpoint
+      if (isMobile) {
+        document.body.style.overflow = 'hidden';
+      }
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [notificationOpen]);
+
   const toggleDropdown = () => {
     setDropdownOpen(!dropdownOpen);
     setProfileOpen(false);
+    setNotificationOpen(false);
   };
 
   const toggleProfile = () => {
     setProfileOpen(!profileOpen);
     setDropdownOpen(false);
+    setNotificationOpen(false);
   };
 
   const toggleNotification = () => {
+    // ✅ ดึงทันทีถ้าเปิด หรือถ้าปิด
+    fetchNotifications();
     setNotificationOpen(!notificationOpen);
+    setDropdownOpen(false);
+    setProfileOpen(false);
   };
 
   const handleClickNotification = async (notif: any) => {
@@ -159,7 +207,7 @@ export default function TopNavbar() {
       {/* Notification & Profile */}
       <div className="flex items-center gap-2 sm:gap-3 xl:gap-5 relative">
         {/* 🔔 Notification */}
-        <div className="cursor-pointer relative" onClick={toggleNotification}>
+        <div className="cursor-pointer relative" onClick={toggleNotification} ref={notificationRef}>
           <img
             src="/all/bell.svg"
             alt="bell"
@@ -172,58 +220,79 @@ export default function TopNavbar() {
           )}
 
           {notificationOpen && (
-            <div
-              className="fixed inset-0 z-50 bg-white p-4 overflow-auto sm:absolute 
-              sm:top-18 lg:top-20 sm:left-[-220px] md:left-[-270px] lg:left-[-320px] xl:left-[-410px]
-              sm:w-[250px] sm:h-[260px] md:w-[300px] md:h-[300px] lg:w-[350px] lg:h-[350px] xl:w-[440px] xl:h-[350px]
-              sm:rounded-md sm:border sm:border-gray-300 sm:shadow-md cursor-default"
-            >
-              <button
-                onClick={toggleNotification}
-                className="absolute top-[-3px] right-5 text-gray-500 hover:text-gray-900 text-5xl sm:hidden"
-                aria-label="Close"
+            <>
+              {/* Mobile Overlay */}
+              <div className="sm:hidden fixed inset-0 z-40 bg-black bg-opacity-50" onClick={toggleNotification}></div>
+              
+              {/* Notification Panel */}
+              <div
+                className="fixed sm:absolute z-50 bg-white border border-gray-300 rounded-md shadow-lg
+                  // Mobile styles
+                  left-4 right-4 top-20 bottom-20 sm:inset-auto
+                  // Desktop styles  
+                  sm:top-16 lg:top-20 sm:left-[-200px] md:left-[-270px] lg:left-[-330px] xl:left-[-380px]
+                  sm:w-[280px] md:w-[320px] lg:w-[380px] xl:w-[440px]
+                  sm:max-h-[400px] lg:max-h-[450px] xl:max-h-[500px]
+                  flex flex-col"
               >
-                ×
-              </button>
-              <div className="border-b-2 border-gray-300 pb-2 xl:text-lg sm:text-md text-lg">
-                การแจ้งเตือน
-              </div>
+                {/* Header */}
+                <div className="flex items-center justify-between p-4 border-b border-gray-300 flex-shrink-0">
+                  <h3 className="font-medium text-lg xl:text-xl">การแจ้งเตือน</h3>
+                  <button
+                    onClick={toggleNotification}
+                    className="sm:hidden text-gray-500 hover:text-gray-700 text-2xl leading-none"
+                    aria-label="Close"
+                  >
+                    ×
+                  </button>
+                </div>
 
-              <div className="overflow-y-auto max-h-64 sm:max-h-80">
-                {notifications.length === 0 ? (
-                  <div className="p-4 text-gray-500 text-sm">
-                    ไม่มีการแจ้งเตือน
-                  </div>
-                ) : (
-                  notifications.map((n) => (
-                    <div
-                      key={n.id}
-                      onClick={() => handleClickNotification(n)}
-                      className={`grid grid-cols-4 gap-2 p-2 cursor-pointer ${
-                        n.isRead ? "bg-white" : "bg-gray-100"
-                      } hover:bg-gray-200`}
-                    >
-                      <div className="col-span-1">
-                        <img
-                          src="/all/comment.png"
-                          alt="notif"
-                          className="w-10 h-10 rounded-full object-cover"
-                        />
-                      </div>
-                      <div className="col-span-3 flex flex-col justify-center">
-                        <span className="text-sm font-medium">{n.title}</span>
-                        <span className="text-xs text-gray-600">
-                          {n.message}
-                        </span>
-                        <span className="text-[10px] text-gray-400">
-                          {new Date(n.createdAt).toLocaleString()}
-                        </span>
-                      </div>
+                {/* Content - ใช้ overflow-y-auto เพียงชั้นเดียว */}
+                <div className="flex-1 overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <div className="p-4 text-gray-500 text-sm text-center">
+                      ไม่มีการแจ้งเตือน
                     </div>
-                  ))
-                )}
+                  ) : (
+                    <>
+                      {notifications.map((n) => (
+                        <div
+                          key={n.id}
+                          onClick={() => handleClickNotification(n)}
+                          className={`flex gap-3 p-3 cursor-pointer border-b border-gray-100 transition-colors
+                            ${n.isRead ? "bg-white hover:bg-gray-50" : "bg-blue-50 hover:bg-blue-100"}
+                          `}
+                        >
+                          <div className="flex-shrink-0">
+                            <img
+                              src="/all/comment.png"
+                              alt="notification"
+                              className="w-10 h-10 rounded-full object-cover"
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm text-gray-900 truncate">
+                              {n.title}
+                            </div>
+                            <div className="text-xs text-gray-600 mt-1 line-clamp-2">
+                              {n.message}
+                            </div>
+                            <div className="text-xs text-gray-400 mt-2">
+                              {new Date(n.createdAt).toLocaleString('th-TH')}
+                            </div>
+                          </div>
+                          {!n.isRead && (
+                            <div className="flex-shrink-0">
+                              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </div>
               </div>
-            </div>
+            </>
           )}
         </div>
 

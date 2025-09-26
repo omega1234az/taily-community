@@ -255,7 +255,7 @@ export async function GET(req: NextRequest) {
           user: {
             select: {
               id: true,
-              firstName: true,
+              name: true,
               province: true,
             },
           },
@@ -316,7 +316,7 @@ export async function GET(req: NextRequest) {
       },
       user: {
         id: lostPet.user.id,
-        firstName: lostPet.user.firstName,
+        firstName: lostPet.user.name,
         province: lostPet.user.province,
       },
       clues: lostPet.clues,
