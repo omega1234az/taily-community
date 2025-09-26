@@ -172,7 +172,7 @@ export default function ViewLostPet() {
     if (params.id) {
       try {
         setIsLoading(true);
-        const response = await fetch(`/api/lostpet/${params.id}`);
+        const response = await fetch(`/api/lostpet/${params.id}/me`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }

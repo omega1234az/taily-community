@@ -12,11 +12,11 @@ export default async function MissingPetLayout({ children }: { children: React.R
   }
 
   return (
-    <div className="flex flex-col h-screen">
-      <TopNavbar />
-      <main className="flex-1 xl:pl-40 lg:pl-18 md:pl-20 sm:pl-18 pl-10 md:pt-18 sm:pt-14 pt-14 overflow-auto">
+   
+      
+      <main className="">
         {children}
       </main>
-    </div>
+
   );
 }
