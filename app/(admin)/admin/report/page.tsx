@@ -1,5 +1,7 @@
+
 "use client";
 import React, { useState, useEffect } from "react";
+import Swal from "sweetalert2";
 
 type Report = {
   id: number;
@@ -72,28 +74,58 @@ export default function Report() {
   }, []);
 
   const handleHide = async (id: number) => {
-    try {
-      const res = await fetch(`/api/reports/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "hidden" }),
-      });
-      if (!res.ok) throw new Error("ซ่อนรายงานไม่สำเร็จ");
-      setReports(reports.filter((r) => r.id !== id));
-      setSelectedReport(null);
-    } catch (err: any) {
-      setError(err.message);
+    const result = await Swal.fire({
+      title: "ยืนยันการซ่อนโพสต์",
+      text: "คุณแน่ใจหรือไม่ที่จะซ่อนโพสต์นี้?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#f4b400",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "ใช่, ซ่อนเลย",
+      cancelButtonText: "ยกเลิก",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const res = await fetch(`/api/reports/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "hidden" }),
+        });
+        if (!res.ok) throw new Error("ซ่อนรายงานไม่สำเร็จ");
+        setReports(reports.filter((r) => r.id !== id));
+        setSelectedReport(null);
+        Swal.fire("ซ่อนสำเร็จ!", "โพสต์นี้ถูกซ่อนแล้ว", "success");
+      } catch (err: any) {
+        setError(err.message);
+        Swal.fire("เกิดข้อผิดพลาด!", err.message || "ซ่อนโพสต์ไม่สำเร็จ", "error");
+      }
     }
   };
 
   const handleDelete = async (id: number) => {
-    try {
-      const res = await fetch(`/api/reports/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("ลบรายงานไม่สำเร็จ");
-      setReports(reports.filter((r) => r.id !== id));
-      setSelectedReport(null);
-    } catch (err: any) {
-      setError(err.message);
+    const result = await Swal.fire({
+      title: "ยืนยันการลบรายงาน",
+      text: "คุณแน่ใจหรือไม่ที่จะลบรายงานนี้?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "ใช่, ลบเลย",
+      cancelButtonText: "ยกเลิก",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const res = await fetch(`/api/reports/${id}`, { method: "DELETE" });
+        if (!res.ok) throw new Error("ลบรายงานไม่สำเร็จ");
+        setReports(reports.filter((r) => r.id !== id));
+        setSelectedReport(null);
+        Swal.fire("ลบสำเร็จ!", "รายงานนี้ถูกลบแล้ว", "success");
+      } catch (err: any) {
+        setError(err.message);
+        Swal.fire("เกิดข้อผิดพลาด!", err.message || "ลบรายงานไม่สำเร็จ", "error");
+      }
     }
   };
 
@@ -109,7 +141,7 @@ export default function Report() {
     return <div className="text-center py-8 text-red-500">{error}</div>;
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-6  bg-white rounded-2xl shadow-xl">
+    <div className="w-full max-w-7xl mx-auto p-6 bg-white rounded-2xl shadow-xl">
       <title>ตรวจสอบรายงาน</title>
       <h1 className="text-3xl font-bold text-gray-800 mb-8 text-center">
         จัดการรายงาน
@@ -238,12 +270,6 @@ export default function Report() {
                   >
                     ดูรายละเอียด
                   </button>
-                  <button
-                    onClick={() => handleDelete(r.id)}
-                    className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                  >
-                    ลบ
-                  </button>
                 </div>
               </div>
             ))
@@ -253,7 +279,7 @@ export default function Report() {
 
       {/* Modal */}
       {selectedReport && (
-        <div className="fixed inset-0  bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-8 max-w-4xl w-full border shadow-2xl overflow-auto max-h-[90vh] relative">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-semibold text-gray-800">

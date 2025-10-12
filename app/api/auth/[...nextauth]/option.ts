@@ -13,6 +13,7 @@ declare module "next-auth" {
   interface User {
     id: string;
     role?: string | null;
+    
   }
 
   interface Session {
@@ -22,6 +23,7 @@ declare module "next-auth" {
       email?: string | null;
       image?: string | null;
       role?: string | null;
+      
     };
   }
 }
@@ -75,7 +77,9 @@ export const options: NextAuthOptions = {
           user.password
         );
         if (!isPasswordValid) return null;
-
+        if (user.status === false) {
+      throw new Error("บัญชีนี้ถูกระงับการใช้งาน"); // จะไปที่ error page
+    }
         return {
           id: user.id,
           name: user.name,

@@ -1,5 +1,7 @@
+
 "use client";
 import React, { useState, useEffect } from "react";
+import Swal from "sweetalert2";
 
 type Category = {
   id: number;
@@ -81,16 +83,31 @@ export default function Categories() {
 
   const handleDelete = async (index: number) => {
     const category = currentCategories[index];
-    try {
-      const res = await fetch(`/api/pets/species/${category.id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error("ลบประเภทไม่สำเร็จ");
-      const newCategories = categories.filter((c) => c.id !== category.id);
-      setCategories(newCategories);
-      setError(null);
-    } catch (error: any) {
-      setError(error.message || "เกิดข้อผิดพลาด");
+    const result = await Swal.fire({
+      title: "ยืนยันการลบประเภท",
+      text: `คุณแน่ใจหรือไม่ที่จะลบประเภท "${category.name}"?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "ใช่, ลบเลย",
+      cancelButtonText: "ยกเลิก",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const res = await fetch(`/api/pets/species/${category.id}`, {
+          method: "DELETE",
+        });
+        if (!res.ok) throw new Error("ลบประเภทไม่สำเร็จ");
+        const newCategories = categories.filter((c) => c.id !== category.id);
+        setCategories(newCategories);
+        setError(null);
+        Swal.fire("ลบสำเร็จ!", `ประเภท "${category.name}" ถูกลบแล้ว`, "success");
+      } catch (error: any) {
+        setError(error.message || "เกิดข้อผิดพลาด");
+        Swal.fire("เกิดข้อผิดพลาด!", error.message || "ลบประเภทไม่สำเร็จ", "error");
+      }
     }
   };
 
@@ -311,7 +328,7 @@ export default function Categories() {
 
       {/* Modal for Adding Category */}
       {showAddBox && (
-        <div className="fixed inset-0  bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl relative">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-semibold text-gray-800">

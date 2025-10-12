@@ -1,10 +1,10 @@
+
 "use client";
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { toast } from "react-toastify";
+import Swal from "sweetalert2";
 import Image from "next/image";
-import "react-toastify/dist/ReactToastify.css";
 
 // Interfaces จาก schema เดิม
 interface LostPetImage {
@@ -117,6 +117,7 @@ const ManageAnnouncements: React.FC = () => {
         setLostPets(mappedPets);
       } catch (err) {
         setError((err as Error).message || "เกิดข้อผิดพลาดในการดึงข้อมูล");
+        Swal.fire("เกิดข้อผิดพลาด!", (err as Error).message || "เกิดข้อผิดพลาดในการดึงข้อมูล", "error");
       } finally {
         setLoading(false);
       }
@@ -154,6 +155,7 @@ const ManageAnnouncements: React.FC = () => {
         setFoundPets(data.data as FoundPet[]);
       } catch (err) {
         setError((err as Error).message || "เกิดข้อผิดพลาดในการดึงข้อมูล");
+        Swal.fire("เกิดข้อผิดพลาด!", (err as Error).message || "เกิดข้อผิดพลาดในการดึงข้อมูล", "error");
       } finally {
         setLoading(false);
       }
@@ -166,47 +168,69 @@ const ManageAnnouncements: React.FC = () => {
 
   // Delete lost pet
   const handleDeleteLostPet = async (id: number) => {
-    if (!confirm("คุณแน่ใจหรือไม่ว่าต้องการลบประกาศนี้?")) return;
+    const result = await Swal.fire({
+      title: "ยืนยันการลบประกาศ",
+      text: "คุณแน่ใจหรือไม่ว่าต้องการลบประกาศนี้? การกระทำนี้ไม่สามารถย้อนกลับได้",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "ใช่, ลบเลย",
+      cancelButtonText: "ยกเลิก",
+    });
 
-    try {
-      const response = await fetch(`/api/lostpet/${id}`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+    if (result.isConfirmed) {
+      try {
+        const response = await fetch(`/api/lostpet/${id}`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
 
-      if (!response.ok) {
-        throw new Error("ไม่สามารถลบประกาศได้");
+        if (!response.ok) {
+          throw new Error("ไม่สามารถลบประกาศได้");
+        }
+
+        setLostPets(lostPets.filter((pet) => pet.id !== id));
+        Swal.fire("ลบสำเร็จ!", "ลบประกาศสัตว์เลี้ยงหายสำเร็จ", "success");
+      } catch (err) {
+        Swal.fire("เกิดข้อผิดพลาด!", (err as Error).message || "เกิดข้อผิดพลาดในการลบ", "error");
       }
-
-      setLostPets(lostPets.filter((pet) => pet.id !== id));
-      toast.success("ลบประกาศสัตว์เลี้ยงหายสำเร็จ");
-    } catch (err) {
-      toast.error((err as Error).message || "เกิดข้อผิดพลาดในการลบ");
     }
   };
 
   // Delete found pet
   const handleDeleteFoundPet = async (id: number) => {
-    if (!confirm("คุณแน่ใจหรือไม่ว่าต้องการลบประกาศนี้?")) return;
+    const result = await Swal.fire({
+      title: "ยืนยันการลบประกาศ",
+      text: "คุณแน่ใจหรือไม่ว่าต้องการลบประกาศนี้? การกระทำนี้ไม่สามารถย้อนกลับได้",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "ใช่, ลบเลย",
+      cancelButtonText: "ยกเลิก",
+    });
 
-    try {
-      const response = await fetch(`/api/foundpet/${id}`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+    if (result.isConfirmed) {
+      try {
+        const response = await fetch(`/api/foundpet/${id}`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
 
-      if (!response.ok) {
-        throw new Error("ไม่สามารถลบประกาศได้");
+        if (!response.ok) {
+          throw new Error("ไม่สามารถลบประกาศได้");
+        }
+
+        setFoundPets(foundPets.filter((pet) => pet.id !== id));
+        Swal.fire("ลบสำเร็จ!", "ลบประกาศสัตว์เลี้ยงที่พบสำเร็จ", "success");
+      } catch (err) {
+        Swal.fire("เกิดข้อผิดพลาด!", (err as Error).message || "เกิดข้อผิดพลาดในการลบ", "error");
       }
-
-      setFoundPets(foundPets.filter((pet) => pet.id !== id));
-      toast.success("ลบประกาศสัตว์เลี้ยงที่พบสำเร็จ");
-    } catch (err) {
-      toast.error((err as Error).message || "เกิดข้อผิดพลาดในการลบ");
     }
   };
 

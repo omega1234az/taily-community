@@ -1,5 +1,7 @@
+
 "use client";
 import React, { useState, useEffect } from "react";
+import Swal from "sweetalert2";
 
 type User = {
   id: string;
@@ -45,12 +47,13 @@ export default function Users() {
       try {
         const query = statusFilter === "all" ? "" : `?status=${statusFilter}`;
         const res = await fetch(`/api/users${query}`);
-        if (!res.ok) throw new Error("Failed to fetch users");
+        if (!res.ok) throw new Error("ไม่สามารถดึงข้อมูลผู้ใช้ได้");
         const json: ApiResponse = await res.json();
         setUsers(json.users || []);
         setTotalPages(json.totalPages || 1);
       } catch (error) {
         console.error(error);
+        Swal.fire("เกิดข้อผิดพลาด!", "ไม่สามารถดึงข้อมูลผู้ใช้ได้", "error");
       } finally {
         setLoading(false);
       }
@@ -71,14 +74,14 @@ export default function Users() {
         method: "DELETE",
       });
 
-      if (!res.ok) throw new Error("Failed to delete user");
+      if (!res.ok) throw new Error("ลบผู้ใช้ไม่สำเร็จ");
 
       const newUsers = [...users];
       newUsers.splice(indexOfFirstUser + index, 1);
       setUsers(newUsers);
     } catch (error) {
       console.error("Error deleting user:", error);
-      alert("ลบผู้ใช้ไม่สำเร็จ");
+      Swal.fire("เกิดข้อผิดพลาด!", "ลบผู้ใช้ไม่สำเร็จ", "error");
     }
   };
 
@@ -87,23 +90,42 @@ export default function Users() {
     id: string,
     currentStatus: boolean
   ) => {
-    try {
-      const res = await fetch(`/api/users/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ status: !currentStatus }),
-      });
+    const action = currentStatus ? "แบน" : "ปลดแบน";
+    const result = await Swal.fire({
+      title: `ยืนยันการ${action}ผู้ใช้`,
+      text: `คุณแน่ใจหรือไม่ที่จะ${action}ผู้ใช้นี้?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: currentStatus ? "#d33" : "#28a745",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: `ใช่, ${action}เลย`,
+      cancelButtonText: "ยกเลิก",
+    });
 
-      if (!res.ok) throw new Error("Failed to update status");
+    if (result.isConfirmed) {
+      try {
+        const res = await fetch(`/api/users/${id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status: !currentStatus }),
+        });
 
-      const newUsers = [...users];
-      newUsers[indexOfFirstUser + index].status = !currentStatus;
-      setUsers(newUsers);
-    } catch (error) {
-      console.error("Error updating status:", error);
-      alert("อัปเดตสถานะผู้ใช้ไม่สำเร็จ");
+        if (!res.ok) throw new Error("อัปเดตสถานะผู้ใช้ไม่สำเร็จ");
+
+        const newUsers = [...users];
+        newUsers[indexOfFirstUser + index].status = !currentStatus;
+        setUsers(newUsers);
+        Swal.fire(
+          `${action}สำเร็จ!`,
+          `ผู้ใช้ถูก${action}แล้ว`,
+          "success"
+        );
+      } catch (error) {
+        console.error("Error updating status:", error);
+        Swal.fire("เกิดข้อผิดพลาด!", "อัปเดตสถานะผู้ใช้ไม่สำเร็จ", "error");
+      }
     }
   };
 
@@ -121,14 +143,14 @@ export default function Users() {
         body: JSON.stringify({ role: newRole }),
       });
 
-      if (!res.ok) throw new Error("Failed to update role");
+      if (!res.ok) throw new Error("เปลี่ยนบทบาทไม่สำเร็จ");
 
       const newUsers = [...users];
       newUsers[indexOfFirstUser + index].role = newRole;
       setUsers(newUsers);
     } catch (error) {
       console.error("Error updating role:", error);
-      alert("เปลี่ยนบทบาทไม่สำเร็จ");
+      Swal.fire("เกิดข้อผิดพลาด!", "เปลี่ยนบทบาทไม่สำเร็จ", "error");
     }
   };
 
