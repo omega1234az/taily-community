@@ -1,8 +1,8 @@
 
 "use client"
-import { useSession, signIn, signOut} from "next-auth/react";
+import { useSession, signIn, signOut } from "next-auth/react";
 import { redirect } from "next/navigation";
-
+//test
 
 export default function Home() {
   const { data: session } = useSession();
