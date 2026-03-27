@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback, Suspense, MutableRefObject } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { ErrorBoundary } from 'react-error-boundary'
+import { ErrorBoundary, FallbackProps } from 'react-error-boundary'
 import "leaflet/dist/leaflet.css"
 import type { Map as LeafletMap, DivIcon } from 'leaflet'
 import dayjs from 'dayjs'
@@ -179,13 +179,16 @@ const ErrorMessage = ({ message }: { message: string }) => (
   </div>
 )
 
-const MapErrorFallback = ({ error }: { error: Error }) => (
-  <div className="flex justify-center items-center h-screen">
-    <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-xl">
-      <p className="text-red-500">เกิดข้อผิดพลาดในการโหลดแผนที่: {error.message}</p>
+const MapErrorFallback = ({ error, resetErrorBoundary }: FallbackProps) => {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  return (
+    <div className="flex justify-center items-center h-screen">
+      <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-xl">
+        <p className="text-red-500">เกิดข้อผิดพลาดในการโหลดแผนที่: {errorMessage}</p>
+      </div>
     </div>
-  </div>
-)
+  );
+};
 
 // FilterModal Props Interface
 interface FilterModalProps {
