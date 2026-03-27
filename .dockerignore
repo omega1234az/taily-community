@@ -1,0 +1,13 @@
+# สร้างโฟลเดอร์สำหรับ cache ข้อมูลของ Next.js และไฟล์ชั่วคราวอื่นๆ
+.next
+.git
+node_modules
+npm-debug.log
+README.md
+Dockerfile
+.dockerignore
+docker-compose.yml
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
