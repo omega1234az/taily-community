@@ -69,7 +69,7 @@ jobs:
             echo "${{ secrets.ENV_FILE }}" > .env
             
             # 2. ล็อกอินเข้า GitHub Container Registry ด้วย Token จาก GitHub Actions
-            echo ${{ secrets.GITHUB_TOKEN }} | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+            echo ${{ secrets.GITHUB_TOKEN }} | sudo docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
             
             # 3. ดาวน์โหลดไฟล์ docker-compose.prod.yml ล่าสุดจากโปรเจกต์ (เผื่อโปรเจกต์เป็นส่วนตัว จะใช้ Token ในการโหลด)
             curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -O https://raw.githubusercontent.com/${{ github.repository }}/main/docker-compose.prod.yml
@@ -78,8 +78,8 @@ jobs:
             export APP_IMAGE=${{ env.REGISTRY }}/${{ steps.string-deploy.outputs.lowercase }}:latest
             
             # 5. สั่ง Pull ดึง Image ใหม่ และรันโปรเจกต์
-            docker-compose -f docker-compose.prod.yml pull
-            docker-compose -f docker-compose.prod.yml up -d
+            sudo docker compose -f docker-compose.prod.yml pull
+            sudo docker compose -f docker-compose.prod.yml up -d
             
             # 6. ลบ Image เก่าเพื่อประหยัดพื้นที่เซิร์ฟเวอร์
-            docker image prune -a -f
+            sudo docker image prune -a -f
