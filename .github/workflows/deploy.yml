@@ -74,8 +74,8 @@ jobs:
             # 3. ดาวน์โหลดไฟล์ docker-compose.prod.yml ล่าสุดจากโปรเจกต์ (เผื่อโปรเจกต์เป็นส่วนตัว จะใช้ Token ในการโหลด)
             curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -O https://raw.githubusercontent.com/${{ github.repository }}/main/docker-compose.prod.yml
             
-            # 4. ตัวแปรอ้างอิงชื่อ Image สำหรับ Docker Compose (แทรกลงใน .env เพื่อป้องกันปัญหา sudo ปัดตัวแปรทิ้ง)
-            echo "APP_IMAGE=${{ env.REGISTRY }}/${{ steps.string-deploy.outputs.lowercase }}:latest" >> .env
+            # 4. ตั้งค่าตัวแปรอ้างอิงของชื่อ Image สำหรับ Docker Compose
+            export APP_IMAGE=${{ env.REGISTRY }}/${{ steps.string-deploy.outputs.lowercase }}:latest
             
             # 5. สั่ง Pull ดึง Image ใหม่ และรันโปรเจกต์
             sudo docker compose -f docker-compose.prod.yml pull
