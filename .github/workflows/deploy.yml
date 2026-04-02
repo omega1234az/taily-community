@@ -1,85 +1,43 @@
-name: Build and Deploy Next.js to VPS via Docker
+name: Deploy to AKS
 
 on:
   push:
-    branches:
-      - main
-  workflow_dispatch: # ทำให้เราสามารถกดรันแบบคลิกเอง (Manual) ได้
+    branches: [main]
 
 env:
-  REGISTRY: ghcr.io
-  # ตีค่า Image name ตามชื่อผู้ใช้และชื่อโปรเจกต์ (เช่น supak/projectpet)
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE: songlnwzacr.azurecr.io/app
 
 jobs:
-  build-and-push-image:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      # แปลงชื่อ Image เป็นพิมพ์เล็ก (GHCR บังคับว่าชื่อต้องพิมพ์เล็กทั้งหมด)
-      - name: Lowercase image name
-        id: string
-        uses: ASzc/change-string-case-action@v6
-        with:
-          string: ${{ env.IMAGE_NAME }}
-
-      - name: Log in to the Container registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: ${{ env.REGISTRY }}/${{ steps.string.outputs.lowercase }}:latest
-
   deploy:
     runs-on: ubuntu-latest
-    needs: build-and-push-image
-    steps:
-      # จำเป็นต้องแปลงเป็นพิมพ์เล็กอีกครั้งเพื่อนำไปใช้ในเซิร์ฟเวอร์
-      - name: Lowercase image name for Deploy
-        id: string-deploy
-        uses: ASzc/change-string-case-action@v6
-        with:
-          string: ${{ env.IMAGE_NAME }}
 
-      - name: Execute SSH commands to Deploy
-        uses: appleboy/ssh-action@v1.0.3
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login Azure
+        uses: azure/login@v1
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            # 1. เข้าไปที่โฟลเดอร์โปรเจกต์ที่ต้องการบนเซิร์ฟเวอร์
-            mkdir -p ~/projectpet
-            cd ~/projectpet
-            
-            # 1.5 สร้างไฟล์ .env รวบรวม Environment Variables สำหรับ Docker Compose
-            echo "${{ secrets.ENV_FILE }}" > .env
-            
-            # 2. ล็อกอินเข้า GitHub Container Registry ด้วย Token จาก GitHub Actions
-            echo ${{ secrets.GITHUB_TOKEN }} | sudo docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
-            
-            # 3. ดาวน์โหลดไฟล์ docker-compose.prod.yml ล่าสุดจากโปรเจกต์ (เผื่อโปรเจกต์เป็นส่วนตัว จะใช้ Token ในการโหลด)
-            curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -O https://raw.githubusercontent.com/${{ github.repository }}/main/docker-compose.prod.yml
-            
-            # 4. ตัวแปรอ้างอิงชื่อ Image สำหรับ Docker Compose (แทรกลงใน .env เพื่อป้องกันปัญหา sudo ปัดตัวแปรทิ้ง)
-            echo "APP_IMAGE=${{ env.REGISTRY }}/${{ steps.string-deploy.outputs.lowercase }}:latest" >> .env
-            
-            # 5. สั่ง Pull ดึง Image ใหม่ และรันโปรเจกต์
-            sudo docker compose -f docker-compose.prod.yml pull
-            sudo docker compose -f docker-compose.prod.yml up -d
-            
-            # 6. ลบ Image เก่าเพื่อประหยัดพื้นที่เซิร์ฟเวอร์
-            sudo docker image prune -a -f
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Login ACR
+        run: az acr login --name songlnwzacr
+
+      - name: Build & Push
+        run: |
+          docker build -t $IMAGE:${{ github.sha }} .
+          docker push $IMAGE:${{ github.sha }}
+
+      - name: Set Kubeconfig
+        run: |
+          az aks get-credentials --resource-group my-rg --name songlnwzak8s
+
+      - name: Deploy
+        run: |
+          # Create secret from GitHub Actions secret
+          echo "${{ secrets.ENV_FILE }}" > .env
+          kubectl create secret generic app-secret --from-env-file=.env --namespace prod --dry-run=client -o yaml | kubectl apply -f -
+          rm .env
+          
+          # Deploy Kubernetes manifests
+          kubectl apply -f infra/k8s/
+          kubectl set image deployment/app app=$IMAGE:${{ github.sha }} -n prod
