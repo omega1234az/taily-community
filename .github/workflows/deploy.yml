@@ -33,6 +33,9 @@ jobs:
 
       - name: Deploy
         run: |
+          # Ensure prod namespace exists
+          kubectl create namespace prod --dry-run=client -o yaml | kubectl apply -f -
+          
           # Create secret from GitHub Actions secret
           echo "${{ secrets.ENV_FILE }}" > .env
           kubectl create secret generic app-secret --from-env-file=.env --namespace prod --dry-run=client -o yaml | kubectl apply -f -
